@@ -1,0 +1,55 @@
+{
+  "schema": "tagro.echo-os.foundation/1",
+  "system_id": "TAGRO-ECHO-OS",
+  "generation": "1",
+  "recorded_at": "2026-08-19T18:12:00+05:30",
+  "status": "repository_bootstrapped_runtime_not_built",
+  "business": {
+    "brand": "TAGRO x ECHO",
+    "venture": "independent ECHO venture",
+    "projected_counter_count": 100,
+    "projected_district_count": 7,
+    "primary_device": "mobile_phone",
+    "desktop_optional": true
+  },
+  "independence": {
+    "legacy_tagro_runtime_dependency": false,
+    "legacy_tagro_data_dependency": false,
+    "busy_operational_source_of_truth": false,
+    "busy_role": "controlled_accounting_adapter",
+    "dropbox_role": "project_archive_evidence_resilience_transport",
+    "operational_cloud": "AWS",
+    "aws_resources_provisioned": false
+  },
+  "repository": {
+    "created": true,
+    "full_name": "koffykraft/tagro-echo-os",
+    "default_branch": "main",
+    "role": "independent_engineering_source"
+  },
+  "skeleton": {
+    "version": "1.0",
+    "elements": ["identity","event","evidence","relationship","time","location","authority","state","provenance","confidence"]
+  },
+  "control_model": {
+    "front_seat_driver": "operational_command_path",
+    "rear_seat_observer": "read_only_observation_analysis_attention",
+    "observer_operational_write_authority": false,
+    "ai_architectural_sovereignty": false,
+    "ai_consequential_truth_authority": false
+  },
+  "component_lifecycle": ["idea","experiment","candidate","tested","admitted","active","superseded","retired"],
+  "protected_governance": ["governance/constitution","governance/decisions","contracts/core","schemas/core"],
+  "forbidden_dependencies": [
+    "legacy_tagro_production_database",
+    "legacy_tagro_cloudflare_bindings",
+    "legacy_tagro_authentication_state",
+    "hard_coded_local_username_paths",
+    "direct_browser_database_access",
+    "observer_to_operational_write_path",
+    "ai_direct_consequential_write_without_contractual_confirmation"
+  ],
+  "current_stage": "repository_control_plane_bootstrap",
+  "next_gate": "core_contracts_and_builder_protocols_present_and_validated",
+  "certification_claim": false
+}
