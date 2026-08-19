@@ -22,7 +22,9 @@ FIELDSETS={
  'service_jobs':('job_id','branch_id','customer_id','machine_id','opened_at','complaint','status','observations','estimate_id'),
  'service_events':('event_id','job_id','occurred_at','event_type','note','actor_id'),
  'cash_closings':('closing_id','branch_id','business_date','opening_cash','cash_sales','other_cash_in','cash_expenses','cash_deposits_or_transfers','declared_closing','expected_closing','variance','recorded_at','actor_id','note'),
- 'bank_transactions':('transaction_id','statement_id','source_file','source_row','account_id','transaction_date','value_date','direction','amount','narration','reference','balance')
+ 'bank_transactions':('transaction_id','statement_id','source_file','source_row','account_id','transaction_date','value_date','direction','amount','narration','reference','balance'),
+ 'payments':('payment_id','branch_id','customer_id','received_at','method','amount','reference','actor_id','status'),
+ 'payment_allocations':('allocation_id','payment_id','target_type','target_id','amount','allocated_at','actor_id')
 }
 
 class ImportContractError(ValueError): pass
