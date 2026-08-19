@@ -1,6 +1,6 @@
 {
   "work_order_id": "WO-0001",
-  "status": "active",
+  "status": "completed",
   "objective": "Establish the persistent governance/control plane and independent repository foundation for TAGRO ECHO OS.",
   "allowed": [
     "README.md",
@@ -29,6 +29,19 @@
     "Observer and AI Builder constraints are committed",
     "governance validation runs in CI"
   ],
+  "evidence": {
+    "governance_gate_run_id": 32254760959,
+    "governance_gate_run_number": 3,
+    "job_id": 96073777881,
+    "job_name": "validate-foundation",
+    "conclusion": "success",
+    "validated_steps": [
+      "Validate TAGRO ECHO OS foundation",
+      "Parse core JSON schemas"
+    ],
+    "rendered_ui_confirmation": true
+  },
   "owner_approved": true,
-  "approved_date": "2026-08-19"
+  "approved_date": "2026-08-19",
+  "completed_date": "2026-08-19"
 }
