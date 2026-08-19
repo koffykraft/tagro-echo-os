@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tagro.echo-os.event-envelope/1",
+  "title": "TAGRO ECHO OS Event Envelope",
+  "type": "object",
+  "required": ["event_id","event_type","schema_version","event_time","recorded_time","actor","location","authority","provenance","payload"],
+  "properties": {
+    "event_id": {"type":"string","minLength":1},
+    "event_type": {"type":"string","minLength":1},
+    "schema_version": {"type":"string","minLength":1},
+    "event_time": {"type":"string","format":"date-time"},
+    "recorded_time": {"type":"string","format":"date-time"},
+    "source_effective_time": {"type":["string","null"],"format":"date-time"},
+    "actor": {
+      "type":"object",
+      "required":["actor_type","actor_id"],
+      "properties":{"actor_type":{"type":"string"},"actor_id":{"type":"string"}},
+      "additionalProperties":true
+    },
+    "location": {
+      "type":"object",
+      "required":["location_type","location_id"],
+      "properties":{"location_type":{"type":"string"},"location_id":{"type":"string"}},
+      "additionalProperties":true
+    },
+    "entities": {"type":"array","items":{"type":"object"}},
+    "evidence": {"type":"array","items":{"type":"object"}},
+    "authority": {"type":"object"},
+    "provenance": {"type":"object"},
+    "confidence": {"type":["object","null"]},
+    "idempotency_key": {"type":["string","null"]},
+    "caused_by": {"type":"array","items":{"type":"string"}},
+    "supersedes": {"type":"array","items":{"type":"string"}},
+    "payload": {"type":"object"}
+  },
+  "additionalProperties": false
+}
