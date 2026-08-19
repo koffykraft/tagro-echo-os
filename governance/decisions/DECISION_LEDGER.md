@@ -47,3 +47,41 @@ Approved: Owner, 2026-08-19.
 ## DEC-0010 — Warehouse begins empty and receives continuous governed feeds
 Decision: the ECHO warehouse begins with no inherited TAGRO operational history and is designed for continuous receipt of ECHO accounting, bank, cash, stock, service, logistics, marketing and other admitted events/evidence.
 Approved: Owner, 2026-08-19.
+
+## DEC-0011 — AWS workload separation begins multi-account
+Decision: production and non-production ECHO workloads are to be separated at AWS account level before production launch; workload accounts are not organized by district/reporting hierarchy.
+Reason: account boundaries provide security, blast-radius and operational isolation; AWS guidance recommends separating production from non-production and organizing by security/operational needs.
+Status: architecture admitted; accounts not yet created/verified.
+Approved under: WO-0003, 2026-08-19.
+
+## DEC-0012 — Primary AWS Region begins with Mumbai assumption
+Decision: `ap-south-1` (Asia Pacific Mumbai) is the first admitted primary Region for implementation planning.
+Reason: the business is initially India-based and the primary workload should begin near its operating geography; this remains testable and replaceable.
+Constraint: no DR Region is admitted yet and no Region-specific service availability is assumed without checking at provisioning time.
+Status: architecture admitted; no resources provisioned.
+Approved under: WO-0003, 2026-08-19.
+
+## DEC-0013 — Mobile ingress begins Cognito + HTTP API + Lambda
+Decision: the first implementation candidate is Amazon Cognito User Pools for staff authentication and API Gateway HTTP API with Lambda application handlers for the governed server boundary.
+Reason: mobile clients need token-based authentication and a server-side command boundary without holding standing AWS IAM credentials or writing directly to the operational database.
+Constraint: application authorization remains server-side domain policy; service selection remains replaceable behind contracts.
+Status: architecture admitted; no resources provisioned.
+Approved under: WO-0003, 2026-08-19.
+
+## DEC-0014 — Operational database semantics are PostgreSQL-compatible; managed mode deferred
+Decision: the canonical operational store requires PostgreSQL-compatible relational/transactional semantics. Exact managed AWS mode is not yet fixed between RDS PostgreSQL and Aurora PostgreSQL/Serverless v2.
+Reason: architecture must follow required business semantics first; exact managed mode depends on measured load, connection behaviour, availability and cost rather than product preference.
+Status: database semantics admitted; service/machine mode not yet admitted and no database exists.
+Approved under: WO-0003, 2026-08-19.
+
+## DEC-0015 — Domain events use explicit async transport, not hidden coupling
+Decision: EventBridge custom bus and SQS are the first admitted AWS candidates for asynchronous event routing/consumption; FIFO is used only where ordering/deduplication materially requires it.
+Constraint: transport does not establish business truth. The Driver/domain transaction admits the event; adapters consume it with explicit retry/reconciliation behaviour.
+Status: architecture admitted; no event resources provisioned.
+Approved under: WO-0003, 2026-08-19.
+
+## DEC-0016 — Evidence and warehouse begin on S3 with catalog/query separation
+Decision: S3 is the first admitted object/evidence and analytical storage boundary; the initial analytical pattern is S3 + Glue Data Catalog + Athena, with heavier ETL/governance services admitted only when needed.
+Constraint: S3 Object Lock is not automatically admitted; retention/WORM policy requires a separate governance decision.
+Status: architecture admitted; no buckets/catalogs/query workgroups provisioned.
+Approved under: WO-0003, 2026-08-19.
