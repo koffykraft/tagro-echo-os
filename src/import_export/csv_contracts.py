@@ -17,7 +17,12 @@ FIELDSETS={
  'purchases':('purchase_id','branch_id','supplier_id','created_at','supplier_invoice_no','total'),
  'purchase_lines':('purchase_id','line_no','product_id','quantity','unit_price','discount','gst_rate','line_total'),
  'stock':('branch_id','product_id','quantity'),
- 'stock_movements':('movement_id','branch_id','product_id','quantity_delta','movement_type','occurred_at','reference_type','reference_id','note')
+ 'stock_movements':('movement_id','branch_id','product_id','quantity_delta','movement_type','occurred_at','reference_type','reference_id','note'),
+ 'machines':('machine_id','customer_id','product_id','model','serial_no','purchase_date','source'),
+ 'service_jobs':('job_id','branch_id','customer_id','machine_id','opened_at','complaint','status','observations','estimate_id'),
+ 'service_events':('event_id','job_id','occurred_at','event_type','note','actor_id'),
+ 'cash_closings':('closing_id','branch_id','business_date','opening_cash','cash_sales','other_cash_in','cash_expenses','cash_deposits_or_transfers','declared_closing','expected_closing','variance','recorded_at','actor_id','note'),
+ 'bank_transactions':('transaction_id','statement_id','source_file','source_row','account_id','transaction_date','value_date','direction','amount','narration','reference','balance')
 }
 
 class ImportContractError(ValueError): pass
