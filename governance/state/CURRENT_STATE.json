@@ -1,89 +1,61 @@
 {
   "schema": "tagro.echo-os.current-state/1",
-  "recorded_at": "2026-08-19T18:58:00+05:30",
-  "stage": "runtime_ci_green_aws_architecture_admission_v1",
+  "recorded_at": "2026-08-19T20:50:00+05:30",
+  "stage": "business_application_shell_v0_1",
   "status": "active_build",
-  "repository": {
-    "exists": true,
-    "full_name": "koffykraft/tagro-echo-os",
-    "default_branch": "main"
-  },
+  "repository": {"exists":true,"full_name":"koffykraft/tagro-echo-os","default_branch":"main"},
   "runtime": {
     "runtime_skeleton_created": true,
     "runtime_skeleton_version": "0.1",
+    "business_domain_engine_created": true,
+    "business_web_shell_created": true,
+    "browser_local_persistence_only": true,
+    "canonical_relational_schema_created": true,
+    "csv_import_export_contracts_created": true,
     "aws_deployed": false,
     "aws_resources_created": false,
     "database_created": false,
     "warehouse_created": false,
     "observer_runtime_created": false,
-    "mobile_app_created": false,
     "busy_adapter_created": false,
     "bank_adapter_created": false,
     "cash_adapter_created": false,
     "service_runtime_created": false
   },
   "verification": {
-    "governance_gate": {
-      "latest_observed_run_id": 32258257554,
-      "latest_observed_run_number": 21,
-      "conclusion": "success"
-    },
-    "runtime_gate": {
-      "run_id": 32258257493,
-      "run_number": 2,
-      "conclusion": "success",
-      "job": "runtime-boundaries"
-    },
-    "runtime_boundary_tests": {
-      "tests_run": 5,
-      "tests_passed": 5
-    }
+    "last_proven_governance_gate":{"run_id":32258257554,"run_number":21,"conclusion":"success"},
+    "last_proven_runtime_gate":{"run_id":32258257493,"run_number":2,"conclusion":"success"},
+    "business_slice_ci":"pending_observed_result_after_WO-0004_changes"
   },
-  "aws_architecture_admission": {
-    "document": "architecture/AWS_ADMISSION_V1.md",
-    "primary_region_planning_assumption": "ap-south-1",
-    "multi_account_separation_required_before_production": true,
-    "identity_candidate": "Amazon Cognito User Pools",
-    "api_candidate": "API Gateway HTTP API",
-    "compute_candidate": "AWS Lambda",
-    "operational_database_semantics": "PostgreSQL-compatible relational ACID",
-    "managed_database_mode": "deferred_RDS_PostgreSQL_or_Aurora_PostgreSQL",
-    "event_routing_candidate": "Amazon EventBridge",
-    "queue_candidate": "Amazon SQS",
-    "evidence_store_candidate": "Amazon S3",
-    "warehouse_catalog_candidate": "AWS Glue Data Catalog",
-    "warehouse_query_candidate": "Amazon Athena",
-    "resources_provisioned": false
+  "business_application": {
+    "domains_present":["users","branches_counters","products","prices","customers","suppliers","quotes","sales","purchases","stock","reports","import_export"],
+    "transaction_rule":"purchases add stock; sales require and reduce stock; manual adjustments require reason",
+    "stock_truth":"derived_from_stock_movements",
+    "busy_role":"future governed accounting import_export adapter",
+    "web_path":"web/index.html",
+    "persistence_status":"prototype browser localStorage only; not production truth"
   },
-  "approved_direction": {
-    "independent_echo_os": true,
-    "aws_first": true,
-    "mobile_first": true,
-    "projected_counters": 100,
-    "projected_districts": 7,
-    "front_seat_operates": true,
-    "rear_seat_observes_only": true,
-    "continuous_information_feed": true,
-    "warehouse_empty_start": true,
-    "ai_counter_intelligence": true
+  "aws_context_inspected": {
+    "management_account_id":"775615322985",
+    "organization_id":"o-qj930yquvx",
+    "organization_all_features":true,
+    "identity_center_instance_id":"ssoins-659533e124342c4d",
+    "identity_center_primary_region":"ap-south-1",
+    "identity_center_organization_instance":true,
+    "identity_center_user_verified":"thomas",
+    "management_account_permission_verified":"AdministratorAccess",
+    "root_access_key_active":false,
+    "aws_work_status":"paused_by_owner_before_echo_member_account_creation"
   },
-  "active_work_order": "WO-0003",
-  "next_safe_action": "verify actual AWS account/organization context before creating any resource; then design infrastructure-as-code and account/region guardrails under a separately authorised provisioning work order",
-  "open_defects": [],
-  "open_architecture_questions": [
-    "Actual AWS Organization/account topology not yet inspected",
-    "Exact production/nonproduction AWS account IDs not yet known",
+  "active_work_order":"WO-0004",
+  "next_safe_action":"prove WO-0004 business tests in CI, complete canonical templates and Dropbox continuity mirror, then extend into service/cash/reporting and persistent repository adapters before AWS deployment resumes",
+  "open_defects":[],
+  "open_architecture_questions":[
     "RDS PostgreSQL versus Aurora PostgreSQL mode not yet selected",
-    "DR Region and RTO/RPO not yet admitted",
+    "ECHO NonProd and Prod member AWS accounts not yet created",
+    "service domain contract not yet implemented",
+    "cash and bank domain contracts not yet implemented",
     "Counter Intelligence AI/vision provider not yet admitted"
   ],
-  "completion_claims_forbidden": [
-    "AWS deployed",
-    "OS operational",
-    "warehouse live",
-    "observer live",
-    "BUSY connected",
-    "bank connected",
-    "100 counters supported in production"
-  ]
+  "completion_claims_forbidden":["AWS deployed","production database live","warehouse live","BUSY connected","bank connected","100 counters supported in production"]
 }
