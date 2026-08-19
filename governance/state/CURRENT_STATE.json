@@ -1,7 +1,7 @@
 {
   "schema": "tagro.echo-os.current-state/1",
-  "recorded_at": "2026-08-19T21:12:00+05:30",
-  "stage": "business_service_cash_bank_shell_v0_2_verified",
+  "recorded_at": "2026-08-19T22:20:00+05:30",
+  "stage": "payments_documents_exports_repository_v0_3",
   "status": "active_build",
   "repository": {"exists":true,"full_name":"koffykraft/tagro-echo-os","default_branch":"main"},
   "runtime": {
@@ -12,6 +12,11 @@
     "service_domain_created": true,
     "cash_domain_created": true,
     "bank_normalization_contract_created": true,
+    "payments_domain_created": true,
+    "printable_documents_created": true,
+    "accounting_file_export_created": true,
+    "replaceable_repository_port_created": true,
+    "json_snapshot_repository_created": true,
     "browser_local_persistence_only": true,
     "canonical_relational_schema_created": true,
     "csv_import_export_contracts_created": true,
@@ -29,18 +34,19 @@
   "verification": {
     "last_proven_governance_gate":{"run_id":32270690312,"run_number":63,"conclusion":"success"},
     "last_proven_runtime_gate":{"run_id":32270689998,"run_number":44,"conclusion":"success"},
-    "wo_0005_ci":"success"
+    "wo_0006_ci":"pending"
   },
   "business_application": {
-    "domains_present":["users","branches_counters","products","prices","customers","suppliers","quotes","sales","purchases","stock","service","closing_cash","bank_evidence","reports","import_export"],
+    "domains_present":["users","branches_counters","products","prices","customers","suppliers","quotes","sales","purchases","stock","service","closing_cash","bank_evidence","payments","payment_allocations","reports","documents","import_export","accounting_export"],
     "transaction_rule":"purchases add stock; sales require and reduce stock; manual adjustments require reason",
     "stock_truth":"derived_from_stock_movements",
+    "payment_truth_rule":"payment is independent evidence and only relates to a sale/invoice/service/customer account through explicit allocation",
     "bank_truth_rule":"bank transaction is evidence only; no automatic sale/payment relationship",
     "cash_truth_rule":"closing cash is independently declared and compared to deterministic expected cash",
     "service_truth_rule":"machine/customer/job history is explicit and event-backed",
-    "busy_role":"future governed accounting import_export adapter",
-    "web_paths":["web/index.html","web/service.html","web/cash.html","web/bank.html"],
-    "persistence_status":"prototype browser localStorage only; not production truth"
+    "busy_role":"governed file import/export adapter only; no production direct write admitted",
+    "web_paths":["web/index.html","web/service.html","web/cash.html","web/bank.html","web/payments.html","web/documents.html"],
+    "persistence_status":"prototype browser localStorage plus replaceable non-production JSON snapshot repository; not production truth"
   },
   "aws_context_inspected": {
     "management_account_id":"775615322985",
@@ -54,14 +60,14 @@
     "root_access_key_active":false,
     "aws_work_status":"paused_by_owner_before_echo_member_account_creation"
   },
-  "active_work_order":"none",
-  "next_safe_action":"open a new work order for persistent repository ports, document generation, fuller reports, payments and accounting export while AWS remains paused",
+  "active_work_order":"WO-0006",
+  "next_safe_action":"prove WO-0006 in Governance and Runtime Gates; if green, close WO-0006 and open the next governed integration-readiness phase while AWS remains paused",
   "open_defects":[],
   "open_architecture_questions":[
     "RDS PostgreSQL versus Aurora PostgreSQL mode not yet selected",
     "ECHO NonProd and Prod member AWS accounts not yet created",
-    "persistent repository implementation not yet created",
     "direct bank-source adapters not yet admitted",
+    "production BUSY write not admitted",
     "Counter Intelligence AI/vision provider not yet admitted"
   ],
   "completion_claims_forbidden":["AWS deployed","production database live","warehouse live","BUSY connected","live bank connected","100 counters supported in production"]
