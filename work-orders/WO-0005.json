@@ -1,8 +1,22 @@
 {
   "work_order_id": "WO-0005",
-  "status": "active",
+  "status": "completed",
   "activated_date": "2026-08-19",
+  "completed_date": "2026-08-19",
   "objective": "Extend TAGRO ECHO OS with service intake/history, closing-cash, bank-statement ingestion contracts, and repository/export boundaries while AWS provisioning remains paused.",
+  "completion_evidence": {
+    "governance_gate_run_id": 32270690312,
+    "governance_gate_run_number": 63,
+    "governance_gate_conclusion": "success",
+    "runtime_gate_run_id": 32270689998,
+    "runtime_gate_run_number": 44,
+    "runtime_gate_conclusion": "success",
+    "service_engine": "src/service/service.py",
+    "cash_engine": "src/cash/closing.py",
+    "bank_contract": "src/bank/normalization.py",
+    "relational_extensions": "schemas/business/operational_extensions_v0_2.sql",
+    "web_pages": ["web/service.html","web/cash.html","web/bank.html"]
+  },
   "allowed": [
     "src/service/**","src/cash/**","src/bank/**","src/reporting/**","src/import_export/**","src/business/**","web/**","schemas/business/**","contracts/business/**","data/templates/**","tests/**","governance/state/**","session-ledger/**","work-orders/WO-0005.json"
   ],
