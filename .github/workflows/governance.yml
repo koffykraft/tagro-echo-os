@@ -1,0 +1,39 @@
+name: Governance Gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-foundation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate TAGRO ECHO OS foundation
+        run: python scripts/validate_foundation.py
+      - name: Parse core JSON schemas
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for p in [
+              Path('schemas/core/EVENT_ENVELOPE.schema.json'),
+              Path('contracts/core/COMPONENT_CONTRACT.schema.json'),
+              Path('governance/state/ECHO_OS_FOUNDATION.json'),
+              Path('governance/state/CURRENT_STATE.json'),
+              Path('work-orders/WO-0001.json'),
+              Path('work-orders/WO-0002.json'),
+          ]:
+              json.loads(p.read_text(encoding='utf-8'))
+              print(f'OK {p}')
+          PY
