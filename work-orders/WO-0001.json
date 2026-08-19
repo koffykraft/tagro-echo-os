@@ -1,0 +1,34 @@
+{
+  "work_order_id": "WO-0001",
+  "status": "active",
+  "objective": "Establish the persistent governance/control plane and independent repository foundation for TAGRO ECHO OS.",
+  "allowed": [
+    "README.md",
+    "governance/**",
+    "contracts/core/**",
+    "schemas/core/**",
+    "observer/**",
+    "ci/**",
+    "scripts/validate_foundation.py",
+    "work-orders/**",
+    "session-ledger/**",
+    ".github/workflows/governance.yml"
+  ],
+  "forbidden": [
+    "AWS provisioning",
+    "production deployment",
+    "BUSY write",
+    "bank mutation",
+    "legacy TAGRO runtime modification",
+    "claiming production readiness"
+  ],
+  "success": [
+    "repository exists independently",
+    "Constitution and machine-readable state are committed",
+    "core Event and Component schemas exist",
+    "Observer and AI Builder constraints are committed",
+    "governance validation runs in CI"
+  ],
+  "owner_approved": true,
+  "approved_date": "2026-08-19"
+}
