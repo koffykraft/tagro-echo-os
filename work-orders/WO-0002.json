@@ -1,7 +1,8 @@
 {
   "work_order_id": "WO-0002",
-  "status": "active",
+  "status": "completed",
   "activated_date": "2026-08-19",
+  "completed_date": "2026-08-19",
   "activation_evidence": {
     "wo_0001_status": "completed",
     "governance_gate_run_id": 32254760959,
@@ -32,5 +33,19 @@
     "core event envelope validates",
     "replacement boundaries are testable",
     "no production capability is falsely claimed"
-  ]
+  ],
+  "exit_evidence": {
+    "runtime_skeleton_version": "0.1",
+    "independent_runtime_tests_run": 5,
+    "independent_runtime_tests_passed": 5,
+    "tests": [
+      "event validates",
+      "runtime event serializes to canonical Event schema shape",
+      "Driver command requires idempotency key",
+      "Observer interface exposes no execute method",
+      "Observer module has no Driver import"
+    ],
+    "production_aws_provisioned": false,
+    "production_integrations_changed": false
+  }
 }
