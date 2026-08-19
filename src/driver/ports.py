@@ -15,6 +15,20 @@ class Command:
     authority_scope: Sequence[str]
     payload: Mapping[str, Any]
 
+    def validate(self) -> None:
+        if not self.command_id.strip():
+            raise ValueError("command_id is required")
+        if not self.command_type.strip():
+            raise ValueError("command_type is required")
+        if not self.idempotency_key.strip():
+            raise ValueError("Driver commands require an idempotency_key")
+        if not self.actor_id.strip():
+            raise ValueError("actor_id is required")
+        if any(not value.strip() for value in self.authority_scope):
+            raise ValueError("authority_scope values must be non-empty")
+        if not isinstance(self.payload, Mapping):
+            raise ValueError("payload must be a mapping")
+
 
 @dataclass(frozen=True)
 class CommandResult:
