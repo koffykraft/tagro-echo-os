@@ -1,7 +1,7 @@
 {
   "schema": "tagro.echo-os.current-state/1",
-  "recorded_at": "2026-08-19T18:24:00+05:30",
-  "stage": "runtime_skeleton_v0_1",
+  "recorded_at": "2026-08-19T18:58:00+05:30",
+  "stage": "runtime_ci_green_aws_architecture_admission_v1",
   "status": "active_build",
   "repository": {
     "exists": true,
@@ -24,16 +24,36 @@
   },
   "verification": {
     "governance_gate": {
-      "run_id": 32254760959,
-      "run_number": 3,
+      "latest_observed_run_id": 32258257554,
+      "latest_observed_run_number": 21,
       "conclusion": "success"
     },
-    "runtime_boundary_test": {
-      "method": "independent execution mirror of committed source interfaces",
+    "runtime_gate": {
+      "run_id": 32258257493,
+      "run_number": 2,
+      "conclusion": "success",
+      "job": "runtime-boundaries"
+    },
+    "runtime_boundary_tests": {
       "tests_run": 5,
-      "tests_passed": 5,
-      "github_actions_runtime_test_wired": false
+      "tests_passed": 5
     }
+  },
+  "aws_architecture_admission": {
+    "document": "architecture/AWS_ADMISSION_V1.md",
+    "primary_region_planning_assumption": "ap-south-1",
+    "multi_account_separation_required_before_production": true,
+    "identity_candidate": "Amazon Cognito User Pools",
+    "api_candidate": "API Gateway HTTP API",
+    "compute_candidate": "AWS Lambda",
+    "operational_database_semantics": "PostgreSQL-compatible relational ACID",
+    "managed_database_mode": "deferred_RDS_PostgreSQL_or_Aurora_PostgreSQL",
+    "event_routing_candidate": "Amazon EventBridge",
+    "queue_candidate": "Amazon SQS",
+    "evidence_store_candidate": "Amazon S3",
+    "warehouse_catalog_candidate": "AWS Glue Data Catalog",
+    "warehouse_query_candidate": "Amazon Athena",
+    "resources_provisioned": false
   },
   "approved_direction": {
     "independent_echo_os": true,
@@ -47,14 +67,15 @@
     "warehouse_empty_start": true,
     "ai_counter_intelligence": true
   },
-  "active_work_order": "WO-0002",
-  "next_safe_action": "complete runtime boundary contracts and schema validation, then create a separately authorised CI work order for committed runtime tests before selecting AWS implementation services",
+  "active_work_order": "WO-0003",
+  "next_safe_action": "verify actual AWS account/organization context before creating any resource; then design infrastructure-as-code and account/region guardrails under a separately authorised provisioning work order",
   "open_defects": [],
   "open_architecture_questions": [
-    "AWS region/account boundary not yet selected and verified",
-    "production identity/authentication mechanism not yet selected",
-    "operational relational database service not yet selected",
-    "warehouse analytical implementation not yet selected"
+    "Actual AWS Organization/account topology not yet inspected",
+    "Exact production/nonproduction AWS account IDs not yet known",
+    "RDS PostgreSQL versus Aurora PostgreSQL mode not yet selected",
+    "DR Region and RTO/RPO not yet admitted",
+    "Counter Intelligence AI/vision provider not yet admitted"
   ],
   "completion_claims_forbidden": [
     "AWS deployed",
