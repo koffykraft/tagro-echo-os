@@ -24,7 +24,17 @@ FIELDSETS={
  'cash_closings':('closing_id','branch_id','business_date','opening_cash','cash_sales','other_cash_in','cash_expenses','cash_deposits_or_transfers','declared_closing','expected_closing','variance','recorded_at','actor_id','note'),
  'bank_transactions':('transaction_id','statement_id','source_file','source_row','account_id','transaction_date','value_date','direction','amount','narration','reference','balance'),
  'payments':('payment_id','branch_id','customer_id','received_at','method','amount','reference','actor_id','status'),
- 'payment_allocations':('allocation_id','payment_id','target_type','target_id','amount','allocated_at','actor_id')
+ 'payment_allocations':('allocation_id','payment_id','target_type','target_id','amount','allocated_at','actor_id'),
+ 'purchase_orders':('po_id','branch_id','supplier_id','created_at','status','created_by','approved_by','approved_at'),
+ 'purchase_order_lines':('po_id','line_no','product_id','quantity','unit_price','note'),
+ 'stock_transfers':('transfer_id','from_branch_id','to_branch_id','requested_at','status','requested_by','dispatched_by','dispatched_at','received_by','received_at'),
+ 'stock_transfer_lines':('transfer_id','line_no','product_id','quantity'),
+ 'stock_counts':('count_id','branch_id','created_by','created_at','status','finalized_by','finalized_at'),
+ 'stock_count_lines':('count_id','product_id','system_qty','counted_qty','variance','evidence_ids'),
+ 'evidence_records':('evidence_id','branch_id','source_type','content_hash','mime_type','captured_at','actor_id','source_ref','note'),
+ 'inference_proposals':('proposal_id','evidence_id','proposal_type','payload_json','confidence','created_at','provider_ref','status'),
+ 'accepted_observations':('observation_id','proposal_id','evidence_id','payload_json','accepted_at','accepted_by'),
+ 'sync_envelopes':('idempotency_key','device_id','counter_id','sequence','payload_type','payload_json','created_at','payload_hash','acknowledged_at')
 }
 
 class ImportContractError(ValueError): pass
