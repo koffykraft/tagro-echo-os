@@ -1,46 +1,28 @@
 {
   "work_order_id": "WO-0004",
-  "status": "active",
+  "status": "completed",
   "activated_date": "2026-08-19",
+  "completed_date": "2026-08-19",
   "objective": "Build the first usable TAGRO ECHO OS business application shell and canonical master/transaction import-export contracts independent of BUSY.",
+  "completion_evidence": {
+    "governance_gate_run_id": 32269947209,
+    "governance_gate_run_number": 49,
+    "governance_gate_conclusion": "success",
+    "runtime_gate_run_id": 32269947201,
+    "runtime_gate_run_number": 30,
+    "runtime_gate_conclusion": "success",
+    "runtime_test_step": "Run all runtime and business tests",
+    "web_shell": "web/index.html",
+    "canonical_relational_schema": "schemas/business/canonical_tables.sql",
+    "import_export_contract": "src/import_export/csv_contracts.py"
+  },
   "allowed": [
-    "src/business/**",
-    "src/reporting/**",
-    "src/import_export/**",
-    "web/**",
-    "data/templates/**",
-    "schemas/business/**",
-    "contracts/business/**",
-    "tests/**",
-    ".github/workflows/**",
-    "architecture/**",
-    "governance/state/**",
-    "session-ledger/**",
-    "work-orders/WO-0004.json"
+    "src/business/**","src/reporting/**","src/import_export/**","web/**","data/templates/**","schemas/business/**","contracts/business/**","tests/**",".github/workflows/**","architecture/**","governance/state/**","session-ledger/**","work-orders/WO-0004.json"
   ],
   "forbidden": [
-    "constitutional modification",
-    "legacy runtime copy",
-    "production AWS provisioning",
-    "production BUSY write",
-    "production bank mutation",
-    "Observer operational write authority",
-    "claiming persistence or deployment before evidence"
+    "constitutional modification","legacy runtime copy","production AWS provisioning","production BUSY write","production bank mutation","Observer operational write authority","claiming persistence or deployment before evidence"
   ],
-  "required_domains": [
-    "users",
-    "branches_counters",
-    "products",
-    "prices",
-    "customers",
-    "suppliers",
-    "quotes",
-    "sales",
-    "purchases",
-    "stock",
-    "reports",
-    "import_export"
-  ],
+  "required_domains": ["users","branches_counters","products","prices","customers","suppliers","quotes","sales","purchases","stock","reports","import_export"],
   "success": [
     "canonical business records and import-export headers exist",
     "quote, sale, purchase and stock functions execute in tests",
