@@ -1,0 +1,32 @@
+{
+  "work_order_id": "WO-0003",
+  "status": "active",
+  "activated_date": "2026-08-19",
+  "objective": "Establish runtime CI and admit the first AWS implementation architecture through evidence-backed decisions without provisioning production resources.",
+  "allowed": [
+    ".github/workflows/**",
+    "tests/**",
+    "architecture/**",
+    "governance/state/**",
+    "governance/decisions/**",
+    "session-ledger/**",
+    "work-orders/WO-0003.json"
+  ],
+  "forbidden": [
+    "constitutional modification",
+    "legacy runtime copy",
+    "production AWS provisioning",
+    "production BUSY write",
+    "production bank mutation",
+    "Observer operational write authority",
+    "claiming AWS deployment before resource evidence"
+  ],
+  "success": [
+    "runtime unit tests execute in GitHub Actions",
+    "governance and runtime test gates are both observable",
+    "AWS target services are selected or explicitly deferred with reasons",
+    "network/account/region/security boundaries are documented before provisioning",
+    "no production resources are created under this work order"
+  ],
+  "owner_authority_basis": "Owner approved continued controlled build after governance model was established."
+}
