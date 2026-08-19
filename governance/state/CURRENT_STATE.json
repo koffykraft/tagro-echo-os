@@ -1,6 +1,6 @@
 {
   "schema": "tagro.echo-os.current-state/1",
-  "recorded_at": "2026-08-19T20:50:00+05:30",
+  "recorded_at": "2026-08-19T20:55:00+05:30",
   "stage": "business_application_shell_v0_1",
   "status": "active_build",
   "repository": {"exists":true,"full_name":"koffykraft/tagro-echo-os","default_branch":"main"},
@@ -12,6 +12,7 @@
     "browser_local_persistence_only": true,
     "canonical_relational_schema_created": true,
     "csv_import_export_contracts_created": true,
+    "mobile_app_created": false,
     "aws_deployed": false,
     "aws_resources_created": false,
     "database_created": false,
@@ -25,7 +26,7 @@
   "verification": {
     "last_proven_governance_gate":{"run_id":32258257554,"run_number":21,"conclusion":"success"},
     "last_proven_runtime_gate":{"run_id":32258257493,"run_number":2,"conclusion":"success"},
-    "business_slice_ci":"pending_observed_result_after_WO-0004_changes"
+    "business_slice_ci":"pending_recheck_after_state_contract_fix"
   },
   "business_application": {
     "domains_present":["users","branches_counters","products","prices","customers","suppliers","quotes","sales","purchases","stock","reports","import_export"],
