@@ -1,0 +1,21 @@
+{
+  "work_order_id": "WO-0006",
+  "status": "active",
+  "activated_date": "2026-08-19",
+  "objective": "Add payments, printable commercial documents, richer management reports, repository ports and governed accounting/BUSY export packages while production persistence and AWS provisioning remain paused.",
+  "allowed": [
+    "src/payments/**","src/documents/**","src/reporting/**","src/repository/**","src/accounting/**","src/import_export/**","src/business/**","web/**","schemas/business/**","contracts/business/**","data/templates/**","tests/**","governance/state/**","session-ledger/**","work-orders/WO-0006.json"
+  ],
+  "forbidden": [
+    "constitutional modification","legacy runtime copy","production AWS provisioning","production BUSY write","live bank mutation","Observer operational write authority","claiming live persistence before evidence"
+  ],
+  "success": [
+    "payments are recorded separately from sales and can be allocated explicitly",
+    "quote, invoice and purchase document renderers produce deterministic printable HTML",
+    "management reports expose sales, purchases, stock, cash and payment views without false reconciliation claims",
+    "repository interfaces make persistence replaceable",
+    "BUSY/accounting exports are file packages only and never direct production writes",
+    "runtime and governance gates remain green"
+  ],
+  "owner_authority_basis": "Owner directed completion of pages, reports, sales, purchases, quotes and independent import/export lists while AWS work is paused."
+}
