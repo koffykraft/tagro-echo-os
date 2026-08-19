@@ -1,0 +1,20 @@
+{
+  "work_order_id": "WO-0005",
+  "status": "active",
+  "activated_date": "2026-08-19",
+  "objective": "Extend TAGRO ECHO OS with service intake/history, closing-cash, bank-statement ingestion contracts, and repository/export boundaries while AWS provisioning remains paused.",
+  "allowed": [
+    "src/service/**","src/cash/**","src/bank/**","src/reporting/**","src/import_export/**","src/business/**","web/**","schemas/business/**","contracts/business/**","data/templates/**","tests/**","governance/state/**","session-ledger/**","work-orders/WO-0005.json"
+  ],
+  "forbidden": [
+    "constitutional modification","legacy runtime copy","production AWS provisioning","production BUSY write","live bank mutation","Observer operational write authority","claiming live persistence before evidence"
+  ],
+  "success": [
+    "service jobs retain customer, machine/model/serial, complaint, observations, status and history references",
+    "closing-cash records are independently representable and reconcilable",
+    "bank statements have a normalized import contract with source lineage",
+    "reporting can compare sales/cash/bank evidence without falsely matching them",
+    "runtime and governance gates remain green"
+  ],
+  "owner_authority_basis": "Owner directed continued build of the independent ECHO OS functions after pausing AWS work."
+}
