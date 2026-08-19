@@ -1,0 +1,10 @@
+{
+  "work_order_id":"WO-0007",
+  "status":"active",
+  "activated_date":"2026-08-19",
+  "objective":"Build offline-first counter operations for purchase orders, inter-counter transfers, stock counts, evidence capture and idempotent synchronization without admitting production cloud persistence or AI inference as truth.",
+  "allowed":["src/counter_ops/**","src/evidence/**","src/sync/**","src/import_export/**","web/**","schemas/business/**","contracts/business/**","data/templates/**","tests/**","governance/state/**","session-ledger/**","work-orders/WO-0007.json"],
+  "forbidden":["constitutional modification","production AWS provisioning","production BUSY write","live bank mutation","automatic AI evidence acceptance","stock mutation from unapproved visual inference","claiming 100-counter production readiness before deployment evidence"],
+  "success":["purchase orders have explicit lifecycle and actors","inter-counter transfer dispatch and receipt are distinct events","stock counts preserve counted evidence and report variance without silently rewriting stock","photo/text/shelf/machine evidence is immutable and AI suggestions remain proposals until accepted","offline sync envelopes are idempotent and auditable","counter prototype page exposes these workflows","runtime and governance gates remain green"],
+  "owner_authority_basis":"Owner instructed completion of WO-0006 and immediate continuation into the next phase before reporting."
+}
