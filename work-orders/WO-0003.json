@@ -1,8 +1,19 @@
 {
   "work_order_id": "WO-0003",
-  "status": "active",
+  "status": "completed",
   "activated_date": "2026-08-19",
+  "completed_date": "2026-08-19",
   "objective": "Establish runtime CI and admit the first AWS implementation architecture through evidence-backed decisions without provisioning production resources.",
+  "completion_evidence": {
+    "runtime_gate_run_id": 32258257493,
+    "runtime_gate_run_number": 2,
+    "runtime_gate_conclusion": "success",
+    "governance_gate_run_id": 32258257554,
+    "governance_gate_run_number": 21,
+    "governance_gate_conclusion": "success",
+    "aws_architecture_document": "architecture/AWS_ADMISSION_V1.md",
+    "aws_provisioning": "paused_by_owner_before_resource_creation"
+  },
   "allowed": [
     ".github/workflows/**",
     "tests/**",
