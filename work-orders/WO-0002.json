@@ -1,7 +1,13 @@
 {
   "work_order_id": "WO-0002",
-  "status": "planned",
-  "activation_condition": "WO-0001 exit recorded and governance CI green",
+  "status": "active",
+  "activated_date": "2026-08-19",
+  "activation_evidence": {
+    "wo_0001_status": "completed",
+    "governance_gate_run_id": 32254760959,
+    "governance_gate_run_number": 3,
+    "governance_gate_conclusion": "success"
+  },
   "objective": "Build the first replaceable runtime skeleton for Core, Driver and Observer without provisioning production AWS resources.",
   "allowed": [
     "src/core/**",
