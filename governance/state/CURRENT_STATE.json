@@ -1,7 +1,7 @@
 {
   "schema": "tagro.echo-os.current-state/1",
-  "recorded_at": "2026-08-19T20:55:00+05:30",
-  "stage": "business_application_shell_v0_1",
+  "recorded_at": "2026-08-19T21:05:00+05:30",
+  "stage": "business_service_cash_bank_shell_v0_2",
   "status": "active_build",
   "repository": {"exists":true,"full_name":"koffykraft/tagro-echo-os","default_branch":"main"},
   "runtime": {
@@ -9,6 +9,9 @@
     "runtime_skeleton_version": "0.1",
     "business_domain_engine_created": true,
     "business_web_shell_created": true,
+    "service_domain_created": true,
+    "cash_domain_created": true,
+    "bank_normalization_contract_created": true,
     "browser_local_persistence_only": true,
     "canonical_relational_schema_created": true,
     "csv_import_export_contracts_created": true,
@@ -24,16 +27,19 @@
     "service_runtime_created": false
   },
   "verification": {
-    "last_proven_governance_gate":{"run_id":32258257554,"run_number":21,"conclusion":"success"},
-    "last_proven_runtime_gate":{"run_id":32258257493,"run_number":2,"conclusion":"success"},
-    "business_slice_ci":"pending_recheck_after_state_contract_fix"
+    "last_proven_governance_gate":{"run_id":32269947209,"run_number":49,"conclusion":"success"},
+    "last_proven_runtime_gate":{"run_id":32269947201,"run_number":30,"conclusion":"success"},
+    "wo_0005_ci":"pending_observed_result_after_service_cash_bank_changes"
   },
   "business_application": {
-    "domains_present":["users","branches_counters","products","prices","customers","suppliers","quotes","sales","purchases","stock","reports","import_export"],
+    "domains_present":["users","branches_counters","products","prices","customers","suppliers","quotes","sales","purchases","stock","service","closing_cash","bank_evidence","reports","import_export"],
     "transaction_rule":"purchases add stock; sales require and reduce stock; manual adjustments require reason",
     "stock_truth":"derived_from_stock_movements",
+    "bank_truth_rule":"bank transaction is evidence only; no automatic sale/payment relationship",
+    "cash_truth_rule":"closing cash is independently declared and compared to deterministic expected cash",
+    "service_truth_rule":"machine/customer/job history is explicit and event-backed",
     "busy_role":"future governed accounting import_export adapter",
-    "web_path":"web/index.html",
+    "web_paths":["web/index.html","web/service.html","web/cash.html","web/bank.html"],
     "persistence_status":"prototype browser localStorage only; not production truth"
   },
   "aws_context_inspected": {
@@ -48,15 +54,15 @@
     "root_access_key_active":false,
     "aws_work_status":"paused_by_owner_before_echo_member_account_creation"
   },
-  "active_work_order":"WO-0004",
-  "next_safe_action":"prove WO-0004 business tests in CI, complete canonical templates and Dropbox continuity mirror, then extend into service/cash/reporting and persistent repository adapters before AWS deployment resumes",
+  "active_work_order":"WO-0005",
+  "next_safe_action":"prove WO-0005 service/cash/bank tests in CI, mirror updated contracts to Dropbox, then design repository ports and persistent adapters while AWS remains paused",
   "open_defects":[],
   "open_architecture_questions":[
     "RDS PostgreSQL versus Aurora PostgreSQL mode not yet selected",
     "ECHO NonProd and Prod member AWS accounts not yet created",
-    "service domain contract not yet implemented",
-    "cash and bank domain contracts not yet implemented",
+    "persistent repository implementation not yet created",
+    "direct bank-source adapters not yet admitted",
     "Counter Intelligence AI/vision provider not yet admitted"
   ],
-  "completion_claims_forbidden":["AWS deployed","production database live","warehouse live","BUSY connected","bank connected","100 counters supported in production"]
+  "completion_claims_forbidden":["AWS deployed","production database live","warehouse live","BUSY connected","live bank connected","100 counters supported in production"]
 }
