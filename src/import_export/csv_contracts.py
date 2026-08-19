@@ -1,0 +1,38 @@
+from __future__ import annotations
+
+import csv, io
+from typing import Iterable, Mapping
+
+FIELDSETS={
+ 'users':('user_id','name','email','role','branch_id','active'),
+ 'branches':('branch_id','code','name','district','branch_type','active'),
+ 'products':('product_id','sku','model','name','category','gst_rate','unit','serial_tracked','active'),
+ 'prices':('price_id','product_id','price_type','amount','effective_from','effective_to','branch_id'),
+ 'customers':('customer_id','name','phone','email','gstin','district'),
+ 'suppliers':('supplier_id','name','phone','email','gstin'),
+ 'quotes':('quote_id','branch_id','customer_id','created_at','status','total'),
+ 'sales':('sale_id','branch_id','customer_id','created_at','payment_status','source_quote_id','total'),
+ 'purchases':('purchase_id','branch_id','supplier_id','created_at','supplier_invoice_no','total'),
+ 'stock':('branch_id','product_id','quantity')
+}
+
+class ImportContractError(ValueError): pass
+
+def template_csv(dataset):
+    out=io.StringIO(); csv.writer(out).writerow(FIELDSETS[dataset]); return out.getvalue()
+
+def read_csv(dataset,text):
+    expected=FIELDSETS[dataset]; reader=csv.DictReader(io.StringIO(text)); actual=tuple(reader.fieldnames or ())
+    if actual!=expected: raise ImportContractError(f'{dataset} header mismatch: expected {expected}, got {actual}')
+    return [dict(row) for row in reader]
+
+def write_csv(dataset,rows:Iterable[Mapping[str,object]]):
+    out=io.StringIO(); fields=FIELDSETS[dataset]; w=csv.DictWriter(out,fieldnames=fields,extrasaction='ignore'); w.writeheader()
+    for row in rows: w.writerow({k:_plain(row.get(k,'')) for k in fields})
+    return out.getvalue()
+
+def _plain(v):
+    if v is None:return ''
+    if isinstance(v,bool):return 'true' if v else 'false'
+    if hasattr(v,'isoformat'):return v.isoformat()
+    return str(v)
