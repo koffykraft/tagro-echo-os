@@ -1,0 +1,30 @@
+{
+  "work_order_id": "WO-0002",
+  "status": "planned",
+  "activation_condition": "WO-0001 exit recorded and governance CI green",
+  "objective": "Build the first replaceable runtime skeleton for Core, Driver and Observer without provisioning production AWS resources.",
+  "allowed": [
+    "src/core/**",
+    "src/driver/**",
+    "src/observer/**",
+    "contracts/**",
+    "schemas/**",
+    "tests/**",
+    "architecture/**"
+  ],
+  "forbidden": [
+    "legacy runtime copy",
+    "production AWS provisioning",
+    "production BUSY write",
+    "production bank mutation",
+    "Observer operational write authority",
+    "constitutional modification"
+  ],
+  "success": [
+    "runtime skeleton has explicit interfaces",
+    "Driver and Observer dependency direction is enforceable",
+    "core event envelope validates",
+    "replacement boundaries are testable",
+    "no production capability is falsely claimed"
+  ]
+}
