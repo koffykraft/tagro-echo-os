@@ -1,0 +1,1 @@
+idempotency_key,device_id,counter_id,sequence,payload_type,payload_json,created_at,payload_hash,acknowledged_at
