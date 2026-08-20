@@ -1,0 +1,10 @@
+{
+  "work_order_id":"WO-0009",
+  "status":"active",
+  "activated_date":"2026-08-20",
+  "objective":"Build BUSY Engine Dock v1 as an executable multi-node accounting/finance/MIS dock with offline-readable snapshots, explicit capabilities, report/result contracts and governed online handoff envelopes, while preserving enterprise/user independence and prohibiting production BUSY mutation in this slice.",
+  "allowed":["src/busy_dock/**","src/enterprise/**","tests/**","contracts/busy/**","schemas/busy/**","data/templates/**","governance/decisions/DECISION_LEDGER.md","governance/state/CURRENT_STATE.json","session-ledger/**","work-orders/WO-0009.json"],
+  "forbidden":["constitutional modification","production AWS provisioning","production BUSY database write","BUSY credential storage","direct Cloudflare access to BDS files","hard-coded single BUSY company assumptions","making BUSY node identity equal enterprise identity","claiming live BUSY connectivity without runtime evidence"],
+  "success":["BUSY dock resolves an enterprise and role to the correct BusyNode and binding","BUSY nodes expose explicit capability and freshness state","read requests support masters transactions stock balances ledgers and report catalogue/results through a stable port","offline snapshot adapter serves normalized BUSY results without network or BUSY availability","online handoff request/result envelopes carry node enterprise actor idempotency and provenance","multiple users may access the same enterprise/material centre under distinct role/tool assignments","one failing BUSY node does not corrupt or block unrelated node state","tests cover multi-node routing offline fallback idempotent envelopes capability enforcement and multi-user same-counter access","runtime and governance gates remain green"],
+  "owner_authority_basis":"Owner approved BUSY Engine Dock v1 and clarified that counters may have multiple users with different roles and permissions sharing the same material centre."
+}
