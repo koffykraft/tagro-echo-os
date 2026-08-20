@@ -30,6 +30,7 @@ class Wo0012SchemaMigrationTests(unittest.TestCase):
                 "0004-operational-extensions-v0.3",
                 "0005-platform-identity-constraints-v0.2.1",
                 "0006-platform-spectral-routing-v0.2.2",
+                "0007-platform-import-observations-v0.2.3",
             ],
         )
 
@@ -85,6 +86,16 @@ class Wo0012SchemaMigrationTests(unittest.TestCase):
         self.assertIn("non-matching spectral projection is semantically inert", sql)
         self.assertIn("presence at a receiver does not create business meaning", sql)
         self.assertNotIn("delete from echo_events", sql)
+
+    def test_import_observations_do_not_become_canonical_by_presence(self) -> None:
+        sql = (ROOT / "schemas/business/platform_import_observations_v0_2_3.sql").read_text(encoding="utf-8").lower()
+        for table in ("import_sources", "import_observations", "reconciliation_candidates", "canonical_admissions"):
+            self.assertIn(f"create table {table}", sql)
+        self.assertIn("observation presence never grants canonical authority", sql)
+        self.assertIn("accepted reconciliation candidate", sql)
+        self.assertIn("admitted_by_principal_id", sql)
+        self.assertIn("authority_basis", sql)
+        self.assertIn("provenance_ref", sql)
 
     def test_business_tables_are_enterprise_scoped(self) -> None:
         for path in (
