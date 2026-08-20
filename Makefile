@@ -13,3 +13,6 @@ build-EchoSchemaMigrationFunction:
 
 build-EchoEnterpriseBootstrapFunction:
 	$(build_echo_python_function)
+
+build-EchoObservationImportFunction:
+	$(build_echo_python_function)
