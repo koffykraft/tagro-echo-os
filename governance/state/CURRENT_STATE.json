@@ -1,7 +1,7 @@
 {
   "schema": "tagro.echo-os.current-state/1",
-  "recorded_at": "2026-08-20T07:52:00+05:30",
-  "stage": "mobile_offline_readiness_audit_v0_1_verified",
+  "recorded_at": "2026-08-20T14:00:00+05:30",
+  "stage": "aws_nonprod_shared_runtime_deployment_wo_0012_active",
   "status": "active_build",
   "repository": {"exists":true,"full_name":"koffykraft/tagro-echo-os","default_branch":"main"},
   "runtime": {
@@ -33,8 +33,8 @@
     "csv_import_export_contracts_created": true,
     "mobile_app_created": false,
     "aws_deployed": false,
-    "aws_resources_created": false,
-    "database_created": false,
+    "aws_resources_created": true,
+    "database_created": true,
     "warehouse_created": false,
     "observer_runtime_created": false,
     "busy_adapter_created": false,
@@ -50,7 +50,8 @@
     "wo_0008_ci":"success",
     "wo_0009_ci":"success",
     "wo_0010_ci":"success",
-    "wo_0011_ci":"success"
+    "wo_0011_ci":"success",
+    "wo_0012_status":"active; AWS resource evidence recorded, application/auth runtime not yet deployed"
   },
   "business_application": {
     "domains_present":["users","branches_counters","enterprise_directory","busy_node_registry","busy_dock","products","prices","customers","suppliers","quotes","sales","purchases","purchase_orders","stock","stock_transfers","stock_counts","service","closing_cash","bank_evidence","payments","payment_allocations","reports","documents","evidence","sync","import_export","accounting_export"],
@@ -66,19 +67,63 @@
     "sync_truth_rule":"offline mutations carry idempotency keys and payload hashes; replays with changed payload are rejected",
     "busy_role":"docked multi-node accounting_finance_mis engine; production BUSY read/write connectivity not yet admitted",
     "web_paths":["web/index.html","web/counter.html","web/service.html","web/cash.html","web/bank.html","web/payments.html","web/documents.html"],
-    "persistence_status":"prototype browser localStorage plus replaceable non-production JSON snapshot repository; shared production persistence not yet deployed"
+    "persistence_status":"AWS NonProd PostgreSQL persistence exists and is verified private/available, but the application still uses browser localStorage/non-production repository abstractions until WO-0012 application connectivity and schema migration are proven"
   },
   "deployment_readiness": {
     "readiness_document":"docs/READINESS_AUDIT_2026-08-20.md",
     "service_memory_deferred_by_owner":true,
     "target_first_counter_onboarding_window_days":3,
     "mobile_offline_shell_verified":true,
-    "production_blockers":["shared persistence","server-side authentication/authorization","live BUSY bridge admission","Closing Cash shared sync","production hosting/domain verification","backup/recovery drill"]
+    "nonprod_shared_database_verified":true,
+    "production_blockers":["application connection to shared persistence","server-side authentication/authorization","live BUSY bridge admission","Closing Cash shared sync","production hosting/domain verification","backup/recovery drill"]
   },
-  "aws_context_inspected": {"management_account_id":"775615322985","organization_id":"o-qj930yquvx","organization_all_features":true,"identity_center_instance_id":"ssoins-659533e124342c4d","identity_center_primary_region":"ap-south-1","identity_center_organization_instance":true,"identity_center_user_verified":"thomas","management_account_permission_verified":"AdministratorAccess","root_access_key_active":false,"aws_work_status":"paused_by_owner_before_echo_member_account_creation"},
-  "active_work_order":"none",
-  "next_safe_action":"deployment/onboarding phase: deploy the smallest shared persistence and server-side authentication boundary, configure one real Enterprise plus users and BusyNode, connect BUSY through read-only/copied-company bridge first, verify offline reconnect synchronization, then admit only proven workflows",
+  "aws_context_inspected": {
+    "management_account_id":"775615322985",
+    "organization_id":"o-qj930yquvx",
+    "organization_all_features":true,
+    "identity_center_instance_id":"ssoins-659533e124342c4d",
+    "identity_center_primary_region":"ap-south-1",
+    "identity_center_organization_instance":true,
+    "identity_center_user_verified":"thomas",
+    "management_account_permission_verified":"AdministratorAccess",
+    "root_access_key_active":false,
+    "nonprod_account_name":"TagroEcho-NonProd",
+    "nonprod_account_id":"272037674623",
+    "nonprod_permission_verified":"AdministratorAccess",
+    "aws_work_status":"WO-0012 active; first NonProd network and RDS persistence resources created and verified"
+  },
+  "aws_nonprod_resources": {
+    "region":"ap-south-1",
+    "vpc":{"id":"vpc-0d24ee12b61ed4830","cidr":"10.20.0.0/16","dns_support":true,"dns_hostnames":true},
+    "private_subnets":[
+      {"id":"subnet-0120b92ce4c054c06","cidr":"10.20.10.0/24","availability_zone":"ap-south-1a","public_ipv4_on_launch":false},
+      {"id":"subnet-0bc49cd8240da5922","cidr":"10.20.20.0/24","availability_zone":"ap-south-1b","public_ipv4_on_launch":false}
+    ],
+    "private_route_table":{"id":"rtb-01d59189125e36885","internet_gateway_route":false,"nat_gateway_route":false},
+    "security_groups":{"app":"sg-09231e827f3723d1e","database":"sg-0fe8421fbb2223917","database_5432_source":"sg-09231e827f3723d1e"},
+    "db_subnet_group":"echo-nonprod-db-subnets",
+    "rds":{
+      "identifier":"echo-nonprod-postgres",
+      "engine":"postgres",
+      "engine_version":"17.10",
+      "instance_class":"db.t4g.micro",
+      "storage_gb":20,
+      "storage_type":"gp3",
+      "encrypted":true,
+      "publicly_accessible":false,
+      "multi_az":false,
+      "database_name":"echoos",
+      "status":"available",
+      "availability_zone":"ap-south-1b",
+      "endpoint":"echo-nonprod-postgres.ch6ciowm8fzs.ap-south-1.rds.amazonaws.com",
+      "port":5432,
+      "master_secret_status":"active",
+      "master_credentials_exposed":false
+    }
+  },
+  "active_work_order":"WO-0012",
+  "next_safe_action":"under WO-0012, deploy Cognito staff authentication first, then API Gateway HTTP API plus Lambda governed application boundary, connect Lambda privately to the verified PostgreSQL instance using Secrets Manager, apply the canonical relational schema, configure one Enterprise/test users, and prove offline reconnect synchronization before BUSY bridge work advances",
   "open_defects":[],
-  "open_architecture_questions":["shared production runtime provider/path still needs execution decision","production BUSY local-agent transport and credentials not yet admitted","RDS PostgreSQL versus Aurora PostgreSQL mode remains deferred if AWS is resumed","direct bank-source adapters not yet admitted","Counter Intelligence AI/vision provider not yet admitted"],
-  "completion_claims_forbidden":["production shared persistence live","production authentication live","live BUSY connected","production BUSY write admitted","live bank connected","AI vision live","100 counters supported in production"]
+  "open_architecture_questions":["production BUSY local-agent transport and credentials not yet admitted","direct bank-source adapters not yet admitted","Counter Intelligence AI/vision provider not yet admitted","production runtime sizing/DR remains unadmitted until NonProd evidence exists"],
+  "completion_claims_forbidden":["production shared persistence live","production authentication live","application using shared PostgreSQL before connectivity/schema evidence","live BUSY connected","production BUSY write admitted","live bank connected","AI vision live","100 counters supported in production"]
 }
