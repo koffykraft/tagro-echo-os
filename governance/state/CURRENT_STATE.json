@@ -1,6 +1,6 @@
 {
   "schema": "tagro.echo-os.current-state/1",
-  "recorded_at": "2026-08-20T14:00:00+05:30",
+  "recorded_at": "2026-08-20T14:21:00+05:30",
   "stage": "aws_nonprod_shared_runtime_deployment_wo_0012_active",
   "status": "active_build",
   "repository": {"exists":true,"full_name":"koffykraft/tagro-echo-os","default_branch":"main"},
@@ -35,6 +35,11 @@
     "aws_deployed": false,
     "aws_resources_created": true,
     "database_created": true,
+    "cognito_user_pool_created": true,
+    "cognito_app_client_created": true,
+    "lambda_runtime_adapter_created": true,
+    "lambda_runtime_deployed": false,
+    "http_api_deployed": false,
     "warehouse_created": false,
     "observer_runtime_created": false,
     "busy_adapter_created": false,
@@ -51,7 +56,8 @@
     "wo_0009_ci":"success",
     "wo_0010_ci":"success",
     "wo_0011_ci":"success",
-    "wo_0012_status":"active; AWS resource evidence recorded, application/auth runtime not yet deployed"
+    "wo_0012_status":"active; private RDS and Cognito staff authentication resources verified; Lambda/API deployment not yet proven",
+    "nonprod_cognito_verification":"user pool exists; admin-create-only true; username attribute email; PWA app client created without a client secret"
   },
   "business_application": {
     "domains_present":["users","branches_counters","enterprise_directory","busy_node_registry","busy_dock","products","prices","customers","suppliers","quotes","sales","purchases","purchase_orders","stock","stock_transfers","stock_counts","service","closing_cash","bank_evidence","payments","payment_allocations","reports","documents","evidence","sync","import_export","accounting_export"],
@@ -75,7 +81,8 @@
     "target_first_counter_onboarding_window_days":3,
     "mobile_offline_shell_verified":true,
     "nonprod_shared_database_verified":true,
-    "production_blockers":["application connection to shared persistence","server-side authentication/authorization","live BUSY bridge admission","Closing Cash shared sync","production hosting/domain verification","backup/recovery drill"]
+    "nonprod_staff_identity_boundary_created":true,
+    "production_blockers":["application connection to shared persistence","server-side authorization tied to enterprise roles/tool packs","live BUSY bridge admission","Closing Cash shared sync","production hosting/domain verification","backup/recovery drill"]
   },
   "aws_context_inspected": {
     "management_account_id":"775615322985",
@@ -90,7 +97,7 @@
     "nonprod_account_name":"TagroEcho-NonProd",
     "nonprod_account_id":"272037674623",
     "nonprod_permission_verified":"AdministratorAccess",
-    "aws_work_status":"WO-0012 active; first NonProd network and RDS persistence resources created and verified"
+    "aws_work_status":"WO-0012 active; NonProd network, private RDS and Cognito staff identity resources created and verified"
   },
   "aws_nonprod_resources": {
     "region":"ap-south-1",
@@ -119,10 +126,18 @@
       "port":5432,
       "master_secret_status":"active",
       "master_credentials_exposed":false
+    },
+    "cognito":{
+      "user_pool_id":"ap-south-1_F9AcKBFpl",
+      "user_pool_name":"echo-nonprod-staff",
+      "admin_create_only":true,
+      "username_attributes":["email"],
+      "app_client_id":"7ctjur525ah5c09pb8dk9ajbgp",
+      "app_client_secret_generated":false
     }
   },
   "active_work_order":"WO-0012",
-  "next_safe_action":"under WO-0012, deploy Cognito staff authentication first, then API Gateway HTTP API plus Lambda governed application boundary, connect Lambda privately to the verified PostgreSQL instance using Secrets Manager, apply the canonical relational schema, configure one Enterprise/test users, and prove offline reconnect synchronization before BUSY bridge work advances",
+  "next_safe_action":"under WO-0012, establish private Secrets Manager service access for the no-NAT Lambda subnets, then deploy the governed Lambda plus HTTP API/JWT boundary, prove authenticated database reachability, apply the canonical relational schema, configure one Enterprise/test users, and prove offline reconnect synchronization before BUSY bridge work advances",
   "open_defects":[],
   "open_architecture_questions":["production BUSY local-agent transport and credentials not yet admitted","direct bank-source adapters not yet admitted","Counter Intelligence AI/vision provider not yet admitted","production runtime sizing/DR remains unadmitted until NonProd evidence exists"],
   "completion_claims_forbidden":["production shared persistence live","production authentication live","application using shared PostgreSQL before connectivity/schema evidence","live BUSY connected","production BUSY write admitted","live bank connected","AI vision live","100 counters supported in production"]
