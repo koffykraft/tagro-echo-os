@@ -1,0 +1,27 @@
+{
+  "schema": "tagro.echo-os.schema-migration-manifest/1",
+  "manifest_id": "nonprod-v0.1",
+  "target": "AWS NonProd PostgreSQL echoos",
+  "transaction_policy": "one transaction per migration; record only after successful SQL execution",
+  "drift_policy": "refuse an already-recorded migration when its admitted Git blob SHA differs",
+  "migrations": [
+    {
+      "id": "0001-canonical-business-v0.1",
+      "path": "schemas/business/canonical_tables.sql",
+      "git_blob_sha": "1ad2b2a34f8b297b3244d9c5e70809cd54d8c776",
+      "depends_on": []
+    },
+    {
+      "id": "0002-counter-operations-v0.1",
+      "path": "schemas/business/counter_ops.sql",
+      "git_blob_sha": "f3ef3e3e6c0857adce91e2f406f0102f14ddea96",
+      "depends_on": ["0001-canonical-business-v0.1"]
+    },
+    {
+      "id": "0003-operational-extensions-v0.2",
+      "path": "schemas/business/operational_extensions_v0_2.sql",
+      "git_blob_sha": "0fb7c8ed0df8f5ffc9d92b18009387a1282427e1",
+      "depends_on": ["0001-canonical-business-v0.1"]
+    }
+  ]
+}
