@@ -4,9 +4,6 @@ import json
 from dataclasses import dataclass
 from typing import Any, Mapping
 
-import boto3
-import psycopg
-
 from src.aws_runtime.config import RuntimeConfig
 
 
@@ -19,6 +16,8 @@ class DatabaseSecret:
 def _load_secret(config: RuntimeConfig) -> DatabaseSecret:
     if not config.db_secret_arn:
         raise RuntimeError("DB_SECRET_ARN is not configured")
+
+    import boto3
 
     client = boto3.client("secretsmanager", region_name=config.aws_region)
     response = client.get_secret_value(SecretId=config.db_secret_arn)
@@ -34,6 +33,8 @@ def _load_secret(config: RuntimeConfig) -> DatabaseSecret:
 def connect(config: RuntimeConfig):
     if not config.database_configured():
         raise RuntimeError("database runtime is not fully configured")
+
+    import psycopg
 
     secret = _load_secret(config)
     return psycopg.connect(
