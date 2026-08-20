@@ -29,6 +29,7 @@ class Wo0012SchemaMigrationTests(unittest.TestCase):
                 "0003-counter-operations-v0.2",
                 "0004-operational-extensions-v0.3",
                 "0005-platform-identity-constraints-v0.2.1",
+                "0006-platform-spectral-routing-v0.2.2",
             ],
         )
 
@@ -72,6 +73,18 @@ class Wo0012SchemaMigrationTests(unittest.TestCase):
         self.assertIn("where external_identity_ref <> ''", sql)
         self.assertIn("idx_enterprise_memberships_principal", sql)
         self.assertIn("idx_enterprise_entitlements_active", sql)
+
+    def test_vibgyor_prism_is_filter_not_new_truth(self) -> None:
+        sql = (ROOT / "schemas/business/platform_spectral_routing_v0_2_2.sql").read_text(encoding="utf-8").lower()
+        self.assertIn("create table spectral_bands", sql)
+        for code in ("'v'", "'i'", "'b'", "'g'", "'y'", "'o'", "'r'"):
+            self.assertIn(code, sql)
+        self.assertIn("alter table vector_definitions", sql)
+        self.assertIn("spectrum_code", sql)
+        self.assertIn("create table spectral_receiver_rules", sql)
+        self.assertIn("non-matching spectral projection is semantically inert", sql)
+        self.assertIn("presence at a receiver does not create business meaning", sql)
+        self.assertNotIn("delete from echo_events", sql)
 
     def test_business_tables_are_enterprise_scoped(self) -> None:
         for path in (
