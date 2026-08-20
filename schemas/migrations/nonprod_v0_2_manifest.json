@@ -1,0 +1,33 @@
+{
+  "schema": "tagro.echo-os.schema-migration-manifest/1",
+  "manifest_id": "nonprod-v0.2",
+  "target": "AWS NonProd PostgreSQL echoos",
+  "transaction_policy": "one transaction per migration; record only after successful SQL execution",
+  "drift_policy": "refuse an already-recorded migration when its admitted Git blob SHA differs",
+  "migrations": [
+    {
+      "id": "0001-platform-foundation-v0.2",
+      "path": "schemas/business/platform_foundation_v0_2.sql",
+      "git_blob_sha": "74ffdfea3cd45ab2bbc2307571c4401c266bc684",
+      "depends_on": []
+    },
+    {
+      "id": "0002-canonical-business-v0.2",
+      "path": "schemas/business/canonical_tables_v0_2.sql",
+      "git_blob_sha": "a248fe0a93b2887123422b829b0f3fa85c46442b",
+      "depends_on": ["0001-platform-foundation-v0.2"]
+    },
+    {
+      "id": "0003-counter-operations-v0.2",
+      "path": "schemas/business/counter_ops_v0_2.sql",
+      "git_blob_sha": "464a28dfc2537a8184f74e7d061f072cd64a807d",
+      "depends_on": ["0001-platform-foundation-v0.2", "0002-canonical-business-v0.2"]
+    },
+    {
+      "id": "0004-operational-extensions-v0.3",
+      "path": "schemas/business/operational_extensions_v0_3.sql",
+      "git_blob_sha": "7ad7997c58fd6e060f68d038169af283ec5ea937",
+      "depends_on": ["0001-platform-foundation-v0.2", "0002-canonical-business-v0.2"]
+    }
+  ]
+}
