@@ -1,0 +1,53 @@
+{
+  "schema": "tagro.echo-os.vibgyor-prism-contract/1",
+  "contract_id": "VIBGYOR-PRISM-001",
+  "status": "owner_admitted_design",
+  "purpose": "Decompose one admitted Event into sparse governed spectral projections without creating duplicate truth or semantic noise.",
+  "invariants": [
+    "The originating Event remains whole and unchanged.",
+    "Spectral projections retain originating Event identity and provenance.",
+    "V I B G Y O R are routing/filter bands; their business semantics are contract-defined rather than universally hard-coded.",
+    "A receiver may derive business meaning only from explicitly admitted matching spectral bands and vectors.",
+    "A non-matching projection is semantically inert even if transport delivers it to the receiver.",
+    "Presence at a receiver never creates a Chord, relationship or consequence by itself.",
+    "Spectral match is necessary where required but does not replace evidence, authority, timing, Enterprise, confidence or passage gates.",
+    "Spectral band and vector strength are independent dimensions.",
+    "AI may propose spectral classification but may not admit a consequential spectral route or Chord alone.",
+    "Sweepers may flag or retire misrouted active projections but may never delete the originating admitted Event or Evidence."
+  ],
+  "bands": [
+    {"code":"V","name":"Violet","semantic_scope":"contract_defined"},
+    {"code":"I","name":"Indigo","semantic_scope":"contract_defined"},
+    {"code":"B","name":"Blue","semantic_scope":"contract_defined"},
+    {"code":"G","name":"Green","semantic_scope":"contract_defined"},
+    {"code":"Y","name":"Yellow","semantic_scope":"contract_defined"},
+    {"code":"O","name":"Orange","semantic_scope":"contract_defined"},
+    {"code":"R","name":"Red","semantic_scope":"contract_defined"}
+  ],
+  "prism_due_diligence": [
+    "which Event and subject",
+    "what dimensions and values are being decomposed",
+    "who originated and who may receive",
+    "why each spectral projection matters",
+    "where the route is valid",
+    "when the route is valid or stale",
+    "how the decomposition is derived",
+    "Enterprise ownership and tenant boundary",
+    "authority and evidence",
+    "provenance and confidence",
+    "sensitivity and visibility",
+    "matching receiver rule",
+    "Chord eligibility",
+    "correction reversal and audit behaviour"
+  ],
+  "processing_model": [
+    "REALITY",
+    "EVENT",
+    "PRISM_DECOMPOSITION",
+    "SPECTRAL_MATCH",
+    "VECTOR_STRENGTH_AND_PASSAGE",
+    "CHORD_FORMATION",
+    "AUTHORISED_CONSEQUENCE",
+    "RESIDENCY_AND_SWEEPER"
+  ]
+}
