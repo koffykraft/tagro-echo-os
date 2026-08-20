@@ -1,10 +1,12 @@
 {
   "work_order_id":"WO-0008",
-  "status":"active",
+  "status":"closed_verified",
   "activated_date":"2026-08-20",
+  "closed_date":"2026-08-20",
   "objective":"Make the Enterprise Directory and multi-node BUSY registry executable so enterprise identity, hierarchy, users and BUSY topology remain independent and replaceable.",
   "allowed":["src/enterprise/**","tests/**","governance/decisions/DECISION_LEDGER.md","governance/state/CURRENT_STATE.json","session-ledger/**","work-orders/WO-0008.json"],
   "forbidden":["constitutional modification","production AWS provisioning","direct BUSY database writes","BUSY credential storage","hard-coding district or region hierarchy","making BUSY identity equal enterprise identity","implementing warehouse/logistics plugins in this slice","claiming production multi-counter readiness"],
   "success":["enterprise records have durable identity independent of hierarchy and BUSY","enterprise parent-child hierarchy can represent counters districts regions operators warehouses and future groupings without schema changes","users can be assigned to enterprises with tool packs/roles","multiple BUSY nodes can coexist","an enterprise can bind to a BUSY node with optional material-centre and voucher-series mappings","one BUSY node can serve multiple enterprises and one enterprise can have multiple role-scoped BUSY bindings when explicitly configured","registry rejects unknown references duplicate codes and hierarchy cycles","runtime and governance gates remain green"],
+  "verification":{"governance_gate":{"run_id":32321066209,"run_number":134,"conclusion":"success"},"runtime_gate":{"run_id":32321066201,"run_number":115,"conclusion":"success"},"verification_pr":9,"probe_merged":false},
   "owner_authority_basis":"Owner explicitly instructed: Go ahead make the Enterprise Directory + BusyNode registry executable in the GitHub repo."
 }
