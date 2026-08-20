@@ -1,0 +1,10 @@
+{
+  "work_order_id":"WO-0011",
+  "status":"active",
+  "activated_date":"2026-08-20",
+  "objective":"Finish and audit the TAGRO ECHO mobile/offline application body for three-day onboarding readiness without adding Service Memory or pretending missing production integrations are complete.",
+  "allowed":["web/**","tests/**","docs/**","governance/state/CURRENT_STATE.json","session-ledger/**","work-orders/WO-0011.json","README.md"],
+  "forbidden":["Service Memory implementation","constitutional modification","production AWS provisioning","production BUSY write","live bank mutation","claiming production shared persistence/authentication before deployment evidence"],
+  "success":["mobile shell is installable as a PWA candidate","core pages are cached for offline navigation","offline status and pending-sync semantics are explicit","all core pages retain mobile viewport and local operation without external CDN dependency","tests audit required pages manifest service worker and core links","readiness report lists verified capabilities blockers and three-day onboarding sequence","runtime and governance gates remain green"],
+  "owner_authority_basis":"Owner requested structure/body completed, checked, inspected, audited and streamlined for offline/online mobile use with system onboarding targeted within three days; Service Memory explicitly deferred until after deployment verification."
+}
