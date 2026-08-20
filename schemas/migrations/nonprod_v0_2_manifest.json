@@ -34,6 +34,12 @@
       "path": "schemas/business/platform_identity_constraints_v0_2_1.sql",
       "git_blob_sha": "8f24c6071ec20f12cedce28b4eadc0dc9bb0b522",
       "depends_on": ["0001-platform-foundation-v0.2"]
+    },
+    {
+      "id": "0006-platform-spectral-routing-v0.2.2",
+      "path": "schemas/business/platform_spectral_routing_v0_2_2.sql",
+      "git_blob_sha": "758250f1403897598b036920b61e44fc72938cca",
+      "depends_on": ["0001-platform-foundation-v0.2"]
     }
   ]
 }
