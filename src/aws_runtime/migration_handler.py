@@ -4,7 +4,7 @@ from typing import Any, Mapping
 
 from scripts.apply_schema_migrations import apply
 
-CONFIRMATION = "APPLY_NONPROD_V0_1"
+CONFIRMATION = "APPLY_NONPROD_V0_2"
 
 
 def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
@@ -12,7 +12,7 @@ def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
 
     This function has no API/event source. It can only be invoked explicitly and
     refuses to mutate schema unless the caller supplies the exact confirmation
-    token for the admitted NonProd v0.1 migration set.
+    token for the admitted NonProd v0.2 migration set.
     """
     if event.get("confirm") != CONFIRMATION:
         return {
@@ -24,5 +24,5 @@ def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
     apply()
     return {
         "status": "migration_complete",
-        "migration_set": "nonprod_v0_1",
+        "migration_set": "nonprod_v0_2",
     }
