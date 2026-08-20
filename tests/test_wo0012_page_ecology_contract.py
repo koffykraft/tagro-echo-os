@@ -65,8 +65,8 @@ class Wo0012PageEcologyContractTests(unittest.TestCase):
 
     def test_acceptance_requires_environment_and_failure_behavior(self) -> None:
         must_prove = self.contract["acceptance"]["must_prove"]
-        self.assertIn("environment_behavior", must_prove)
-        self.assertIn("failure/recovery_behavior", must_prove)
+        self.assertIn("environment behavior", must_prove)
+        self.assertIn("failure/recovery behavior", must_prove)
         self.assertIn("usable wording and labels", must_prove)
         self.assertIn("correct data/event binding", must_prove)
 
