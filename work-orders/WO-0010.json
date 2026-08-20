@@ -1,10 +1,12 @@
 {
   "work_order_id":"WO-0010",
-  "status":"active",
+  "status":"closed_verified",
   "activated_date":"2026-08-20",
+  "closed_date":"2026-08-20",
   "objective":"Build Closing Cash Engine v1 as the second operating pillar: enterprise-scoped, multi-user, mobile/offline-capable daily money evidence with explicit channels, expenses, allocations, deposits/transfers, service receipts, expected versus declared closing, lifecycle, reconciliation hooks and audit trail.",
   "allowed":["src/cash/**","src/enterprise/**","tests/**","contracts/cash/**","schemas/cash/**","web/cash.html","data/templates/**","governance/decisions/DECISION_LEDGER.md","governance/state/CURRENT_STATE.json","session-ledger/**","work-orders/WO-0010.json"],
   "forbidden":["constitutional modification","production AWS provisioning","production BUSY write","live bank mutation","silently classifying allocation as expense","silently treating BUSY sales as cash received","silently converting missing evidence to zero","claiming live Closing Cash deployment before persistence/deployment evidence"],
   "success":["daily closing is scoped to enterprise and business date","multiple authorized users can record distinct entries while final submission has explicit actor","cash noncash receipts expenses allocations deposits/transfers and service receipts remain distinct","expected physical cash is derived only from physical-cash-affecting entries","declared cash variance is explicit","draft submitted approved and corrected/superseded lifecycle is auditable","offline records carry idempotency keys and can be replayed without duplication","BUSY and bank reconciliation fields are references/candidates not invented matches","mobile cash page can capture and review the v1 structure","tests cover classification cash arithmetic lifecycle multi-user and idempotency","runtime and governance gates remain green"],
+  "verification":{"governance_gate":{"run_id":32322071753,"run_number":154,"conclusion":"success"},"runtime_gate":{"run_id":32322071748,"run_number":135,"conclusion":"success"},"verification_pr":11,"probe_merged":false},
   "owner_authority_basis":"Owner approved Closing Cash Engine v1 immediately after verified BUSY Engine Dock v1 and requested the structure/body completed for mobile offline/online onboarding within three days."
 }
