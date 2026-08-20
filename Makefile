@@ -10,3 +10,6 @@ build-EchoRuntimeFunction:
 
 build-EchoSchemaMigrationFunction:
 	$(build_echo_python_function)
+
+build-EchoEnterpriseBootstrapFunction:
+	$(build_echo_python_function)
