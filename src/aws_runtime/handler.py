@@ -4,6 +4,7 @@ import json
 from typing import Any, Mapping
 
 from src.aws_runtime.config import RuntimeConfig
+from src.aws_runtime.database import probe
 
 
 def _response(status_code: int, payload: Mapping[str, Any]) -> dict[str, Any]:
@@ -57,5 +58,18 @@ def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
                 "username": claims.get("username") or claims.get("cognito:username"),
             },
         )
+
+    if raw_path == "/db-health" and method == "GET":
+        try:
+            result = probe(config)
+        except Exception as exc:
+            return _response(
+                503,
+                {
+                    "status": "database_unavailable",
+                    "error_type": type(exc).__name__,
+                },
+            )
+        return _response(200, {"status": "database_reachable", **result})
 
     return _response(404, {"error": "route_not_admitted"})
