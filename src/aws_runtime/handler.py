@@ -5,6 +5,7 @@ from typing import Any, Mapping
 
 from src.aws_runtime.config import RuntimeConfig
 from src.aws_runtime.database import probe, tenant_context
+from src.aws_runtime.import_reconciliation import reconciliation_readback
 
 
 def _response(status_code: int, payload: Mapping[str, Any]) -> dict[str, Any]:
@@ -83,5 +84,28 @@ def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
         if not result:
             return _response(403, {"error": "enterprise_membership_required"})
         return _response(200, {"status": "tenant_context_resolved", **result})
+
+    if raw_path == "/import-reconciliation" and method == "GET":
+        subject = str(claims.get("sub") or "")
+        if not subject:
+            return _response(401, {"error": "authenticated_subject_missing"})
+        try:
+            context_result = tenant_context(config, subject)
+        except Exception as exc:
+            return _response(503, {"error": "tenant_context_unavailable", "error_type": type(exc).__name__})
+        if not context_result or not context_result.get("enterprises"):
+            return _response(403, {"error": "enterprise_membership_required"})
+        memberships = context_result["enterprises"]
+        owner_memberships = [m for m in memberships if m.get("role_code") == "OWNER"]
+        if not owner_memberships:
+            return _response(403, {"error": "owner_authority_required"})
+        if len(owner_memberships) != 1:
+            return _response(409, {"error": "enterprise_selection_required"})
+        enterprise_id = str(owner_memberships[0]["enterprise_id"])
+        try:
+            result = reconciliation_readback(config, enterprise_id=enterprise_id)
+        except Exception as exc:
+            return _response(503, {"error": "reconciliation_unavailable", "error_type": type(exc).__name__})
+        return _response(200, {"status": "reconciliation_readback", **result})
 
     return _response(404, {"error": "route_not_admitted"})
