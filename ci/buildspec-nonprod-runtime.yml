@@ -21,6 +21,7 @@ phases:
       - sam build --template-file architecture/aws/nonprod-runtime-template.yaml
       - test -n "$ARTIFACT_BUCKET"
       - sam package --s3-bucket "$ARTIFACT_BUCKET" --s3-prefix echo-nonprod/runtime --output-template-file packaged-nonprod-runtime.yaml
+      - aws s3 cp packaged-nonprod-runtime.yaml "s3://$ARTIFACT_BUCKET/echo-nonprod/runtime/packaged-nonprod-runtime.yaml"
 
 artifacts:
   files:
