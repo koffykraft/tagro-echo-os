@@ -85,3 +85,16 @@ Decision: S3 is the first admitted object/evidence and analytical storage bounda
 Constraint: S3 Object Lock is not automatically admitted; retention/WORM policy requires a separate governance decision.
 Status: architecture admitted; no buckets/catalogs/query workgroups provisioned.
 Approved under: WO-0003, 2026-08-19.
+
+## DEC-0017 — Enterprise identity is independent of organizational hierarchy
+Decision: every ECHO operating enterprise/counter has a durable enterprise identity that does not depend on its current parent grouping, physical location, BUSY company, material centre, voucher series or assigned users. Parent-child relationships are configurable so counters may later be grouped by district, region, operator, warehouse, vertical or another admitted structure without identity migration.
+Reason: future scale and franchise/operator structures must not require core schema redesign.
+Status: executable registry admitted under WO-0008.
+Approved: Owner, 2026-08-20.
+
+## DEC-0018 — BUSY is represented as a multi-node ecosystem
+Decision: ECHO addresses BUSY through registered BUSY nodes and explicit enterprise bindings. A BUSY node may represent a company/environment and may serve multiple enterprises through material-centre/voucher-series mappings; an enterprise may have more than one role-scoped BUSY binding when explicitly configured. BUSY credentials are not part of the Enterprise Directory.
+Reason: the network may begin with counters as material centres but later include separate BUSY companies, multi-location operators, districts/regions or other combinations. The bridge must fetch/write/process across different iterations of the same BUSY ecosystem without changing enterprise identity.
+Constraint: this decision defines topology and registry behavior only; it does not admit production BUSY write or credentials.
+Status: executable registry admitted under WO-0008.
+Approved: Owner, 2026-08-20.
