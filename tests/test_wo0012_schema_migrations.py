@@ -92,7 +92,8 @@ class Wo0012SchemaMigrationTests(unittest.TestCase):
         for table in ("import_sources", "import_observations", "reconciliation_candidates", "canonical_admissions"):
             self.assertIn(f"create table {table}", sql)
         self.assertIn("observation presence never grants canonical authority", sql)
-        self.assertIn("accepted reconciliation candidate", sql)
+        self.assertIn("only an accepted", sql)
+        self.assertIn("reconciliation candidate plus authorised admission", sql)
         self.assertIn("admitted_by_principal_id", sql)
         self.assertIn("authority_basis", sql)
         self.assertIn("provenance_ref", sql)
