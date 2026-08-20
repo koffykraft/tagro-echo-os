@@ -28,6 +28,12 @@
       "path": "schemas/business/operational_extensions_v0_3.sql",
       "git_blob_sha": "7ad7997c58fd6e060f68d038169af283ec5ea937",
       "depends_on": ["0001-platform-foundation-v0.2", "0002-canonical-business-v0.2"]
+    },
+    {
+      "id": "0005-platform-identity-constraints-v0.2.1",
+      "path": "schemas/business/platform_identity_constraints_v0_2_1.sql",
+      "git_blob_sha": "8f24c6071ec20f12cedce28b4eadc0dc9bb0b522",
+      "depends_on": ["0001-platform-foundation-v0.2"]
     }
   ]
 }
