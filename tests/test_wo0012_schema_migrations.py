@@ -28,6 +28,7 @@ class Wo0012SchemaMigrationTests(unittest.TestCase):
                 "0002-canonical-business-v0.2",
                 "0003-counter-operations-v0.2",
                 "0004-operational-extensions-v0.3",
+                "0005-platform-identity-constraints-v0.2.1",
             ],
         )
 
@@ -64,6 +65,13 @@ class Wo0012SchemaMigrationTests(unittest.TestCase):
         self.assertIn("passage_state", sql)
         self.assertIn("strength_class", sql)
         self.assertIn("review_interval_seconds", sql)
+
+    def test_identity_hardening_keeps_external_login_unique(self) -> None:
+        sql = (ROOT / "schemas/business/platform_identity_constraints_v0_2_1.sql").read_text(encoding="utf-8").lower()
+        self.assertIn("create unique index ux_principals_external_identity_ref", sql)
+        self.assertIn("where external_identity_ref <> ''", sql)
+        self.assertIn("idx_enterprise_memberships_principal", sql)
+        self.assertIn("idx_enterprise_entitlements_active", sql)
 
     def test_business_tables_are_enterprise_scoped(self) -> None:
         for path in (
