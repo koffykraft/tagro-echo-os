@@ -63,11 +63,12 @@ class BusyBinding:
 
 
 class EnterpriseDirectory:
-    """Executable enterprise identity and BUSY topology registry.
+    """Executable enterprise identity, user-access and BUSY topology registry.
 
     Enterprise identity is independent from organizational hierarchy and from BUSY.
-    BUSY nodes are registered engines. Bindings map an enterprise to a BUSY node,
-    optional material centre, and voucher-series configuration.
+    Any number of users may be assigned to the same enterprise/material centre, each
+    with separate roles and tool packs. BUSY nodes are registered engines. Bindings
+    map an enterprise to a BUSY node, optional material centre, and voucher series.
 
     The registry deliberately stores no BUSY credentials and performs no BUSY I/O.
     """
@@ -173,6 +174,26 @@ class EnterpriseDirectory:
             r for r in rows
             if r.enterprise_id == enterprise_id and (r.active or not active_only)
         ]
+
+    def assignments_for_user(self, user_id: str, active_only: bool = True) -> list[EnterpriseUser]:
+        rows = [self._user_from(r) for r in self.repository.list(self.USERS)]
+        return [r for r in rows if r.user_id == user_id and (r.active or not active_only)]
+
+    def user_has_role(self, user_id: str, enterprise_id: str, role: str) -> bool:
+        wanted = role.strip().casefold()
+        return any(
+            wanted in {r.strip().casefold() for r in assignment.roles}
+            for assignment in self.assignments_for_user(user_id)
+            if assignment.enterprise_id == enterprise_id
+        )
+
+    def user_has_tool(self, user_id: str, enterprise_id: str, tool_pack: str) -> bool:
+        wanted = tool_pack.strip().casefold()
+        return any(
+            wanted in {t.strip().casefold() for t in assignment.tool_packs}
+            for assignment in self.assignments_for_user(user_id)
+            if assignment.enterprise_id == enterprise_id
+        )
 
     def busy_nodes(self, active_only: bool = True) -> list[BusyNode]:
         rows = [self._busy_node_from(r) for r in self.repository.list(self.BUSY_NODES)]
