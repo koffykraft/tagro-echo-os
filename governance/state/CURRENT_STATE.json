@@ -1,7 +1,7 @@
 {
   "schema": "tagro.echo-os.current-state/1",
-  "recorded_at": "2026-08-20T07:34:00+05:30",
-  "stage": "closing_cash_engine_v0_1_candidate",
+  "recorded_at": "2026-08-20T07:48:00+05:30",
+  "stage": "mobile_offline_readiness_audit_v0_1_candidate",
   "status": "active_build",
   "repository": {"exists":true,"full_name":"koffykraft/tagro-echo-os","default_branch":"main"},
   "runtime": {
@@ -25,6 +25,9 @@
     "busy_node_registry_created": true,
     "busy_dock_v1_created": true,
     "multi_user_enterprise_access_created": true,
+    "pwa_manifest_created": true,
+    "offline_service_worker_created": true,
+    "mobile_readiness_audit_created": true,
     "browser_local_persistence_only": true,
     "canonical_relational_schema_created": true,
     "csv_import_export_contracts_created": true,
@@ -40,13 +43,14 @@
     "service_runtime_created": false
   },
   "verification": {
-    "last_proven_governance_gate":{"run_id":32321832350,"run_number":146,"conclusion":"success"},
-    "last_proven_runtime_gate":{"run_id":32321832352,"run_number":127,"conclusion":"success"},
+    "last_proven_governance_gate":{"run_id":32322071753,"run_number":154,"conclusion":"success"},
+    "last_proven_runtime_gate":{"run_id":32322071748,"run_number":135,"conclusion":"success"},
     "wo_0006_ci":"success",
     "wo_0007_ci":"success",
     "wo_0008_ci":"success",
     "wo_0009_ci":"success",
-    "wo_0010_ci":"pending"
+    "wo_0010_ci":"success",
+    "wo_0011_ci":"pending"
   },
   "business_application": {
     "domains_present":["users","branches_counters","enterprise_directory","busy_node_registry","busy_dock","products","prices","customers","suppliers","quotes","sales","purchases","purchase_orders","stock","stock_transfers","stock_counts","service","closing_cash","bank_evidence","payments","payment_allocations","reports","documents","evidence","sync","import_export","accounting_export"],
@@ -55,19 +59,25 @@
     "busy_topology_rule":"multiple BUSY nodes may coexist; enterprises bind explicitly by role with optional material-centre and voucher-series mappings; registry stores no BUSY credentials",
     "busy_dock_rule":"BUSY is a docked accounting finance MIS engine; v1 resolves multi-node reads, explicit capabilities, stale offline snapshots and idempotent online handoff envelopes; live BUSY I/O is not yet asserted",
     "closing_cash_rule":"enterprise daily money evidence keeps physical cash, noncash receipts, expenses, allocations/contra, deposits/transfers and service receipts distinct; expected physical cash is derived from cash-affecting entries; corrections supersede prior closings",
-    "offline_rule":"mobile counter workflows must label stale or missing engine state explicitly and preserve idempotent queued handoff for later online processing",
+    "offline_rule":"mobile counter workflows label stale/missing engine state explicitly; core pages are PWA-cache candidates and local queued work remains pending until acknowledged synchronization",
     "stock_truth":"derived_from_stock_movements; stock counts report variance and do not silently mutate balance",
     "transfer_truth_rule":"request dispatch and receipt are separate actor-stamped lifecycle events",
     "evidence_truth_rule":"captured evidence and inference proposals remain separate; proposals require explicit human acceptance before operational use",
     "sync_truth_rule":"offline mutations carry idempotency keys and payload hashes; replays with changed payload are rejected",
     "busy_role":"docked multi-node accounting_finance_mis engine; production BUSY read/write connectivity not yet admitted",
     "web_paths":["web/index.html","web/counter.html","web/service.html","web/cash.html","web/bank.html","web/payments.html","web/documents.html"],
-    "persistence_status":"prototype browser localStorage plus replaceable non-production JSON snapshot repository; not production truth"
+    "persistence_status":"prototype browser localStorage plus replaceable non-production JSON snapshot repository; shared production persistence not yet deployed"
+  },
+  "deployment_readiness": {
+    "readiness_document":"docs/READINESS_AUDIT_2026-08-20.md",
+    "service_memory_deferred_by_owner":true,
+    "target_first_counter_onboarding_window_days":3,
+    "production_blockers":["shared persistence","server-side authentication/authorization","live BUSY bridge admission","Closing Cash shared sync","production hosting/domain verification","backup/recovery drill"]
   },
   "aws_context_inspected": {"management_account_id":"775615322985","organization_id":"o-qj930yquvx","organization_all_features":true,"identity_center_instance_id":"ssoins-659533e124342c4d","identity_center_primary_region":"ap-south-1","identity_center_organization_instance":true,"identity_center_user_verified":"thomas","management_account_permission_verified":"AdministratorAccess","root_access_key_active":false,"aws_work_status":"paused_by_owner_before_echo_member_account_creation"},
-  "active_work_order":"WO-0010",
-  "next_safe_action":"verify Closing Cash Engine v1 runtime and governance gates, then begin whole-system mobile/offline readiness audit and deployment hardening; Service Memory remains deferred by owner",
+  "active_work_order":"WO-0011",
+  "next_safe_action":"verify mobile/offline readiness gates; after verification choose/deploy the smallest shared persistence/authentication runtime and connect one first-counter BusyNode in read-only/copied-company mode before any production BUSY write",
   "open_defects":[],
-  "open_architecture_questions":["production BUSY local-agent transport and credentials not yet admitted","production shared persistence/authentication deployment still pending","RDS PostgreSQL versus Aurora PostgreSQL mode not yet selected","ECHO NonProd and Prod member AWS accounts not yet created","direct bank-source adapters not yet admitted","Counter Intelligence AI/vision provider not yet admitted"],
-  "completion_claims_forbidden":["AWS deployed","production database live","warehouse live","live BUSY connected","production BUSY write admitted","live bank connected","AI vision live","100 counters supported in production"]
+  "open_architecture_questions":["shared production runtime provider/path still needs execution decision","production BUSY local-agent transport and credentials not yet admitted","RDS PostgreSQL versus Aurora PostgreSQL mode remains deferred if AWS is resumed","direct bank-source adapters not yet admitted","Counter Intelligence AI/vision provider not yet admitted"],
+  "completion_claims_forbidden":["production shared persistence live","production authentication live","live BUSY connected","production BUSY write admitted","live bank connected","AI vision live","100 counters supported in production"]
 }
