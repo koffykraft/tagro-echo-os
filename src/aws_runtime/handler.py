@@ -4,7 +4,7 @@ import json
 from typing import Any, Mapping
 
 from src.aws_runtime.config import RuntimeConfig
-from src.aws_runtime.database import probe
+from src.aws_runtime.database import probe, tenant_context
 
 
 def _response(status_code: int, payload: Mapping[str, Any]) -> dict[str, Any]:
@@ -71,5 +71,17 @@ def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
                 },
             )
         return _response(200, {"status": "database_reachable", **result})
+
+    if raw_path == "/tenant-context" and method == "GET":
+        subject = str(claims.get("sub") or "")
+        if not subject:
+            return _response(401, {"error": "authenticated_subject_missing"})
+        try:
+            result = tenant_context(config, subject)
+        except Exception as exc:
+            return _response(503, {"error": "tenant_context_unavailable", "error_type": type(exc).__name__})
+        if not result:
+            return _response(403, {"error": "enterprise_membership_required"})
+        return _response(200, {"status": "tenant_context_resolved", **result})
 
     return _response(404, {"error": "route_not_admitted"})
