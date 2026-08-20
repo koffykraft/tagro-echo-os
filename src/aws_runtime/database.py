@@ -60,3 +60,73 @@ def probe(config: RuntimeConfig) -> Mapping[str, Any]:
         "engine": "postgresql",
         "version": str(version),
     }
+
+
+def tenant_context(config: RuntimeConfig, external_identity_ref: str) -> Mapping[str, Any] | None:
+    """Resolve the authenticated principal to active Enterprise memberships and entitlements.
+
+    This is a read-only projection. The Cognito subject is treated only as an external
+    identity reference; Enterprise authority comes from server-side membership state.
+    """
+    if not external_identity_ref:
+        return None
+
+    with connect(config) as connection:
+        principal = connection.execute(
+            """
+            select principal_id, display_name
+            from principals
+            where external_identity_ref=%s and active=true
+            """,
+            (external_identity_ref,),
+        ).fetchone()
+        if not principal:
+            return None
+
+        principal_id, display_name = principal
+        memberships = connection.execute(
+            """
+            select m.membership_id, e.enterprise_id, e.code, e.name, m.role_code, m.tool_pack_code
+            from enterprise_memberships m
+            join enterprises e on e.enterprise_id=m.enterprise_id
+            where m.principal_id=%s
+              and m.status='active'
+              and e.status='active'
+              and m.valid_from <= now()
+              and (m.valid_to is null or m.valid_to > now())
+            order by e.code, m.role_code
+            """,
+            (principal_id,),
+        ).fetchall()
+
+        enterprises: list[dict[str, Any]] = []
+        for membership_id, enterprise_id, code, name, role_code, tool_pack_code in memberships:
+            entitlements = connection.execute(
+                """
+                select capability_code
+                from enterprise_entitlements
+                where enterprise_id=%s
+                  and status='enabled'
+                  and effective_from <= now()
+                  and (effective_to is null or effective_to > now())
+                order by capability_code
+                """,
+                (enterprise_id,),
+            ).fetchall()
+            enterprises.append(
+                {
+                    "membership_id": membership_id,
+                    "enterprise_id": enterprise_id,
+                    "enterprise_code": code,
+                    "enterprise_name": name,
+                    "role_code": role_code,
+                    "tool_pack_code": tool_pack_code,
+                    "capabilities": [row[0] for row in entitlements],
+                }
+            )
+
+    return {
+        "principal_id": principal_id,
+        "display_name": display_name,
+        "enterprises": enterprises,
+    }
