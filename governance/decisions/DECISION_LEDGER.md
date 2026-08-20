@@ -18,6 +18,7 @@ Approved: Owner, 2026-08-19.
 Decision: operational sales, stock, customer, service, cash, logistics and related events originate in TAGRO ECHO OS. BUSY is a controlled accounting/statutory adapter.
 Rejected: BUSY-first operational architecture.
 Approved: Owner, 2026-08-19.
+Status: BUSY-role wording superseded by DEC-0019; ECHO operational-orchestration principle remains active.
 
 ## DEC-0004 — Front-seat Driver and rear-seat Observer are separated
 Decision: operational command and observation/intelligence are structurally separated. The Driver changes authorised operational state. The Observer is read-only and creates findings/attention, not operational commands.
@@ -97,4 +98,18 @@ Decision: ECHO addresses BUSY through registered BUSY nodes and explicit enterpr
 Reason: the network may begin with counters as material centres but later include separate BUSY companies, multi-location operators, districts/regions or other combinations. The bridge must fetch/write/process across different iterations of the same BUSY ecosystem without changing enterprise identity.
 Constraint: this decision defines topology and registry behavior only; it does not admit production BUSY write or credentials.
 Status: executable registry admitted under WO-0008.
+Approved: Owner, 2026-08-20.
+
+## DEC-0019 — BUSY is a docked accounting, finance and MIS engine
+Decision: BUSY is an independent docked specialist engine used to process, consolidate and store accounting/financial information and to produce accounting, inventory and MIS outputs. ECHO orchestrates users, enterprises, operational context and presentation; BUSY may be authoritative for the accounting/books result it processes. This supersedes DEC-0003 only where DEC-0003 described BUSY merely as an adapter.
+Reason: existing TAGRO evidence proves BUSY is a mature accounting/inventory engine and native read/write/report capability already exists. Rebuilding those calculations in ECHO would create unnecessary duplication.
+Constraint: BUSY remains replaceable, multi-node, governed and separately reconciled. A queued request is not a booked BUSY transaction until BUSY result/readback confirms it.
+Status: BUSY Dock v1 implementation under WO-0009.
+Approved: Owner, 2026-08-20.
+
+## DEC-0020 — Mobile operation is offline-capable by design
+Decision: ordinary counter work must remain usable on mobile during intermittent connectivity. Local/offline state is explicit, queued mutations are idempotent, stale BUSY/report snapshots are labelled stale, and online synchronization/readback must not silently reinterpret offline activity.
+Reason: ECHO counters are mobile-first and may have unreliable network availability; the operating system must degrade calmly rather than stop.
+Constraint: offline capability does not authorize bypassing permissions or fabricating current server/BUSY state.
+Status: active design rule from WO-0009 onward.
 Approved: Owner, 2026-08-20.
