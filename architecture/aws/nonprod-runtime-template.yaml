@@ -92,6 +92,12 @@ Resources:
             ApiId: !Ref EchoHttpApi
             Path: /tenant-context
             Method: GET
+        ImportReconciliation:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref EchoHttpApi
+            Path: /import-reconciliation
+            Method: GET
 
   EchoSchemaMigrationFunction:
     Type: AWS::Serverless::Function
