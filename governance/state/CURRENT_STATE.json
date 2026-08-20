@@ -1,12 +1,12 @@
 {
   "schema": "tagro.echo-os.current-state/1",
-  "recorded_at": "2026-08-20T15:06:00+05:30",
+  "recorded_at": "2026-08-20T16:24:00+05:30",
   "stage": "aws_nonprod_shared_runtime_deployment_wo_0012_active",
   "status": "active_build",
   "repository": {"exists":true,"full_name":"koffykraft/tagro-echo-os","default_branch":"main"},
   "runtime": {
     "runtime_skeleton_created": true,
-    "runtime_skeleton_version": "0.1",
+    "runtime_skeleton_version": "0.2",
     "business_domain_engine_created": true,
     "business_web_shell_created": true,
     "service_domain_created": true,
@@ -30,6 +30,10 @@
     "mobile_readiness_audit_created": true,
     "browser_local_persistence_only": true,
     "canonical_relational_schema_created": true,
+    "saas_safe_platform_foundation_v0_2_created": true,
+    "saas_safe_platform_foundation_v0_2_migrated_nonprod": true,
+    "planar_event_vector_chord_primitives_created": true,
+    "migration_lambda_deployed": true,
     "csv_import_export_contracts_created": true,
     "mobile_app_created": false,
     "aws_deployed": true,
@@ -48,23 +52,30 @@
     "service_runtime_created": false
   },
   "verification": {
-    "last_proven_governance_gate":{"run_number":171,"conclusion":"success"},
-    "last_proven_runtime_gate":{"run_number":152,"conclusion":"success"},
+    "last_proven_governance_gate":{"run_number":188,"conclusion":"success"},
+    "last_proven_runtime_gate":{"run_number":169,"conclusion":"success"},
     "wo_0006_ci":"success",
     "wo_0007_ci":"success",
     "wo_0008_ci":"success",
     "wo_0009_ci":"success",
     "wo_0010_ci":"success",
     "wo_0011_ci":"success",
-    "wo_0012_status":"active; NonProd API Gateway, Lambda, Cognito authentication and private PostgreSQL reachability proven",
+    "wo_0012_status":"active; NonProd API Gateway, Lambda, Cognito authentication, private PostgreSQL reachability, private migration Lambda, and SaaS-safe v0.2 schema migration proven",
     "nonprod_cognito_verification":"user pool exists; admin-create-only true; username attribute email; PWA app client has no client secret; confirmed test staff identity authenticated successfully",
     "nonprod_http_health":"GET /health returned status ok with database_configured true",
     "nonprod_auth_boundary":"unauthenticated GET /whoami returned HTTP 401; authenticated JWT GET /whoami returned the Cognito subject and email",
-    "nonprod_database_path":"authenticated GET /db-health proved Lambda -> Secrets Manager -> private PostgreSQL; database echoos; engine PostgreSQL 17.10; status database_reachable"
+    "nonprod_database_path":"authenticated GET /db-health proved Lambda -> Secrets Manager -> private PostgreSQL; database echoos; engine PostgreSQL 17.10; status database_reachable",
+    "nonprod_v0_2_build":"CodeBuild echo-nonprod-runtime-build:8bd3e564-3865-44f0-a950-056442074631 SUCCEEDED",
+    "nonprod_v0_2_stack":"CloudFormation echo-nonprod-runtime successfully updated",
+    "nonprod_v0_2_migration":"Lambda echo-nonprod-schema-migrate invocation StatusCode 200 returned migration_complete for nonprod_v0_2"
   },
   "business_application": {
-    "domains_present":["users","branches_counters","enterprise_directory","busy_node_registry","busy_dock","products","prices","customers","suppliers","quotes","sales","purchases","purchase_orders","stock","stock_transfers","stock_counts","service","closing_cash","bank_evidence","payments","payment_allocations","reports","documents","evidence","sync","import_export","accounting_export"],
+    "domains_present":["enterprises","principals","enterprise_memberships","capabilities","enterprise_entitlements","echo_events","vector_definitions","event_vectors","chord_definitions","chord_vector_requirements","chord_candidates","sweeper_policies","users","branches_counters","enterprise_directory","busy_node_registry","busy_dock","products","prices","customers","suppliers","quotes","sales","purchases","purchase_orders","stock","stock_transfers","stock_counts","service","closing_cash","bank_evidence","payments","payment_allocations","reports","documents","evidence","sync","import_export","accounting_export"],
     "enterprise_identity_rule":"durable enterprise identity is independent from parent hierarchy BUSY company material centre voucher series users and physical location",
+    "saas_ownership_rule":"Enterprise is the primary operational ownership and isolation boundary; human/system identity is independent from enterprise membership",
+    "capability_rule":"capabilities and enterprise entitlements are data-driven; enabling/disabling capability does not silently destroy historical enterprise data",
+    "planar_propagation_rule":"admitted events hold potential; selected governed vectors carry typed signals; admitted chord contracts combine vectors; passage is mediated and consequential action remains authority-gated",
+    "sweeper_rule":"waiting/static vectors and chord candidates are periodically re-inspected according to strength/residency policy; retirement removes static from active circulation without deleting originating events/evidence",
     "enterprise_user_rule":"multiple users may share the same enterprise and material centre while holding independent role and tool-pack assignments",
     "busy_topology_rule":"multiple BUSY nodes may coexist; enterprises bind explicitly by role with optional material-centre and voucher-series mappings; registry stores no BUSY credentials",
     "busy_dock_rule":"BUSY is a docked accounting finance MIS engine; v1 resolves multi-node reads, explicit capabilities, stale offline snapshots and idempotent online handoff envelopes; live BUSY I/O is not yet asserted",
@@ -76,17 +87,19 @@
     "sync_truth_rule":"offline mutations carry idempotency keys and payload hashes; replays with changed payload are rejected",
     "busy_role":"docked multi-node accounting_finance_mis engine; production BUSY read/write connectivity not yet admitted",
     "web_paths":["web/index.html","web/counter.html","web/service.html","web/cash.html","web/bank.html","web/payments.html","web/documents.html"],
-    "persistence_status":"AWS NonProd PostgreSQL is privately reachable from the deployed authenticated Lambda runtime, but application business persistence remains on browser localStorage/non-production repository abstractions until canonical schema migration and repository mapping are proven"
+    "persistence_status":"AWS NonProd PostgreSQL is privately reachable and the governed SaaS-safe v0.2 platform/business schema is applied; application business writes remain unadmitted until Enterprise membership/authorization and repository mapping are proven"
   },
   "deployment_readiness": {
     "readiness_document":"docs/READINESS_AUDIT_2026-08-20.md",
+    "future_scale_map":"docs/FUTURE_SCALE_MAP.md",
     "service_memory_deferred_by_owner":true,
     "target_first_counter_onboarding_window_days":3,
     "mobile_offline_shell_verified":true,
     "nonprod_shared_database_verified":true,
     "nonprod_staff_identity_boundary_created":true,
     "nonprod_authenticated_runtime_to_database_verified":true,
-    "production_blockers":["canonical schema migration and application mapping to shared persistence","server-side authorization tied to enterprise roles/tool packs","live BUSY bridge admission","Closing Cash shared sync","production hosting/domain verification","backup/recovery drill"]
+    "nonprod_saas_safe_schema_migrated":true,
+    "production_blockers":["first Enterprise/principal/membership/entitlement seed","server-side authorization tied to enterprise membership/roles/tool packs","application repository mapping to shared persistence","live BUSY bridge admission","Closing Cash shared sync","production hosting/domain verification","backup/recovery drill"]
   },
   "aws_context_inspected": {
     "management_account_id":"775615322985",
@@ -101,7 +114,7 @@
     "nonprod_account_name":"TagroEcho-NonProd",
     "nonprod_account_id":"272037674623",
     "nonprod_permission_verified":"AdministratorAccess",
-    "aws_work_status":"WO-0012 active; NonProd private network/RDS, Cognito staff auth, API Gateway and Lambda runtime deployed; authenticated private PostgreSQL reachability verified"
+    "aws_work_status":"WO-0012 active; private NonProd network/RDS, Cognito staff auth, API Gateway/Lambda runtime, private migration Lambda and SaaS-safe v0.2 schema are deployed and proven"
   },
   "aws_nonprod_resources": {
     "region":"ap-south-1",
@@ -114,41 +127,16 @@
     "security_groups":{"app":"sg-09231e827f3723d1e","database":"sg-0fe8421fbb2223917","database_5432_source":"sg-09231e827f3723d1e","vpc_endpoint":"sg-0cad604183d618123"},
     "secrets_manager_vpc_endpoint":{"id":"vpce-0456e2f4959cee4b1","private_dns":true,"status":"available"},
     "db_subnet_group":"echo-nonprod-db-subnets",
-    "rds":{
-      "identifier":"echo-nonprod-postgres",
-      "engine":"postgres",
-      "engine_version":"17.10",
-      "instance_class":"db.t4g.micro",
-      "storage_gb":20,
-      "storage_type":"gp3",
-      "encrypted":true,
-      "publicly_accessible":false,
-      "multi_az":false,
-      "database_name":"echoos",
-      "status":"available",
-      "availability_zone":"ap-south-1b",
-      "endpoint":"echo-nonprod-postgres.ch6ciowm8fzs.ap-south-1.rds.amazonaws.com",
-      "port":5432,
-      "master_secret_status":"active",
-      "master_credentials_exposed":false
-    },
-    "cognito":{
-      "user_pool_id":"ap-south-1_F9AcKBFpl",
-      "user_pool_name":"echo-nonprod-staff",
-      "admin_create_only":true,
-      "username_attributes":["email"],
-      "app_client_id":"7ctjur525ah5c09pb8dk9ajbgp",
-      "app_client_secret_generated":false,
-      "test_identity_confirmed":true
-    },
-    "lambda":{"function_name":"echo-nonprod-runtime","execution_role":"arn:aws:iam::272037674623:role/echo-nonprod-runtime-role","private_vpc_attachment":true},
+    "rds":{"identifier":"echo-nonprod-postgres","engine":"postgres","engine_version":"17.10","instance_class":"db.t4g.micro","storage_gb":20,"storage_type":"gp3","encrypted":true,"publicly_accessible":false,"multi_az":false,"database_name":"echoos","status":"available","availability_zone":"ap-south-1b","endpoint":"echo-nonprod-postgres.ch6ciowm8fzs.ap-south-1.rds.amazonaws.com","port":5432,"master_secret_status":"active","master_credentials_exposed":false},
+    "cognito":{"user_pool_id":"ap-south-1_F9AcKBFpl","user_pool_name":"echo-nonprod-staff","admin_create_only":true,"username_attributes":["email"],"app_client_id":"7ctjur525ah5c09pb8dk9ajbgp","app_client_secret_generated":false,"test_identity_confirmed":true},
+    "lambda":{"function_name":"echo-nonprod-runtime","schema_migration_function_name":"echo-nonprod-schema-migrate","execution_role":"arn:aws:iam::272037674623:role/echo-nonprod-runtime-role","private_vpc_attachment":true},
     "http_api":{"endpoint":"https://3n1lhlcush.execute-api.ap-south-1.amazonaws.com","routes":["GET /health","GET /whoami","GET /db-health"],"jwt_authorizer":"Cognito staff user pool"},
     "cloudformation_stack":"echo-nonprod-runtime",
     "artifact_bucket":"echo-nonprod-artifacts-272037674623"
   },
   "active_work_order":"WO-0012",
-  "next_safe_action":"under WO-0012, inspect and order the existing PostgreSQL schema files into a controlled migration manifest, then apply the admitted NonProd schema and verify it before creating the first Enterprise/role/tool-pack records and offline reconnect synchronization test",
+  "next_safe_action":"under WO-0012, add a controlled idempotent bootstrap path for the first Enterprise, bind the confirmed Cognito principal to Owner membership and initial capability entitlements, then prove tenant-aware authenticated shared write/read and offline reconnect idempotency",
   "open_defects":[],
   "open_architecture_questions":["production BUSY local-agent transport and credentials not yet admitted","direct bank-source adapters not yet admitted","Counter Intelligence AI/vision provider not yet admitted","production runtime sizing/DR remains unadmitted until NonProd evidence exists"],
-  "completion_claims_forbidden":["production shared persistence live","production authentication live","application business domains using shared PostgreSQL before schema/repository mapping evidence","live BUSY connected","production BUSY write admitted","live bank connected","AI vision live","100 counters supported in production"]
+  "completion_claims_forbidden":["production shared persistence live","production authentication live","general application business domains using shared PostgreSQL before repository mapping and authorization evidence","live BUSY connected","production BUSY write admitted","live bank connected","AI vision live","100 counters supported in production"]
 }
