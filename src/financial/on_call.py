@@ -5,6 +5,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Iterable, Mapping
 
+from .cost_confidence import confidence_breakdown
 from .health import ExpenseEvidence, ExpenseRole, FinancialHealthEngine, PurchasePriceEvidence, SaleLineEvidence
 
 
@@ -50,6 +51,7 @@ class OwnerOnCall:
         summary = self.engine.summarize(sale_rows, purchase_rows, expense_rows)
 
         projections = summary["projections"]
+        cost_confidence = confidence_breakdown(projections)
         by_branch: dict[str, dict[str, object]] = defaultdict(
             lambda: {
                 "sales_before_tax": Decimal("0"),
@@ -126,6 +128,13 @@ class OwnerOnCall:
                 "revenue": summary["sales_without_known_cost"],
                 "message": "Sale lines lack reliable purchase-cost evidence; profit is partial.",
             })
+        if cost_confidence["weak_or_unknown_sales_before_tax"]:
+            attention.append({
+                "type": "cost_confidence_exposure",
+                "amount": cost_confidence["weak_or_unknown_sales_before_tax"],
+                "coverage_pct": cost_confidence["exact_or_strong_revenue_coverage_pct"],
+                "message": "Part of sales revenue is supported only by weak or unknown acquisition-cost evidence.",
+            })
         if summary["unclassified_expenses"]:
             attention.append({
                 "type": "unclassified_expense",
@@ -185,6 +194,7 @@ class OwnerOnCall:
             "cost_revenue_coverage_pct": summary["cost_revenue_coverage_pct"],
             "cost_confidence_counts": summary["cost_confidence_counts"],
             "cost_confidence_revenue": summary["cost_confidence_revenue"],
+            "cost_confidence": cost_confidence,
             "projection_complete": summary["projection_complete"],
             "cash_position": cash_position,
             "bank_position": bank_position,
