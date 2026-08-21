@@ -11,8 +11,10 @@ from .health import ExpenseEvidence, FinancialHealthEngine, PurchasePriceEvidenc
 class OwnerOnCall:
     """Read-only owner financial status projection.
 
-    This layer intentionally reports known, unknown, and stale evidence
-    separately. It does not mutate transactions or classify ambiguous evidence.
+    This layer reports known, unknown, and stale evidence separately. It does
+    not mutate transactions or classify ambiguous evidence. Profitability is
+    always accompanied by cost/evidence coverage so partial projections cannot
+    masquerade as complete business P&L.
     """
 
     def __init__(self, engine: FinancialHealthEngine | None = None) -> None:
@@ -50,6 +52,8 @@ class OwnerOnCall:
         by_branch: dict[str, dict[str, object]] = defaultdict(
             lambda: {
                 "sales_before_tax": Decimal("0"),
+                "sales_with_known_cost": Decimal("0"),
+                "sales_without_known_cost": Decimal("0"),
                 "estimated_cogs_known": Decimal("0"),
                 "estimated_gross_profit_known": Decimal("0"),
                 "sale_lines": 0,
@@ -62,29 +66,46 @@ class OwnerOnCall:
             row["sale_lines"] += 1
             if projection.estimated_cogs is None:
                 row["unknown_cost_lines"] += 1
+                row["sales_without_known_cost"] += projection.sales_before_tax
             else:
+                row["sales_with_known_cost"] += projection.sales_before_tax
                 row["estimated_cogs_known"] += projection.estimated_cogs
                 row["estimated_gross_profit_known"] += projection.estimated_gross_profit or Decimal("0")
 
         for e in expense_rows:
             key = e.branch or "UNALLOCATED"
             row = by_branch[key]
-            expense_key = "classified_operating_expenses" if e.category and e.classification_confidence != "unknown" else "unclassified_expenses"
+            classified = self.engine._classified(e)
+            expense_key = "classified_pnl_expenses" if classified else "unclassified_expenses"
             row.setdefault(expense_key, Decimal("0"))
             row[expense_key] += abs(e.amount)
+
+        for row in by_branch.values():
+            total = row["sales_before_tax"]
+            known = row["sales_with_known_cost"]
+            row["cost_revenue_coverage_pct"] = (
+                Decimal("0.00") if total == 0
+                else (known / total * Decimal("100")).quantize(Decimal("0.01"))
+            )
 
         attention: list[dict[str, object]] = []
         if summary["sale_lines_unknown_cost"]:
             attention.append({
                 "type": "unknown_cost",
                 "count": summary["sale_lines_unknown_cost"],
-                "message": "Sale lines lack reliable purchase-cost evidence.",
+                "revenue": summary["sales_without_known_cost"],
+                "message": "Sale lines lack reliable purchase-cost evidence; profit is partial.",
             })
         if summary["unclassified_expenses"]:
             attention.append({
                 "type": "unclassified_expense",
                 "amount": summary["unclassified_expenses"],
                 "message": "Expense evidence exists but is not authoritatively classified.",
+            })
+        if not summary["projection_complete"]:
+            attention.append({
+                "type": "projection_incomplete",
+                "message": "Profitability is a governed projection, not accounting-final P&L.",
             })
 
         now = datetime.now(timezone.utc)
@@ -97,12 +118,21 @@ class OwnerOnCall:
             "period": {"start": start, "end": end},
             "branch": branch,
             "sales_before_tax": summary["sales_before_tax"],
+            "sales_with_known_cost": summary["sales_with_known_cost"],
+            "sales_without_known_cost": summary["sales_without_known_cost"],
             "estimated_cogs_known": summary["estimated_cogs_known"],
             "estimated_gross_profit_known": summary["estimated_gross_profit_known"],
+            "gross_margin_pct_on_known_cost_sales": summary["gross_margin_pct_on_known_cost_sales"],
             "classified_operating_expenses": summary["classified_operating_expenses"],
+            "classified_finance_costs": summary["classified_finance_costs"],
             "estimated_operating_profit_known": summary["estimated_operating_profit_known"],
+            "estimated_profit_after_finance_known": summary["estimated_profit_after_finance_known"],
             "unclassified_expenses": summary["unclassified_expenses"],
+            "expense_role_totals": summary["expense_role_totals"],
             "cost_coverage_pct": summary["cost_coverage_pct"],
+            "cost_revenue_coverage_pct": summary["cost_revenue_coverage_pct"],
+            "cost_confidence_counts": summary["cost_confidence_counts"],
+            "projection_complete": summary["projection_complete"],
             "cash_position": cash_position,
             "bank_position": bank_position,
             "evidence_as_of": evidence_as_of,
