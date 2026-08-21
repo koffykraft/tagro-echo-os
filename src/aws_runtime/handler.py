@@ -4,6 +4,7 @@ import json
 from typing import Any, Mapping
 
 from src.aws_runtime.billing_runtime import RuntimeBillingError, issue_bill
+from src.aws_runtime.cash_document_runtime import CashDocumentRuntimeError, save_cash_document
 from src.aws_runtime.cash_runtime import CashRuntimeError, cash_day_readback, open_cash_day, record_cash_entry, submit_cash_day
 from src.aws_runtime.config import RuntimeConfig
 from src.aws_runtime.database import probe, tenant_context
@@ -75,9 +76,7 @@ def _operational_post(config: RuntimeConfig, claims: Mapping[str, Any], event: M
         result = operation(config, principal_id=str(context_result["principal_id"]), membership=membership, payload=payload)
     except PermissionError:
         return _response(403, {"error": f"{capability.lower()}_capability_required"})
-    except OperationalRuntimeError as exc:
-        return _response(409, {"error": "operation_rejected", "detail": str(exc)})
-    except CashRuntimeError as exc:
+    except (OperationalRuntimeError, CashRuntimeError, CashDocumentRuntimeError) as exc:
         return _response(409, {"error": "operation_rejected", "detail": str(exc)})
     except Exception as exc:
         return _response(503, {"error": "operational_runtime_unavailable", "error_type": type(exc).__name__})
@@ -243,6 +242,9 @@ def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
 
     if raw_path == "/cash-days/submit" and method == "POST":
         return _operational_post(config, claims, event, capability="CASH", operation=submit_cash_day, schema="tagro.echo.cash-day-submitted.v1")
+
+    if raw_path == "/cash-days/save" and method == "POST":
+        return _operational_post(config, claims, event, capability="CASH", operation=save_cash_document, schema="tagro.echo.cash-document-saved.v1")
 
     if raw_path == "/service/intake" and method == "POST":
         return _operational_post(config, claims, event, capability="SERVICE", operation=create_service_intake, schema="tagro.echo.service-intake.v1")
