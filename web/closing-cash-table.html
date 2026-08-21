@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TAGRO ECHO · Closing Cash Table</title>
+<style>
+:root{--grid:#111;--sale:#c9f7c9;--expense:#fff98c;--grey:#c9c9c9;--summary:#fff500;--green:#42a76b;--blue:#2368d5;--red:#ff1f14;--paper:#fff;--ink:#111}
+*{box-sizing:border-box}body{margin:0;background:#f2f2f2;color:var(--ink);font-family:Arial,Helvetica,sans-serif}.top{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#fff;border-bottom:1px solid #bbb;position:sticky;top:0;z-index:5}.top b{font-size:16px}.top small{display:block;color:#666;margin-top:2px}.top a{color:#111;text-decoration:none;border:1px solid #aaa;padding:6px 10px;border-radius:14px;font-size:12px}.wrap{padding:10px;overflow:auto}.sheet{min-width:1180px;background:var(--paper);border-collapse:collapse;table-layout:fixed;box-shadow:0 1px 4px #bbb}.sheet td,.sheet th{border:1.4px solid var(--grid);padding:2px 5px;height:28px;font-size:14px;font-weight:600;vertical-align:middle}.sheet th{font-size:16px;text-align:center}.sale{background:var(--sale)}.exp{background:var(--expense)}.grey{background:var(--grey)}.sumhi{background:var(--summary)}.cash{background:#ccf7cc}.darkgreen{background:var(--green);color:#fff;font-weight:800;font-style:italic}.red{color:var(--red);font-weight:800}.blue{color:var(--blue);font-weight:800}.right{text-align:right}.center{text-align:center}.editable{outline:none}.editable:focus{box-shadow:inset 0 0 0 2px #2d78ff;background:#eef5ff}.w-sale{width:90px}.w-bill{width:95px}.w-exp{width:95px}.w-part{width:300px}.w-label{width:155px}.w-num{width:95px}.w-small{width:80px}.w-summary{width:175px}.w-summarynum{width:110px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px}.toolbar button{border:1px solid #999;background:#fff;border-radius:5px;padding:7px 10px;font-weight:700}.toolbar .primary{background:#111;color:#fff}.note{font-size:12px;color:#555;margin:7px 0 0}.entry-row td{background:#fff}.entry-row td.saleCell{background:var(--sale)}.entry-row td.expCell{background:var(--expense)}
+@media(max-width:700px){.wrap{padding:6px}.sheet td,.sheet th{font-size:13px;height:31px}.top{padding:8px 10px}}
+</style>
+</head>
+<body>
+<header class="top"><div><b>TAGRO × ECHO</b><small>Closing Cash · Excel Table Format</small></div><a href="index.html">Home</a></header>
+<div class="wrap">
+<div class="toolbar"><button class="primary" id="addSale">+ SALE</button><button id="addExpense">+ EXPENSE</button><button id="addCash">+ CASH / OTHER</button><button id="clearBlank">Clear blank rows</button></div>
+<table class="sheet" id="sheet">
+<colgroup><col class="w-sale"><col class="w-bill"><col class="w-exp"><col class="w-part"><col class="w-label"><col class="w-num"><col class="w-small"><col class="w-small"><col class="w-small"><col class="w-summary"><col class="w-summarynum"></colgroup>
+<tbody id="body">
+<tr><th class="sale">SALE</th><th>BILL</th><th class="exp">EXPENSES</th><th></th><th class="center editable" contenteditable="true" id="dateCell">7/1/26</th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+<tr class="entry-row"><td class="saleCell editable right" contenteditable="true">1100</td><td class="editable center" contenteditable="true">649</td><td class="expCell editable right" contenteditable="true">1000</td><td class="editable" contenteditable="true">Paytm HDFC Bill NO , 655</td><td class="grey">Opening Cash</td><td class="grey editable right" contenteditable="true" id="opening">849</td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="entry-row"><td class="saleCell editable right" contenteditable="true">2595</td><td class="editable center" contenteditable="true">650</td><td class="expCell editable right" contenteditable="true">2078</td><td class="editable" contenteditable="true">Paytm HDFC Bill NO , 657</td><td class="sumhi red">Sales</td><td class="sumhi right" id="salesTop"></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="entry-row"><td class="saleCell editable right" contenteditable="true">42000</td><td class="editable center" contenteditable="true">651</td><td class="expCell editable right" contenteditable="true">270</td><td class="editable" contenteditable="true">Paytm HDFC Bill NO , 656</td><td class="grey">Sales</td><td class="grey right" id="salesPlusOpening"></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="entry-row"><td class="saleCell editable right" contenteditable="true">490</td><td class="editable center" contenteditable="true">653</td><td class="expCell editable right" contenteditable="true">70</td><td class="editable" contenteditable="true">Parm Oil</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="entry-row"><td class="saleCell editable right" contenteditable="true">1010</td><td class="editable center" contenteditable="true">654</td><td class="expCell editable right" contenteditable="true">70</td><td class="editable" contenteditable="true">DTDC Courier</td><td class="sumhi red">Expenses</td><td class="sumhi right" id="expensesTop"></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="entry-row"><td class="saleCell editable right" contenteditable="true">1000</td><td class="editable center" contenteditable="true">655</td><td class="expCell editable right" contenteditable="true">200</td><td class="editable" contenteditable="true">Auto PLR</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="entry-row"><td class="saleCell editable right" contenteditable="true">270</td><td class="editable center" contenteditable="true">656</td><td class="expCell editable right" contenteditable="true">35000</td><td class="editable" contenteditable="true">MS 382 cash Separate Box ( JJ )</td><td class="cash">Balance Cash</td><td class="cash right" id="balanceTop"></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="entry-row"><td class="saleCell editable right" contenteditable="true">2078</td><td class="editable center" contenteditable="true">657</td><td class="expCell editable right" contenteditable="true"></td><td class="editable" contenteditable="true"></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td class="sale"></td><td></td><td class="exp"></td><td></td><td class="cash"></td><td class="grey"></td><td class="cash"><b>Amount</b></td><td class="grey"></td><td class="grey"><b>Amount</b></td><td><b>Yesterday Closing</b></td><td class="right" id="yesterday">849</td></tr>
+<tr><td class="sale"></td><td></td><td class="exp"></td><td></td><td class="cash editable right" contenteditable="true">500</td><td class="grey editable right" contenteditable="true">0</td><td class="cash right calcMoney">0</td><td class="grey editable right" contenteditable="true">1</td><td class="grey right calcMoney">500</td><td><b>Today sale</b></td><td class="right" id="todaySale"></td></tr>
+<tr class="entry-row"><td class="saleCell editable right" contenteditable="true">75000</td><td class="editable" contenteditable="true">Service Cash</td><td class="expCell editable right" contenteditable="true">75000</td><td class="editable" contenteditable="true">SBI Deposit - Service Cash</td><td class="cash editable right" contenteditable="true">200</td><td class="grey editable right" contenteditable="true">0</td><td class="cash right calcMoney">0</td><td class="grey editable right" contenteditable="true">0</td><td class="grey right calcMoney">0</td><td><b>TOTAL</b></td><td class="right" id="totalCash"></td></tr>
+<tr><td class="sale"></td><td></td><td class="exp"></td><td></td><td class="cash editable right" contenteditable="true">100</td><td class="grey editable right" contenteditable="true">7</td><td class="cash right calcMoney">700</td><td class="grey editable right" contenteditable="true">0</td><td class="grey right calcMoney">0</td><td><b>Expenses</b></td><td class="right red" id="todayExpense"></td></tr>
+<tr><td class="sale"></td><td></td><td class="exp"></td><td></td><td class="cash editable right" contenteditable="true">50</td><td class="grey editable right" contenteditable="true">2</td><td class="cash right calcMoney">100</td><td class="grey editable right" contenteditable="true">1</td><td class="grey right calcMoney">50</td><td class="blue"><b>Balance Due</b></td><td class="right blue" id="balanceDue"></td></tr>
+<tr><td class="sale"></td><td></td><td class="exp"></td><td></td><td class="cash editable right" contenteditable="true">20</td><td class="grey editable right" contenteditable="true">1</td><td class="cash right calcMoney">20</td><td class="grey editable right" contenteditable="true">4</td><td class="grey right calcMoney">80</td><td><b>CASH in hand</b></td><td class="right" id="cashHand"></td></tr>
+<tr><td class="sale"></td><td></td><td class="exp"></td><td></td><td class="cash editable right" contenteditable="true">10</td><td class="grey editable right" contenteditable="true">1</td><td class="cash right calcMoney">10</td><td class="grey editable right" contenteditable="true">5</td><td class="grey right calcMoney">50</td><td class="sumhi red"><b>Difference</b></td><td class="sumhi right red" id="difference"></td></tr>
+<tr><td class="sale"></td><td></td><td class="exp"></td><td></td><td class="cash editable" contenteditable="true">Coins</td><td class="grey editable right" contenteditable="true">19</td><td class="cash right calcMoney">19</td><td class="grey editable right" contenteditable="true">19</td><td class="grey right calcMoney">19</td><td></td><td></td></tr>
+<tr class="entry-row"><td class="saleCell editable right" contenteditable="true"></td><td class="editable" contenteditable="true"></td><td class="expCell editable right red" contenteditable="true">3500</td><td class="editable red" contenteditable="true">Service Cash</td><td></td><td></td><td class="darkgreen right" id="cashCountA"></td><td></td><td class="darkgreen right" id="cashCountB"></td><td></td><td></td></tr>
+<tr class="entry-row"><td class="saleCell editable right" contenteditable="true"></td><td class="editable" contenteditable="true"></td><td class="expCell editable right red" contenteditable="true">1000</td><td class="editable red" contenteditable="true">Spare Cash Axis</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="entry-row"><td class="saleCell editable right" contenteditable="true"></td><td class="editable" contenteditable="true"></td><td class="expCell editable right red" contenteditable="true">1500</td><td class="editable red" contenteditable="true">Chitty Cash</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="entry-row"><td class="saleCell editable right" contenteditable="true"></td><td class="editable" contenteditable="true"></td><td class="expCell editable right red" contenteditable="true">2000</td><td class="editable red" contenteditable="true">GST Cash</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="entry-row"><td class="saleCell editable right" contenteditable="true"></td><td class="editable" contenteditable="true"></td><td class="expCell editable right red" contenteditable="true">4000</td><td class="editable red" contenteditable="true">Stihl Cash</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td class="sale" colspan="1"></td><td></td><td class="exp"></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td class="sale sumhi red right" id="saleBottom"></td><td></td><td class="exp sumhi red right" id="expenseBottom"></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+</tbody></table>
+<p class="note">Prototype format: editable spreadsheet-style cells. No Closing Cash entry is being written to AWS yet from this page.</p>
+</div>
+<script>
+const n=v=>{const x=Number(String(v??'').replace(/,/g,'').trim());return Number.isFinite(x)?x:0};
+function recalc(){
+ const rows=[...document.querySelectorAll('.entry-row')];
+ const sales=rows.reduce((s,r)=>s+n(r.cells[0]?.innerText),0);
+ const expenses=rows.reduce((s,r)=>s+n(r.cells[2]?.innerText),0);
+ const opening=n(document.getElementById('opening').innerText);
+ document.getElementById('salesTop').textContent=sales.toFixed(0);
+ document.getElementById('salesPlusOpening').textContent=(sales+opening).toFixed(0);
+ document.getElementById('expensesTop').textContent=expenses.toFixed(0);
+ document.getElementById('balanceTop').textContent=(opening+sales-expenses).toFixed(0);
+ document.getElementById('todaySale').textContent=sales.toFixed(0);
+ document.getElementById('totalCash').textContent=(opening+sales).toFixed(0);
+ document.getElementById('todayExpense').textContent=expenses.toFixed(0);
+ document.getElementById('balanceDue').textContent=(opening+sales-expenses).toFixed(0);
+ const denomRows=[...document.querySelectorAll('tbody tr')].slice(10,17);
+ let left=0,right=0; denomRows.forEach(r=>{if(r.cells.length>=9){const d=r.cells[4].innerText.trim()==='Coins'?1:n(r.cells[4].innerText);const q1=n(r.cells[5].innerText);const q2=n(r.cells[7].innerText);r.cells[6].textContent=(d*q1).toFixed(0);r.cells[8].textContent=(d*q2).toFixed(0);left+=d*q1;right+=d*q2;}});
+ document.getElementById('cashCountA').textContent=left.toFixed(1);
+ document.getElementById('cashCountB').textContent=right.toFixed(1);
+ document.getElementById('cashHand').textContent=right.toFixed(1);
+ document.getElementById('difference').textContent=(right-(opening+sales-expenses)).toFixed(1);
+ document.getElementById('saleBottom').textContent=sales.toFixed(0);
+ document.getElementById('expenseBottom').textContent=expenses.toFixed(0);
+}
+function addEntry(kind){
+ const anchor=[...document.querySelectorAll('.entry-row')][7];
+ const tr=document.createElement('tr');tr.className='entry-row';
+ tr.innerHTML=`<td class="saleCell editable right" contenteditable="true">${kind==='sale'?'0':''}</td><td class="editable" contenteditable="true"></td><td class="expCell editable right" contenteditable="true">${kind==='expense'?'0':''}</td><td class="editable" contenteditable="true"></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>`;
+ anchor.after(tr);tr.querySelector(kind==='expense'?'.expCell':'.saleCell').focus();recalc();
+}
+document.addEventListener('input',e=>{if(e.target.classList.contains('editable'))recalc()});
+document.getElementById('addSale').onclick=()=>addEntry('sale');
+document.getElementById('addExpense').onclick=()=>addEntry('expense');
+document.getElementById('addCash').onclick=()=>addEntry('cash');
+document.getElementById('clearBlank').onclick=()=>{[...document.querySelectorAll('.entry-row')].forEach(r=>{if([...r.cells].slice(0,4).every(c=>!c.innerText.trim()))r.remove()});recalc()};
+recalc();
+</script>
+</body></html>
