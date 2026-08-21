@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import date, datetime, timezone
 from decimal import Decimal
-from typing import Iterable
+from typing import Iterable, Mapping
 
 from .health import ExpenseEvidence, FinancialHealthEngine, PurchasePriceEvidence, SaleLineEvidence
 
@@ -36,6 +36,7 @@ class OwnerOnCall:
         cash_position: Decimal | None = None,
         bank_position: Decimal | None = None,
         evidence_as_of: datetime | None = None,
+        prism_status: Mapping[str, object] | None = None,
     ) -> dict[str, object]:
         sale_rows = tuple(
             s for s in sales
@@ -102,6 +103,23 @@ class OwnerOnCall:
                 "amount": summary["unclassified_expenses"],
                 "message": "Expense evidence exists but is not authoritatively classified.",
             })
+        if prism_status:
+            unresolved_count = int(prism_status.get("unresolved_count", 0) or 0)
+            tight_count = int(prism_status.get("tight_split_count", 0) or 0)
+            if unresolved_count:
+                attention.append({
+                    "type": "prism_unresolved",
+                    "count": unresolved_count,
+                    "amount": prism_status.get("unresolved_amount"),
+                    "message": "Financial movements remain at a broader Prism meaning pending stronger evidence.",
+                })
+            if tight_count:
+                attention.append({
+                    "type": "prism_tight_split",
+                    "count": tight_count,
+                    "amount": prism_status.get("tight_split_amount"),
+                    "message": "Competing meanings are too close; ECHO deliberately stepped back instead of forcing a classification.",
+                })
         if not summary["projection_complete"]:
             attention.append({
                 "type": "projection_incomplete",
@@ -137,11 +155,13 @@ class OwnerOnCall:
             "bank_position": bank_position,
             "evidence_as_of": evidence_as_of,
             "freshness_seconds": freshness_seconds,
+            "prism_status": dict(prism_status) if prism_status else None,
             "branches": dict(by_branch),
             "attention": tuple(attention),
             "drilldown": {
                 "sale_projections": projections,
                 "unknown_expense_evidence": summary["unknown_expense_evidence"],
+                "prism_review_queue": tuple(prism_status.get("review_queue", ())) if prism_status else (),
             },
             "status": "projection_not_accounting_final",
         }
