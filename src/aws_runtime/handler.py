@@ -7,6 +7,7 @@ from src.aws_runtime.billing_runtime import RuntimeBillingError, issue_bill
 from src.aws_runtime.config import RuntimeConfig
 from src.aws_runtime.database import probe, tenant_context
 from src.aws_runtime.import_reconciliation import reconciliation_readback
+from src.aws_runtime.on_call_runtime import OnCallRuntimeError, owner_on_call_readback
 from src.aws_runtime.operational_runtime import (
     OperationalRuntimeError,
     create_purchase_order,
@@ -112,6 +113,36 @@ def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
         if not result:
             return _response(403, {"error": "enterprise_membership_required"})
         return _response(200, {"status": "tenant_context_resolved", **result})
+
+    if raw_path == "/owner-on-call" and method == "GET":
+        subject = str(claims.get("sub") or "")
+        try:
+            context_result = tenant_context(config, subject)
+        except Exception as exc:
+            return _response(503, {"error": "tenant_context_unavailable", "error_type": type(exc).__name__})
+        if not context_result or not context_result.get("enterprises"):
+            return _response(403, {"error": "enterprise_membership_required"})
+        owner_memberships = [m for m in context_result["enterprises"] if str(m.get("role_code") or "").upper() == "OWNER"]
+        if not owner_memberships:
+            return _response(403, {"error": "owner_authority_required"})
+        if len(owner_memberships) != 1:
+            return _response(409, {"error": "enterprise_selection_required"})
+        query = event.get("queryStringParameters") or {}
+        if not isinstance(query, Mapping):
+            query = {}
+        try:
+            payload = owner_on_call_readback(
+                config,
+                enterprise_id=str(owner_memberships[0]["enterprise_id"]),
+                start=str(query.get("start") or "") or None,
+                end=str(query.get("end") or "") or None,
+                branch=str(query.get("branch") or "") or None,
+            )
+        except OnCallRuntimeError as exc:
+            return _response(400, {"error": "invalid_on_call_query", "detail": str(exc)})
+        except Exception as exc:
+            return _response(503, {"error": "owner_on_call_unavailable", "error_type": type(exc).__name__})
+        return _response(200, payload)
 
     if raw_path == "/billing/issue" and method == "POST":
         subject = str(claims.get("sub") or "")
