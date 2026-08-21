@@ -7,6 +7,9 @@ Parameters:
     Type: String
   UserPoolClientId:
     Type: String
+  WebAllowedOrigin:
+    Type: String
+    Description: Exact HTTPS origin hosting the ECHO web/PWA shell; required for authenticated browser CORS.
   LambdaExecutionRoleArn:
     Type: String
   DbSecretArn:
@@ -28,6 +31,17 @@ Resources:
     Type: AWS::Serverless::HttpApi
     Properties:
       StageName: '$default'
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref WebAllowedOrigin
+        AllowHeaders:
+          - Authorization
+          - Content-Type
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        MaxAge: 600
       Auth:
         DefaultAuthorizer: EchoStaffJwt
         Authorizers:
