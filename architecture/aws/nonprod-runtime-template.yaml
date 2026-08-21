@@ -92,6 +92,12 @@ Resources:
             ApiId: !Ref EchoHttpApi
             Path: /tenant-context
             Method: GET
+        BillingIssue:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref EchoHttpApi
+            Path: /billing/issue
+            Method: POST
         ImportReconciliation:
           Type: HttpApi
           Properties:
