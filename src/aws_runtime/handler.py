@@ -4,6 +4,7 @@ import json
 from typing import Any, Mapping
 
 from src.aws_runtime.billing_runtime import RuntimeBillingError, issue_bill
+from src.aws_runtime.cash_runtime import CashRuntimeError, cash_day_readback, open_cash_day, record_cash_entry, submit_cash_day
 from src.aws_runtime.config import RuntimeConfig
 from src.aws_runtime.database import probe, tenant_context
 from src.aws_runtime.import_reconciliation import reconciliation_readback
@@ -75,6 +76,8 @@ def _operational_post(config: RuntimeConfig, claims: Mapping[str, Any], event: M
     except PermissionError:
         return _response(403, {"error": f"{capability.lower()}_capability_required"})
     except OperationalRuntimeError as exc:
+        return _response(409, {"error": "operation_rejected", "detail": str(exc)})
+    except CashRuntimeError as exc:
         return _response(409, {"error": "operation_rejected", "detail": str(exc)})
     except Exception as exc:
         return _response(503, {"error": "operational_runtime_unavailable", "error_type": type(exc).__name__})
@@ -176,6 +179,37 @@ def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
             return _response(503, {"error": "owner_on_call_unavailable", "error_type": type(exc).__name__})
         return _response(200, payload)
 
+    if raw_path == "/cash-days" and method == "GET":
+        subject = str(claims.get("sub") or "")
+        try:
+            context_result = tenant_context(config, subject)
+        except Exception as exc:
+            return _response(503, {"error": "tenant_context_unavailable", "error_type": type(exc).__name__})
+        if not context_result or not context_result.get("enterprises"):
+            return _response(403, {"error": "enterprise_membership_required"})
+        memberships = [m for m in context_result["enterprises"] if "CASH" in {str(x).upper() for x in m.get("capabilities") or []}]
+        query = event.get("queryStringParameters") or {}
+        if not isinstance(query, Mapping):
+            query = {}
+        requested_enterprise = str(query.get("enterprise_id") or "")
+        if requested_enterprise:
+            memberships = [m for m in memberships if str(m.get("enterprise_id") or "") == requested_enterprise]
+        if len(memberships) != 1:
+            return _response(409, {"error": "enterprise_selection_required"})
+        try:
+            result = cash_day_readback(
+                config,
+                enterprise_id=str(memberships[0]["enterprise_id"]),
+                branch_code=str(query.get("branch") or "") or None,
+                business_date=str(query.get("business_date") or "") or None,
+                limit=query.get("limit") or 14,
+            )
+        except CashRuntimeError as exc:
+            return _response(400, {"error": "invalid_cash_query", "detail": str(exc)})
+        except Exception as exc:
+            return _response(503, {"error": "cash_runtime_unavailable", "error_type": type(exc).__name__})
+        return _response(200, {"schema": "tagro.echo.cash-day-readback.v1", "data": result})
+
     if raw_path == "/billing/issue" and method == "POST":
         subject = str(claims.get("sub") or "")
         payload = _json_body(event)
@@ -200,6 +234,15 @@ def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
         except Exception as exc:
             return _response(503, {"error": "billing_runtime_unavailable", "error_type": type(exc).__name__})
         return _response(201, {"schema": "tagro.echo.bill-issued.v1", "data": result})
+
+    if raw_path == "/cash-days/open" and method == "POST":
+        return _operational_post(config, claims, event, capability="CASH", operation=open_cash_day, schema="tagro.echo.cash-day-opened.v1")
+
+    if raw_path == "/cash-days/entries" and method == "POST":
+        return _operational_post(config, claims, event, capability="CASH", operation=record_cash_entry, schema="tagro.echo.cash-entry-recorded.v1")
+
+    if raw_path == "/cash-days/submit" and method == "POST":
+        return _operational_post(config, claims, event, capability="CASH", operation=submit_cash_day, schema="tagro.echo.cash-day-submitted.v1")
 
     if raw_path == "/service/intake" and method == "POST":
         return _operational_post(config, claims, event, capability="SERVICE", operation=create_service_intake, schema="tagro.echo.service-intake.v1")
