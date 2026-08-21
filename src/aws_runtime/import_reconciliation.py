@@ -9,7 +9,7 @@ from src.aws_runtime.config import RuntimeConfig
 from src.aws_runtime.database import connect
 
 
-SUBJECT_KINDS = {"branch", "person", "financial_sale_line", "financial_snapshot"}
+SUBJECT_KINDS = {"branch", "person", "financial_sale_line", "financial_snapshot", "stock_count_line"}
 DIMENSION_CODES = {
     "branch.code",
     "branch.name",
@@ -26,6 +26,7 @@ DIMENSION_CODES = {
     "person.active_state",
     "financial.sale_cost_evidence",
     "financial.export_manifest",
+    "stock_count.observation",
 }
 
 
@@ -58,8 +59,10 @@ def record_observations(
     """Store source evidence without granting canonical authority.
 
     This function only writes import_sources/import_observations. Financial
-    projection observations are deliberately supporting evidence: their presence
-    never inserts or updates canonical sales, purchases, stock, cash or bank state.
+    projection observations and historical stock-count lines are deliberately
+    supporting evidence: their presence never inserts or updates canonical sales,
+    purchases, stock, cash or bank state. A stock-count observation may preserve
+    raw item naming and a proposed name match, but neither is canonical identity.
     """
     if not enterprise_id or not source_system or not source_locator or not source_class:
         raise ValueError("enterprise_id, source_system, source_locator and source_class are required")
