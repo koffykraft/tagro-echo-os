@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=yes">
+<title>TAGRO ECHO · Closing Cash Ver10</title>
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fff}#frame{width:100%;height:100%;border:0;display:block}</style>
+</head>
+<body>
+<iframe id="frame" title="TAGRO ECHO Closing Cash Ver10"></iframe>
+<script>
+(()=>{
+'use strict';
+const frame=document.getElementById('frame');
+frame.src='closing-cash-v07-balanced.html?v=10-mobile-calm-20260821';
+frame.addEventListener('load',()=>{
+ const w=frame.contentWindow,d=frame.contentDocument;if(!d)return;
+ d.title='TAGRO ECHO · Closing Cash Ver10';
+ const sub=d.querySelector('.sub');if(sub)sub.textContent='Ver10 · calm vertical mobile sheet';
+
+ // Keyboard semantics: ordinary text keyboard with Return/Enter.
+ function normalizeInputs(){d.querySelectorAll('.grid input,.denom input').forEach(el=>{el.type='text';el.setAttribute('inputmode','text');el.setAttribute('enterkeyhint','enter');el.setAttribute('autocomplete','off');el.removeAttribute('pattern')})}
+ normalizeInputs();new MutationObserver(normalizeInputs).observe(d.body,{subtree:true,childList:true});
+
+ // Column-aware Return navigation. No mode button is required.
+ function focusCell(row,key){if(!row)return false;const el=row.querySelector(`input[data-key="${key}"]`);if(!el)return false;el.focus({preventScroll:true});try{el.select()}catch{}el.scrollIntoView({block:'nearest',inline:'nearest'});return true}
+ function nextRow(row){let n=row?.nextElementSibling;if(n)return n;if(typeof w.addRow==='function'){try{w.addRow();n=row.nextElementSibling}catch{}}return n}
+ function prevRow(row){return row?.previousElementSibling||null}
+ function routeEntry(el,back){const row=el.closest('tr[data-row]'),key=el.dataset.key;if(!row||!key)return false;if(!back){if(key==='sale')return focusCell(row,'bill');if(key==='bill')return focusCell(nextRow(row),'sale');if(key==='expense')return focusCell(row,'part');if(key==='part')return focusCell(nextRow(row),'expense')}else{if(key==='bill')return focusCell(row,'sale');if(key==='sale')return focusCell(prevRow(row),'bill');if(key==='part')return focusCell(row,'expense');if(key==='expense')return focusCell(prevRow(row),'part')}return false}
+ function routeDenom(el,back){const inputs=[...d.querySelectorAll('.denom input[data-denom]')],i=inputs.indexOf(el);if(i<0)return false;const target=inputs[Math.max(0,Math.min(inputs.length-1,i+(back?-1:1)))];if(!target)return false;target.focus({preventScroll:true});try{target.select()}catch{}target.scrollIntoView({block:'nearest'});return true}
+ d.addEventListener('keydown',e=>{if(e.key!=='Enter')return;const el=e.target;if(!(el instanceof w.HTMLInputElement))return;let ok=false;if(el.matches('.grid input[data-key]'))ok=routeEntry(el,e.shiftKey);else if(el.matches('.denom input[data-denom]'))ok=routeDenom(el,e.shiftKey);if(ok){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation()}},true);
+
+ // Mobile calm shell: menu only when context/actions are needed.
+ const style=d.createElement('style');style.textContent=`
+ @media(max-width:760px){
+  html,body{overflow-x:hidden!important;background:#fff!important}
+  .page{padding:0 5px 18px!important;max-width:none!important}
+  .topline,.meta,.tools,.hint,.sheet-note{display:none!important}
+  .workspace{display:block!important;margin:0!important}
+  .sheetbox{border-top:0!important}
+  .grid{width:100%!important;table-layout:fixed!important}
+  .grid col.sale{width:21%!important}.grid col.bill{width:22%!important}.grid col.exp{width:22%!important}.grid col.part{width:35%!important}
+  .grid th,.grid td{height:34px!important}.grid th{font-size:10px!important}.grid input{height:33px!important;font-size:12px!important;padding:3px 4px!important}
+  .sidewrap{display:block!important;margin-top:7px!important}
+  .sidebox{margin:0 0 7px!important}
+  .sidebox h3{font-size:11px!important;padding:5px 6px!important}
+  .denom td,.denom th{height:31px!important}.denom input{height:30px!important;font-size:12px!important}
+  .summary{grid-template-columns:1fr 88px!important}.summary div{min-height:31px!important;font-size:11px!important;padding:5px 6px!important}
+  #echoMobileBar{display:flex!important}
+  #echoDrawer{display:none!important}#echoDrawer.open{display:block!important}
+ }
+ @media(min-width:761px){#echoMobileBar,#echoDrawer{display:none!important}}
+ `;d.head.appendChild(style);
+
+ const bar=d.createElement('div');bar.id='echoMobileBar';bar.innerHTML='<button id="echoMenuBtn" type="button">☰</button><div id="echoMiniTitle">Closing Cash</div><button id="echoQuickSave" type="button">Review & Save</button>';
+ Object.assign(bar.style,{display:'none',alignItems:'center',gap:'8px',position:'sticky',top:'0',zIndex:'60',background:'#fff',borderBottom:'1px solid #bbb',padding:'5px'});
+ const menuBtn=bar.querySelector('#echoMenuBtn'),mini=bar.querySelector('#echoMiniTitle'),quick=bar.querySelector('#echoQuickSave');
+ [menuBtn,quick].forEach(b=>Object.assign(b.style,{height:'30px',border:'1px solid #999',borderRadius:'4px',background:'#fff',fontWeight:'700'}));menuBtn.style.width='38px';quick.style.marginLeft='auto';quick.style.padding='0 9px';quick.style.background='#e85d22';quick.style.color='#fff';quick.style.borderColor='#e85d22';Object.assign(mini.style,{fontWeight:'800',fontSize:'12px'});
+ d.body.insertBefore(bar,d.body.firstChild);
+
+ const drawer=d.createElement('div');drawer.id='echoDrawer';
+ Object.assign(drawer.style,{background:'#fff',borderBottom:'1px solid #bbb',padding:'7px',position:'sticky',top:'41px',zIndex:'59',boxShadow:'0 3px 10px #0002'});
+ const date=d.getElementById('date'),branch=d.getElementById('branch'),person=d.getElementById('person');
+ drawer.innerHTML='<div style="display:grid;grid-template-columns:1fr 82px 1.25fr;gap:5px" id="echoContext"></div><div style="display:flex;gap:5px;margin-top:7px" id="echoActions"></div>';
+ d.body.insertBefore(drawer,bar.nextSibling);
+ const ctx=drawer.querySelector('#echoContext');
+ function wrap(label,el){const x=d.createElement('label');x.style.fontSize='9px';x.style.color='#666';x.textContent=label;x.appendChild(el);Object.assign(el.style,{width:'100%',height:'31px',marginTop:'2px'});return x}
+ ctx.append(wrap('Date',date));ctx.append(wrap('Branch',branch));ctx.append(wrap('Entered by',person));
+ const acts=drawer.querySelector('#echoActions'),undo=d.getElementById('undo'),review=d.getElementById('review');
+ if(undo){undo.textContent='Undo';acts.appendChild(undo)}
+ if(review){review.textContent='Review & Save';acts.appendChild(review)}
+ [undo,review].filter(Boolean).forEach(b=>Object.assign(b.style,{height:'31px',border:'1px solid #999',borderRadius:'4px',padding:'0 9px'}));
+ function title(){mini.textContent=`Closing Cash · ${branch?.value||''}`}
+ title();branch?.addEventListener('change',title);
+ menuBtn.onclick=()=>drawer.classList.toggle('open');quick.onclick=()=>review?.click();
+
+ // Remove obsolete mode controls entirely on mobile; navigation derives from the tapped column.
+ ['saleMode','expenseMode','cashMode'].forEach(id=>{const el=d.getElementById(id);if(el)el.remove()});
+ });
+})();
+</script>
+</body>
+</html>
