@@ -5,7 +5,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Iterable, Mapping
 
-from .health import ExpenseEvidence, FinancialHealthEngine, PurchasePriceEvidence, SaleLineEvidence
+from .health import ExpenseEvidence, ExpenseRole, FinancialHealthEngine, PurchasePriceEvidence, SaleLineEvidence
 
 
 class OwnerOnCall:
@@ -59,6 +59,12 @@ class OwnerOnCall:
                 "estimated_gross_profit_known": Decimal("0"),
                 "sale_lines": 0,
                 "unknown_cost_lines": 0,
+                "classified_direct_selling_costs": Decimal("0"),
+                "classified_branch_operating_expenses": Decimal("0"),
+                "classified_central_overhead": Decimal("0"),
+                "classified_finance_costs": Decimal("0"),
+                "classified_pnl_expenses": Decimal("0"),
+                "unclassified_expenses": Decimal("0"),
             }
         )
         for projection in projections:
@@ -73,13 +79,24 @@ class OwnerOnCall:
                 row["estimated_cogs_known"] += projection.estimated_cogs
                 row["estimated_gross_profit_known"] += projection.estimated_gross_profit or Decimal("0")
 
+        role_keys = {
+            ExpenseRole.DIRECT: "classified_direct_selling_costs",
+            ExpenseRole.BRANCH: "classified_branch_operating_expenses",
+            ExpenseRole.CENTRAL: "classified_central_overhead",
+            ExpenseRole.FINANCE: "classified_finance_costs",
+        }
+        pnl_roles = set(role_keys)
         for e in expense_rows:
             key = e.branch or "UNALLOCATED"
             row = by_branch[key]
             classified = self.engine._classified(e)
-            expense_key = "classified_pnl_expenses" if classified else "unclassified_expenses"
-            row.setdefault(expense_key, Decimal("0"))
-            row[expense_key] += abs(e.amount)
+            if not classified:
+                row["unclassified_expenses"] += abs(e.amount)
+                continue
+            if e.role in pnl_roles:
+                amount = abs(e.amount)
+                row[role_keys[e.role]] += amount
+                row["classified_pnl_expenses"] += amount
 
         for row in by_branch.values():
             total = row["sales_before_tax"]
@@ -88,6 +105,18 @@ class OwnerOnCall:
                 Decimal("0.00") if total == 0
                 else (known / total * Decimal("100")).quantize(Decimal("0.01"))
             )
+            row["estimated_contribution_known"] = (
+                row["estimated_gross_profit_known"] - row["classified_direct_selling_costs"]
+            ).quantize(Decimal("0.01"))
+            row["estimated_branch_contribution_known"] = (
+                row["estimated_contribution_known"] - row["classified_branch_operating_expenses"]
+            ).quantize(Decimal("0.01"))
+            row["estimated_operating_profit_known"] = (
+                row["estimated_branch_contribution_known"] - row["classified_central_overhead"]
+            ).quantize(Decimal("0.01"))
+            row["estimated_profit_after_finance_known"] = (
+                row["estimated_operating_profit_known"] - row["classified_finance_costs"]
+            ).quantize(Decimal("0.01"))
 
         attention: list[dict[str, object]] = []
         if summary["sale_lines_unknown_cost"]:
@@ -141,8 +170,13 @@ class OwnerOnCall:
             "estimated_cogs_known": summary["estimated_cogs_known"],
             "estimated_gross_profit_known": summary["estimated_gross_profit_known"],
             "gross_margin_pct_on_known_cost_sales": summary["gross_margin_pct_on_known_cost_sales"],
+            "classified_direct_selling_costs": summary["classified_direct_selling_costs"],
+            "classified_branch_operating_expenses": summary["classified_branch_operating_expenses"],
+            "classified_central_overhead": summary["classified_central_overhead"],
             "classified_operating_expenses": summary["classified_operating_expenses"],
             "classified_finance_costs": summary["classified_finance_costs"],
+            "estimated_contribution_known": summary["estimated_contribution_known"],
+            "estimated_branch_contribution_known": summary["estimated_branch_contribution_known"],
             "estimated_operating_profit_known": summary["estimated_operating_profit_known"],
             "estimated_profit_after_finance_known": summary["estimated_profit_after_finance_known"],
             "unclassified_expenses": summary["unclassified_expenses"],
