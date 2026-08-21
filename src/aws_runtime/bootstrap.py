@@ -18,6 +18,7 @@ class BootstrapRequest:
     owner_external_identity_ref: str
     owner_display_name: str
     capabilities: tuple[str, ...]
+    owner_email: str | None = None
 
 
 def _clean_code(value: Any) -> str:
@@ -32,6 +33,7 @@ def validate_request(event: Mapping[str, Any]) -> BootstrapRequest:
     enterprise_name = str(event.get("enterprise_name") or "").strip()
     owner_external_identity_ref = str(event.get("owner_external_identity_ref") or "").strip()
     owner_display_name = str(event.get("owner_display_name") or "Owner").strip()
+    owner_email = str(event.get("owner_email") or "").strip().lower() or None
     raw_capabilities = event.get("capabilities") or []
 
     if not enterprise_code or len(enterprise_code) > 40:
@@ -40,6 +42,8 @@ def validate_request(event: Mapping[str, Any]) -> BootstrapRequest:
         raise ValueError("invalid_enterprise_name")
     if not owner_external_identity_ref or len(owner_external_identity_ref) > 200:
         raise ValueError("invalid_owner_external_identity_ref")
+    if owner_email is not None and (len(owner_email) > 254 or "@" not in owner_email):
+        raise ValueError("invalid_owner_email")
     if not isinstance(raw_capabilities, Sequence) or isinstance(raw_capabilities, (str, bytes)):
         raise ValueError("invalid_capabilities")
 
@@ -55,6 +59,7 @@ def validate_request(event: Mapping[str, Any]) -> BootstrapRequest:
         owner_external_identity_ref=owner_external_identity_ref,
         owner_display_name=owner_display_name,
         capabilities=capabilities,
+        owner_email=owner_email,
     )
 
 
@@ -69,6 +74,7 @@ def bootstrap(config: RuntimeConfig, request: BootstrapRequest) -> dict[str, Any
     enterprise_id = _stable_id("enterprise", request.enterprise_code)
     principal_id = _stable_id("principal", request.owner_external_identity_ref)
     membership_id = _stable_id("membership", f"{enterprise_id}:{principal_id}:OWNER")
+    user_id = _stable_id("user", f"{enterprise_id}:{principal_id}") if request.owner_email else None
 
     with connect(config) as conn:
         with conn.transaction():
@@ -112,6 +118,25 @@ def bootstrap(config: RuntimeConfig, request: BootstrapRequest) -> dict[str, Any
                 (membership_id, enterprise_id, principal_id),
             )
 
+            # The operational runtime deliberately requires a separate active users row.
+            # Create it only when an explicit email is supplied to this private NonProd
+            # bootstrap; never invent an email from the Cognito subject or display name.
+            if request.owner_email and user_id:
+                conn.execute(
+                    """
+                    insert into users (user_id, enterprise_id, principal_id, name, email, role, branch_id, active)
+                    values (%s, %s, %s, %s, %s, 'OWNER', null, true)
+                    on conflict (user_id) do nothing
+                    """,
+                    (user_id, enterprise_id, principal_id, request.owner_display_name, request.owner_email),
+                )
+                user = conn.execute(
+                    "select user_id,email,role,active from users where user_id=%s and enterprise_id=%s and principal_id=%s",
+                    (user_id, enterprise_id, principal_id),
+                ).fetchone()
+                if not user or user[1] != request.owner_email or str(user[2]).upper() != "OWNER" or user[3] is not True:
+                    raise RuntimeError("owner_user_bootstrap_drift")
+
             for capability_code in request.capabilities:
                 conn.execute(
                     """
@@ -148,6 +173,7 @@ def bootstrap(config: RuntimeConfig, request: BootstrapRequest) -> dict[str, Any
         "enterprise_code": request.enterprise_code,
         "principal_id": principal_id,
         "membership_id": membership_id,
+        "user_id": user_id,
         "role_code": "OWNER",
         "enabled_capabilities": [row[0] for row in enabled],
     }
