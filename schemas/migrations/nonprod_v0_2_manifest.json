@@ -64,6 +64,12 @@
       "path": "schemas/business/cash_entry_evidence_v0_4.sql",
       "git_blob_sha": "52ddf67fd3a257954a08ad64ea13fd21c506bb58",
       "depends_on": ["0001-platform-foundation-v0.2", "0004-operational-extensions-v0.3"]
+    },
+    {
+      "id": "0011-cash-saved-document-v0.4",
+      "path": "schemas/business/cash_saved_document_v0_4.sql",
+      "git_blob_sha": "b312e271eb3f355ca0cb420eef3447e71b4fc31f",
+      "depends_on": ["0010-cash-entry-evidence-v0.4"]
     }
   ]
 }
