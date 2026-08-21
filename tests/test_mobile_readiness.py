@@ -7,7 +7,7 @@ WEB = ROOT / "web"
 
 
 class MobileReadinessTests(unittest.TestCase):
-    pages = ["index.html","counter.html","service.html","cash.html","bank.html","payments.html","documents.html"]
+    pages = ["index.html","on-call.html","counter.html","service.html","cash.html","bank.html","payments.html","documents.html"]
 
     def test_required_mobile_pages_exist_and_have_viewport(self):
         for name in self.pages:
@@ -46,6 +46,14 @@ class MobileReadinessTests(unittest.TestCase):
         self.assertIn("OFFLINE", text)
         self.assertIn("ONLINE", text)
         self.assertIn("Pending local work", text)
+        self.assertIn('href="on-call.html"', text)
+
+    def test_owner_on_call_refuses_to_invent_missing_runtime_data(self):
+        text = (WEB / "on-call.html").read_text(encoding="utf-8")
+        self.assertIn("/owner-on-call", text)
+        self.assertIn("No financial value has been invented or substituted.", text)
+        self.assertIn("not accounting final", text)
+        self.assertNotIn("demo", text.lower())
 
 
 if __name__ == "__main__":
