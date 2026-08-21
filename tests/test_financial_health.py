@@ -30,13 +30,30 @@ class FinancialHealthTests(unittest.TestCase):
         result = self.engine.project_sale(sale, purchases)
         self.assertEqual(result.cost.confidence, CostConfidence.STRONG)
         self.assertEqual(result.cost.reference_count, 4)
-        self.assertEqual(result.cost.unit_cost, Decimal("102.50"))
+        self.assertEqual(result.cost.unit_cost, Decimal("100.00"))
         self.assertEqual(result.cost.reference_low, Decimal("90.00"))
         self.assertEqual(result.cost.reference_high, Decimal("110.00"))
         self.assertEqual(result.cost.latest_reference, Decimal("100.00"))
         self.assertEqual(result.cost.reference_scope, "same_branch")
-        self.assertEqual(result.estimated_cogs, Decimal("205.00"))
-        self.assertEqual(result.estimated_gross_profit, Decimal("95.00"))
+        self.assertIn("LIFO-style", result.cost.policy)
+        self.assertEqual(result.estimated_cogs, Decimal("200.00"))
+        self.assertEqual(result.estimated_gross_profit, Decimal("100.00"))
+
+    def test_protected_high_is_comparison_only_not_primary_cost(self):
+        sale = SaleLineEvidence("S1H", date(2026, 8, 20), "KVR", "ITEM1", Decimal("1"), Decimal("300"))
+        purchases = [
+            PurchasePriceEvidence("ITEM1", date(2026, 8, 19), Decimal("100"), "KVR", source_ref="LATEST"),
+            PurchasePriceEvidence("ITEM1", date(2026, 8, 10), Decimal("101"), "KVR", source_ref="P2"),
+            PurchasePriceEvidence("ITEM1", date(2026, 7, 1), Decimal("99"), "KVR", source_ref="P3"),
+            PurchasePriceEvidence("ITEM1", date(2026, 6, 1), Decimal("98"), "KVR", source_ref="P4"),
+            PurchasePriceEvidence("ITEM1", date(2026, 4, 2), Decimal("180"), "KVR", source_ref="HIGH"),
+        ]
+        result = self.engine.project_sale(sale, purchases)
+        self.assertEqual(result.cost.unit_cost, Decimal("100.00"))
+        self.assertEqual(result.cost.latest_reference, Decimal("100.00"))
+        self.assertEqual(result.cost.reference_high, Decimal("180.00"))
+        self.assertEqual(result.cost.reference_count, 5)
+        self.assertIn("protected high", result.cost.policy)
 
     def test_falls_back_to_prior_financial_year(self):
         sale = SaleLineEvidence("S2", date(2026, 5, 1), "KVR", "ITEM2", Decimal("1"), Decimal("250"))
@@ -46,7 +63,7 @@ class FinancialHealthTests(unittest.TestCase):
         ]
         result = self.engine.project_sale(sale, purchases)
         self.assertEqual(result.cost.confidence, CostConfidence.WEAK)
-        self.assertEqual(result.cost.unit_cost, Decimal("145.00"))
+        self.assertEqual(result.cost.unit_cost, Decimal("150.00"))
         self.assertIn("FY 2025-26", result.cost.policy)
 
     def test_enterprise_fallback_when_branch_has_no_purchase_history(self):
@@ -59,6 +76,7 @@ class FinancialHealthTests(unittest.TestCase):
         result = self.engine.project_sale(sale, purchases)
         self.assertEqual(result.cost.reference_scope, "enterprise_fallback")
         self.assertEqual(result.cost.confidence, CostConfidence.STRONG)
+        self.assertEqual(result.cost.unit_cost, Decimal("120.00"))
 
     def test_stock_transfers_do_not_create_cost_reference(self):
         sale = SaleLineEvidence("S3", date(2026, 8, 1), "KVR", "ITEM3", Decimal("1"), Decimal("200"))
