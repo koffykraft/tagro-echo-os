@@ -37,6 +37,22 @@ def _request_hash(payload: Mapping[str, Any]) -> str:
     return sha256(json.dumps(stable, sort_keys=True, separators=(",", ":"), default=str).encode()).hexdigest()
 
 
+def _stock_assessment(lines: list[dict[str, Any]], provisional_rows: list[tuple[Any, ...]]):
+    """Assess only known provisional physical stock; absence remains UNKNOWN."""
+    provisional: dict[str, dict[str, Any]] = {}
+    for row in provisional_rows:
+        product_id = str(row[0])
+        provisional[product_id] = {
+            "quantity": Decimal(str(row[1])),
+            "source_observation_id": str(row[2]),
+            "observed_at": row[3],
+            "truth_state": str(row[4]),
+        }
+    shortages = [line for line in lines if line["product_id"] in provisional and provisional[line["product_id"]]["quantity"] < line["quantity"]]
+    unknown = [line for line in lines if line["product_id"] not in provisional]
+    return provisional, shortages, unknown
+
+
 def issue_bill(
     config: RuntimeConfig,
     *,
@@ -129,6 +145,8 @@ def issue_bill(
                     "invoice_total": str(header[0]),
                     "payment_status": header[1],
                     "created_at": header[2].isoformat(),
+                    "stock_evidence_state": prior.get("stock_evidence_state", "unknown"),
+                    "stock_unknown_count": int(prior.get("stock_unknown_count", 0)),
                     "busy_status": "not_booked_not_confirmed",
                     "busy_series": None,
                     "idempotent_replay": True,
@@ -146,17 +164,25 @@ def issue_bill(
                 if row["gst_rate"] != products[row["product_id"]]:
                     raise RuntimeBillingError(f"GST rate mismatch for product {row['product_id']}")
 
-            stock_rows = connection.execute(
-                "select product_id, quantity from stock_position where enterprise_id=%s and branch_id=%s and product_id = any(%s)",
+            provisional_rows = connection.execute(
+                "select product_id,quantity,source_observation_id,observed_at,truth_state from provisional_stock_position where enterprise_id=%s and branch_id=%s and product_id = any(%s)",
                 (enterprise_id, branch_id, product_ids),
             ).fetchall()
-            stock = {str(pid): Decimal(str(qty)) for pid, qty in stock_rows}
-            shortages = [row for row in normalized if stock.get(row["product_id"], Decimal("0")) < row["quantity"]]
+            provisional, shortages, unknown_stock = _stock_assessment(normalized, provisional_rows)
+
+            # Canonical movement-only position is retained as a comparison ray. During
+            # count-led transition it is not promoted to physical opening-stock truth.
+            canonical_rows = connection.execute(
+                "select product_id,quantity from stock_position where enterprise_id=%s and branch_id=%s and product_id = any(%s)",
+                (enterprise_id, branch_id, product_ids),
+            ).fetchall()
+            canonical_comparison = {str(pid): Decimal(str(qty)) for pid, qty in canonical_rows}
+
             override = bool(payload.get("owner_stock_override", False))
             reason = str(payload.get("stock_override_reason") or "").strip()
             if shortages:
                 if str(membership.get("role_code") or "").upper() != "OWNER" or not override or not reason:
-                    raise RuntimeBillingError("insufficient stock; explicit owner override with reason required")
+                    raise RuntimeBillingError("known provisional stock shortage; explicit owner override with reason required")
 
             customer_id = str(payload.get("customer_id") or "").strip() or None
             if customer_id:
@@ -173,16 +199,48 @@ def issue_bill(
                 "insert into sale_headers(sale_id,enterprise_id,branch_id,customer_id,created_at,payment_status,source_quote_id,total) values(%s,%s,%s,%s,%s,%s,null,%s)",
                 (sale_id, enterprise_id, branch_id, customer_id, now, payment_status, invoice_total),
             )
+            shortage_products = {row["product_id"] for row in shortages}
+            unknown_products = {row["product_id"] for row in unknown_stock}
             for line_no, row in enumerate(normalized, start=1):
                 connection.execute(
                     "insert into sale_lines(sale_id,line_no,product_id,quantity,unit_price,discount,gst_rate,line_total) values(%s,%s,%s,%s,%s,%s,%s,%s)",
                     (sale_id, line_no, row["product_id"], row["quantity"], row["unit_price"], row["discount"], row["gst_rate"], row["line_total"]),
                 )
                 movement_id = f"{sale_id}-stock-{line_no}"
+                movement_note = reason if row["product_id"] in shortage_products else ("stock_evidence_unknown_at_sale" if row["product_id"] in unknown_products else "")
                 connection.execute(
                     "insert into stock_movements(movement_id,enterprise_id,branch_id,product_id,quantity_delta,movement_type,occurred_at,reference_type,reference_id,note) values(%s,%s,%s,%s,%s,'sale',%s,'sale',%s,%s)",
-                    (movement_id, enterprise_id, branch_id, row["product_id"], -row["quantity"], now, sale_id, reason if shortages else ""),
+                    (movement_id, enterprise_id, branch_id, row["product_id"], -row["quantity"], now, sale_id, movement_note),
                 )
+
+            if shortages:
+                stock_evidence_state = "known_shortage_owner_override"
+            elif unknown_stock:
+                stock_evidence_state = "partial_or_full_unknown"
+            else:
+                stock_evidence_state = "provisional_known"
+
+            stock_basis: dict[str, Any] = {}
+            for row in normalized:
+                pid = row["product_id"]
+                if pid in provisional:
+                    p = provisional[pid]
+                    observed_at = p["observed_at"]
+                    stock_basis[pid] = {
+                        "state": "provisional",
+                        "quantity_before_sale": str(p["quantity"]),
+                        "source_observation_id": p["source_observation_id"],
+                        "observed_at": observed_at.isoformat() if hasattr(observed_at, "isoformat") else str(observed_at),
+                        "truth_state": p["truth_state"],
+                        "canonical_movement_comparison": str(canonical_comparison[pid]) if pid in canonical_comparison else None,
+                    }
+                else:
+                    stock_basis[pid] = {
+                        "state": "unknown",
+                        "quantity_before_sale": None,
+                        "source_observation_id": None,
+                        "canonical_movement_comparison": str(canonical_comparison[pid]) if pid in canonical_comparison else None,
+                    }
 
             event_payload = {
                 "schema": "tagro.echo.billing-admission.v1",
@@ -194,6 +252,10 @@ def issue_bill(
                 "invoice_total": str(invoice_total),
                 "stock_exception": bool(shortages),
                 "stock_exception_reason": reason if shortages else "",
+                "stock_evidence_state": stock_evidence_state,
+                "stock_unknown_count": len(unknown_stock),
+                "stock_unknown_products": sorted(unknown_products),
+                "stock_basis": stock_basis,
                 "busy_status": "not_booked_not_confirmed",
             }
             connection.execute(
@@ -206,6 +268,8 @@ def issue_bill(
         "invoice_total": str(invoice_total),
         "payment_status": payment_status,
         "created_at": now.isoformat(),
+        "stock_evidence_state": stock_evidence_state,
+        "stock_unknown_count": len(unknown_stock),
         "busy_status": "not_booked_not_confirmed",
         "busy_series": None,
         "idempotent_replay": False,
