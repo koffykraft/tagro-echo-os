@@ -38,7 +38,7 @@ def _request_hash(payload: Mapping[str, Any]) -> str:
 
 
 def _stock_assessment(lines: list[dict[str, Any]], provisional_rows: list[tuple[Any, ...]]):
-    """Assess only known provisional physical stock; absence remains UNKNOWN."""
+    """Assess aggregate demand only against known provisional stock; absence remains UNKNOWN."""
     provisional: dict[str, dict[str, Any]] = {}
     for row in provisional_rows:
         product_id = str(row[0])
@@ -48,8 +48,22 @@ def _stock_assessment(lines: list[dict[str, Any]], provisional_rows: list[tuple[
             "observed_at": row[3],
             "truth_state": str(row[4]),
         }
-    shortages = [line for line in lines if line["product_id"] in provisional and provisional[line["product_id"]]["quantity"] < line["quantity"]]
-    unknown = [line for line in lines if line["product_id"] not in provisional]
+
+    demand: dict[str, Decimal] = {}
+    for line in lines:
+        product_id = line["product_id"]
+        demand[product_id] = demand.get(product_id, Decimal("0")) + line["quantity"]
+
+    shortages = [
+        {"product_id": product_id, "quantity": quantity}
+        for product_id, quantity in demand.items()
+        if product_id in provisional and provisional[product_id]["quantity"] < quantity
+    ]
+    unknown = [
+        {"product_id": product_id, "quantity": quantity}
+        for product_id, quantity in demand.items()
+        if product_id not in provisional
+    ]
     return provisional, shortages, unknown
 
 
