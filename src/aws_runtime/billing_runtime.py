@@ -78,7 +78,9 @@ def issue_bill(
 
     The authenticated principal and server-side membership determine authority.
     Client-supplied role/authority is ignored. Sale, stock movements and audit
-    event are committed together. BUSY booking is never asserted here.
+    event are committed together. A tendered payment mode may create separate
+    staff-affirmed receipt evidence, but never bank/cash reconciliation. BUSY
+    booking is never asserted here.
     """
     enterprise_id = str(membership.get("enterprise_id") or "")
     if not enterprise_id or str(payload.get("enterprise_id") or enterprise_id) != enterprise_id:
@@ -92,6 +94,10 @@ def issue_bill(
     lines = payload.get("lines")
     if not branch_code or not idempotency_key or not isinstance(lines, list) or not lines:
         raise RuntimeBillingError("branch_code, idempotency_key and lines are required")
+
+    payment_mode = str(payload.get("payment_mode") or "").strip().lower()
+    if payment_mode not in {"cash", "upi", "card", "bank", "credit"}:
+        raise RuntimeBillingError("payment_mode must be cash, upi, card, bank or credit")
 
     normalized: list[dict[str, Any]] = []
     taxable_total = Decimal("0")
@@ -120,6 +126,8 @@ def issue_bill(
     invoice_total = _money(taxable_total + tax_total)
     sale_id = _stable_id("echo-sale", enterprise_id, idempotency_key)
     event_id = _stable_id("echo-event", enterprise_id, idempotency_key)
+    payment_id = None if payment_mode == "credit" else _stable_id("echo-payment", enterprise_id, f"{idempotency_key}|payment")
+    payment_event_id = None if payment_id is None else _stable_id("echo-payment-event", enterprise_id, f"{idempotency_key}|payment")
     request_hash = _request_hash({**payload, "enterprise_id": enterprise_id})
     now = datetime.now(timezone.utc)
 
@@ -139,6 +147,7 @@ def issue_bill(
             ).fetchone()
             if not actor:
                 raise RuntimeBillingError("authenticated principal has no active ECHO user")
+            actor_id = str(actor[0])
 
             existing = connection.execute(
                 "select payload_json from echo_events where event_id=%s and enterprise_id=%s",
@@ -158,6 +167,8 @@ def issue_bill(
                     "bill_id": sale_id,
                     "invoice_total": str(header[0]),
                     "payment_status": header[1],
+                    "payment_id": prior.get("payment_id"),
+                    "payment_evidence_state": prior.get("payment_evidence_state", "none"),
                     "created_at": header[2].isoformat(),
                     "stock_evidence_state": prior.get("stock_evidence_state", "unknown"),
                     "stock_unknown_count": int(prior.get("stock_unknown_count", 0)),
@@ -184,8 +195,6 @@ def issue_bill(
             ).fetchall()
             provisional, shortages, unknown_stock = _stock_assessment(normalized, provisional_rows)
 
-            # Canonical movement-only position is retained as a comparison ray. During
-            # count-led transition it is not promoted to physical opening-stock truth.
             canonical_rows = connection.execute(
                 "select product_id,quantity from stock_position where enterprise_id=%s and branch_id=%s and product_id = any(%s)",
                 (enterprise_id, branch_id, product_ids),
@@ -207,8 +216,8 @@ def issue_bill(
                 if not customer:
                     raise RuntimeBillingError("customer does not belong to enterprise")
 
-            payment_mode = str(payload.get("payment_mode") or "").strip().lower()
-            payment_status = "unpaid" if payment_mode == "credit" else "paid"
+            payment_status = "unpaid" if payment_mode == "credit" else "receipt_claimed_unreconciled"
+            payment_evidence_state = "none" if payment_mode == "credit" else "staff_affirmed_unreconciled"
             connection.execute(
                 "insert into sale_headers(sale_id,enterprise_id,branch_id,customer_id,created_at,payment_status,source_quote_id,total) values(%s,%s,%s,%s,%s,%s,null,%s)",
                 (sale_id, enterprise_id, branch_id, customer_id, now, payment_status, invoice_total),
@@ -225,6 +234,38 @@ def issue_bill(
                 connection.execute(
                     "insert into stock_movements(movement_id,enterprise_id,branch_id,product_id,quantity_delta,movement_type,occurred_at,reference_type,reference_id,note) values(%s,%s,%s,%s,%s,'sale',%s,'sale',%s,%s)",
                     (movement_id, enterprise_id, branch_id, row["product_id"], -row["quantity"], now, sale_id, movement_note),
+                )
+
+            if payment_id is not None:
+                payment_provenance = json.dumps(
+                    {
+                        "source": "billing_runtime",
+                        "sale_id": sale_id,
+                        "claim": "staff_affirmed_receipt_not_reconciled",
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                connection.execute(
+                    "insert into payment_receipts(payment_id,enterprise_id,branch_id,received_at,amount,method,evidence_state,actor_id,source_type,source_ref,idempotency_key,reference,provenance_json) values(%s,%s,%s,%s,%s,%s,'staff_affirmed_unreconciled',%s,'billing',%s,%s,'',%s)",
+                    (payment_id, enterprise_id, branch_id, now, invoice_total, payment_mode, actor_id, sale_id, f"{idempotency_key}|payment", payment_provenance),
+                )
+                connection.execute(
+                    "insert into payment_allocations(payment_id,sale_id,amount,allocation_state) values(%s,%s,%s,'staff_affirmed_unreconciled')",
+                    (payment_id, sale_id, invoice_total),
+                )
+                payment_payload = {
+                    "schema": "tagro.echo.payment-receipt-claim.v1",
+                    "payment_id": payment_id,
+                    "sale_id": sale_id,
+                    "amount": str(invoice_total),
+                    "method": payment_mode,
+                    "evidence_state": payment_evidence_state,
+                    "reconciled": False,
+                }
+                connection.execute(
+                    "insert into echo_events(event_id,enterprise_id,event_type,subject_type,subject_id,occurred_at,recorded_at,actor_principal_id,location_ref,authority_basis,evidence_ref,provenance_ref,confidence,materiality_class,sensitivity_class,payload_json,admission_state) values(%s,%s,'payment.receipt_claimed','payment',%s,%s,%s,%s,%s,%s,'','','1.0','A','internal',%s,'admitted')",
+                    (payment_event_id, enterprise_id, payment_id, now, now, principal_id, branch_id, f"membership:{membership.get('membership_id','')};capability:SELL", json.dumps(payment_payload, sort_keys=True, separators=(",", ":"))),
                 )
 
             if shortages:
@@ -262,6 +303,8 @@ def issue_bill(
                 "idempotency_key": idempotency_key,
                 "branch_code": branch_code,
                 "payment_mode": payment_mode,
+                "payment_id": payment_id,
+                "payment_evidence_state": payment_evidence_state,
                 "customer_name": str(payload.get("customer_name") or "").strip(),
                 "invoice_total": str(invoice_total),
                 "stock_exception": bool(shortages),
@@ -281,6 +324,8 @@ def issue_bill(
         "bill_id": sale_id,
         "invoice_total": str(invoice_total),
         "payment_status": payment_status,
+        "payment_id": payment_id,
+        "payment_evidence_state": payment_evidence_state,
         "created_at": now.isoformat(),
         "stock_evidence_state": stock_evidence_state,
         "stock_unknown_count": len(unknown_stock),
