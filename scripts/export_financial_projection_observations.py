@@ -98,7 +98,7 @@ def main() -> None:
     source_hash = file_sha256(source)
     branch_marks = ",".join("?" for _ in branches)
     purchase_sql = f"""
-      select v.branch,v.vch_date,v.voucher_id,v.vch_no,v.vch_code,
+      select v.branch,v.vch_date,v.voucher_id,v.vch_no,v.vch_code,v.party_name,
              i.item_line_id,i.item_code,i.item_name,i.qty,i.unit_rate,i.taxable_amount,
              i.source_sha256,i.record_sha256
       from vouchers v join voucher_items i on i.voucher_id=v.voucher_id
@@ -112,7 +112,9 @@ def main() -> None:
     for row in purchase_rows:
         cost = unit_cost(row)
         key = item_key(row)
-        if cost is None or not key or key == "NAME:":
+        vendor_norm = norm_name(str(row["party_name"] or ""))
+        stock_transfer = "THUMPASSERY AGRO" in vendor_norm or "STOCK TRANSFER" in vendor_norm
+        if cost is None or not key or key == "NAME:" or stock_transfer:
             continue
         purchase_by_key[key].append(
             {
@@ -151,14 +153,21 @@ def main() -> None:
             by_fy[fy_start(p["purchase_date"])].append(p)
         selected_fy = max((fy for fy in by_fy if fy <= sale_fy), default=None)
         selected: list[dict[str, Any]] = []
+        recent_count = 0
         scope = "none"
         if selected_fy is not None:
             year_rows = by_fy[selected_fy]
             same_branch = [p for p in year_rows if p["branch"] == row["branch"]]
             scoped = same_branch if same_branch else year_rows
             scope = "same_branch" if same_branch else "enterprise_fallback"
-            selected = sorted(scoped, key=lambda p: (p["purchase_date"], p["purchase_vch_code"], p["item_line_id"]), reverse=True)[:4]
-        confidence = "strong" if len(selected) >= 3 else "weak" if selected else "unknown"
+            ordered = sorted(scoped, key=lambda p: (p["purchase_date"], p["purchase_vch_code"], p["item_line_id"]), reverse=True)
+            recent = ordered[:4]
+            recent_count = len(recent)
+            selected = list(recent)
+            protected_high = max(scoped, key=lambda p: (p["cost_before_tax"], p["purchase_date"], p["purchase_vch_code"], p["item_line_id"]))
+            if protected_high not in selected:
+                selected.append(protected_high)
+        confidence = "strong" if recent_count >= 3 else "weak" if recent_count else "unknown"
         cost_counts[confidence] += 1
         sale_ref = f"{row['branch']}|{row['voucher_id']}|{row['item_line_id']}"
         value = {
@@ -178,6 +187,7 @@ def main() -> None:
             "cost_reference_confidence": confidence,
             "cost_reference_scope": scope,
             "cost_reference_fy_start": selected_fy,
+            "cost_policy": "LIFO-style latest external purchase; up to four recent comparison prices plus protected pre-sale high; prior-FY fallback",
             "purchase_references": [
                 {
                     "branch": p["branch"],
@@ -246,6 +256,7 @@ def main() -> None:
         "chunk_count": len(chunk_files),
         "chunk_files": chunk_files,
         "cost_reference_counts": cost_counts,
+        "cost_policy": "LIFO-style latest external purchase; up to four recent comparison prices plus protected pre-sale high; stock transfers excluded; prior-FY fallback",
         "canonical_write": False,
     }
     manifest_package = {
