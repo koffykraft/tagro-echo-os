@@ -31,6 +31,7 @@ class Wo0012SchemaMigrationTests(unittest.TestCase):
                 "0005-platform-identity-constraints-v0.2.1",
                 "0006-platform-spectral-routing-v0.2.2",
                 "0007-platform-import-observations-v0.2.3",
+                "0008-stock-observation-planes-v0.4",
             ],
         )
 
@@ -98,11 +99,24 @@ class Wo0012SchemaMigrationTests(unittest.TestCase):
         self.assertIn("authority_basis", sql)
         self.assertIn("provenance_ref", sql)
 
+    def test_stock_count_plane_preserves_unknown_separately_from_canonical_stock(self) -> None:
+        sql = (ROOT / "schemas/business/stock_observation_planes_v0_4.sql").read_text(encoding="utf-8").lower()
+        self.assertIn("create table stock_count_observations", sql)
+        self.assertIn("create view provisional_stock_position", sql)
+        self.assertIn("provisional_eligible", sql)
+        self.assertIn("identity_state", sql)
+        self.assertIn("product_id text references products(product_id)", sql)
+        self.assertNotIn("product_id text not null references products(product_id)", sql)
+        self.assertIn("unknown, never zero by absence", sql)
+        self.assertIn("cannot create stock movements", sql)
+        self.assertNotIn("insert into stock_movements", sql)
+
     def test_business_tables_are_enterprise_scoped(self) -> None:
         for path in (
             "schemas/business/canonical_tables_v0_2.sql",
             "schemas/business/counter_ops_v0_2.sql",
             "schemas/business/operational_extensions_v0_3.sql",
+            "schemas/business/stock_observation_planes_v0_4.sql",
         ):
             sql = (ROOT / path).read_text(encoding="utf-8").lower()
             self.assertIn("enterprise_id", sql, path)
