@@ -58,6 +58,21 @@ class OwnerOnCallTests(unittest.TestCase):
         self.assertEqual(snapshot["attention"][0]["type"], "unknown_cost")
         self.assertEqual(snapshot["status"], "projection_not_accounting_final")
 
+    def test_owner_snapshot_exposes_prism_uncertainty_instead_of_hiding_it(self):
+        prism_status = {
+            "unresolved_count": 3,
+            "unresolved_amount": Decimal("18000"),
+            "tight_split_count": 1,
+            "tight_split_amount": Decimal("5000"),
+            "review_queue": ({"observation_id": "bank:1"},),
+        }
+        snapshot = OwnerOnCall().snapshot((), (), prism_status=prism_status)
+        types = {row["type"] for row in snapshot["attention"]}
+        self.assertIn("prism_unresolved", types)
+        self.assertIn("prism_tight_split", types)
+        self.assertEqual(snapshot["prism_status"]["unresolved_amount"], Decimal("18000"))
+        self.assertEqual(snapshot["drilldown"]["prism_review_queue"][0]["observation_id"], "bank:1")
+
 
 if __name__ == "__main__":
     unittest.main()
