@@ -128,28 +128,98 @@ def record_stock_count(config: RuntimeConfig, *, principal_id: str, membership: 
     enterprise_id = str(membership.get("enterprise_id") or "")
     branch_code = str(payload.get("branch_code") or "").strip().upper()
     product_id = str(payload.get("product_id") or "").strip()
-    counted_qty = Decimal(str(payload.get("counted_qty") or 0))
+    raw_count = payload.get("counted_qty")
+    try:
+        counted_qty = Decimal(str(raw_count))
+    except Exception as exc:
+        raise OperationalRuntimeError("counted_qty must be numeric") from exc
     session_key = str(payload.get("count_session_key") or "").strip()
-    evidence_ids = payload.get("evidence_ids") or []
-    if not branch_code or not product_id or not session_key or counted_qty < 0:
-        raise OperationalRuntimeError("branch, product, non-negative count and count_session_key are required")
+    key = str(payload.get("idempotency_key") or "").strip()
+    evidence_ids = list(payload.get("evidence_ids") or [])
+    raw_item_ref = str(payload.get("raw_item_ref") or product_id).strip()
+    location_note = str(payload.get("location_note") or "").strip()
+    if not branch_code or not product_id or not session_key or not key or counted_qty < 0:
+        raise OperationalRuntimeError("branch, product, non-negative count, count_session_key and idempotency_key are required")
+
     count_id = _stable_id("echo-count", enterprise_id, session_key)
+    observation_id = _stable_id("echo-stock-observation", enterprise_id, key)
     now = datetime.now(timezone.utc)
     with connect(config) as conn:
         with conn.transaction():
             user_id, branch_id = _identity(conn, enterprise_id, principal_id, branch_code)
             if not conn.execute("select 1 from products where enterprise_id=%s and product_id=%s and active=true", (enterprise_id, product_id)).fetchone():
                 raise OperationalRuntimeError("product does not belong to enterprise")
+
+            existing_observation = conn.execute(
+                "select branch_id,product_id,counted_qty,count_id from stock_count_observations where enterprise_id=%s and observation_id=%s",
+                (enterprise_id, observation_id),
+            ).fetchone()
+            if existing_observation:
+                if (
+                    str(existing_observation[0]) != branch_id
+                    or str(existing_observation[1]) != product_id
+                    or Decimal(str(existing_observation[2])) != counted_qty
+                    or str(existing_observation[3]) != count_id
+                ):
+                    raise OperationalRuntimeError("idempotency_key was reused with changed stock count payload")
+                provisional = conn.execute(
+                    "select quantity,observed_at from provisional_stock_position where enterprise_id=%s and branch_id=%s and product_id=%s",
+                    (enterprise_id, branch_id, product_id),
+                ).fetchone()
+                return {
+                    "count_id": count_id,
+                    "observation_id": observation_id,
+                    "product_id": product_id,
+                    "system_qty": None,
+                    "system_qty_known": False,
+                    "counted_qty": str(counted_qty),
+                    "variance": None,
+                    "provisional_qty": str(provisional[0]) if provisional else str(counted_qty),
+                    "provisional_truth_state": "provisional_count",
+                    "stock_mutated": False,
+                    "status": "open",
+                    "idempotent_replay": True,
+                }
+
             count = conn.execute("select branch_id,status from stock_counts where enterprise_id=%s and count_id=%s", (enterprise_id, count_id)).fetchone()
             if count and (str(count[0]) != branch_id or str(count[1]) != "open"):
                 raise OperationalRuntimeError("stock count session is not open for this branch")
             if not count:
                 conn.execute("insert into stock_counts(count_id,enterprise_id,branch_id,created_by,created_at,status) values(%s,%s,%s,%s,%s,'open')", (count_id, enterprise_id, branch_id, user_id, now))
+
             stock = conn.execute("select quantity from stock_position where enterprise_id=%s and branch_id=%s and product_id=%s", (enterprise_id, branch_id, product_id)).fetchone()
-            system_qty = Decimal(str(stock[0])) if stock else Decimal("0")
-            variance = counted_qty - system_qty
-            conn.execute(
-                "insert into stock_count_lines(count_id,product_id,system_qty,counted_qty,variance,evidence_ids) values(%s,%s,%s,%s,%s,%s) on conflict(count_id,product_id) do update set system_qty=excluded.system_qty,counted_qty=excluded.counted_qty,variance=excluded.variance,evidence_ids=excluded.evidence_ids",
-                (count_id, product_id, system_qty, counted_qty, variance, json.dumps(list(evidence_ids), separators=(",", ":"))),
+            system_qty = Decimal(str(stock[0])) if stock else None
+            variance = counted_qty - system_qty if system_qty is not None else None
+
+            provenance = json.dumps(
+                {"evidence_ids": evidence_ids, "location_note": location_note, "source": "staff_realtime_count"},
+                separators=(",", ":"),
+                sort_keys=True,
             )
-    return {"count_id": count_id, "product_id": product_id, "system_qty": str(system_qty), "counted_qty": str(counted_qty), "variance": str(variance), "stock_mutated": False, "status": "open"}
+            conn.execute(
+                "insert into stock_count_observations(observation_id,enterprise_id,branch_id,count_id,product_id,raw_item_ref,counted_qty,observed_at,observed_by,source_type,source_ref,evidence_id,identity_state,identity_confidence,observation_confidence,provisional_eligible,note,provenance_json) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,'staff_realtime_count',%s,null,'resolved',1,1,true,%s,%s)",
+                (observation_id, enterprise_id, branch_id, count_id, product_id, raw_item_ref, counted_qty, now, user_id, key, location_note, provenance),
+            )
+
+            # Legacy summary is retained only when canonical movement quantity actually exists.
+            # Absence from stock_position is UNKNOWN and must never be encoded as numeric zero.
+            if system_qty is not None:
+                conn.execute(
+                    "insert into stock_count_lines(count_id,product_id,system_qty,counted_qty,variance,evidence_ids) values(%s,%s,%s,%s,%s,%s) on conflict(count_id,product_id) do update set system_qty=excluded.system_qty,counted_qty=excluded.counted_qty,variance=excluded.variance,evidence_ids=excluded.evidence_ids",
+                    (count_id, product_id, system_qty, counted_qty, variance, json.dumps(evidence_ids, separators=(",", ":"))),
+                )
+
+    return {
+        "count_id": count_id,
+        "observation_id": observation_id,
+        "product_id": product_id,
+        "system_qty": str(system_qty) if system_qty is not None else None,
+        "system_qty_known": system_qty is not None,
+        "counted_qty": str(counted_qty),
+        "variance": str(variance) if variance is not None else None,
+        "provisional_qty": str(counted_qty),
+        "provisional_truth_state": "provisional_count",
+        "stock_mutated": False,
+        "status": "open",
+        "idempotent_replay": False,
+    }
