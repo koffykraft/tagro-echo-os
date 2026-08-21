@@ -9,7 +9,7 @@ from src.aws_runtime.config import RuntimeConfig
 from src.aws_runtime.database import connect
 
 
-SUBJECT_KINDS = {"branch", "person"}
+SUBJECT_KINDS = {"branch", "person", "financial_sale_line", "financial_snapshot"}
 DIMENSION_CODES = {
     "branch.code",
     "branch.name",
@@ -24,6 +24,8 @@ DIMENSION_CODES = {
     "person.phone",
     "person.email",
     "person.active_state",
+    "financial.sale_cost_evidence",
+    "financial.export_manifest",
 }
 
 
@@ -33,6 +35,13 @@ def _now() -> datetime:
 
 def _id(prefix: str) -> str:
     return f"{prefix}_{uuid.uuid4()}"
+
+
+def _parse_timestamp(value: Any, fallback: datetime | None) -> datetime | None:
+    text = str(value or "").strip()
+    if not text:
+        return fallback
+    return datetime.fromisoformat(text.replace("Z", "+00:00"))
 
 
 def record_observations(
@@ -48,15 +57,16 @@ def record_observations(
 ) -> Mapping[str, Any]:
     """Store source evidence without granting canonical authority.
 
-    This function only writes import_sources/import_observations. It does not write
-    branches, users, principals, memberships, or any other canonical business table.
+    This function only writes import_sources/import_observations. Financial
+    projection observations are deliberately supporting evidence: their presence
+    never inserts or updates canonical sales, purchases, stock, cash or bank state.
     """
     if not enterprise_id or not source_system or not source_locator or not source_class:
         raise ValueError("enterprise_id, source_system, source_locator and source_class are required")
 
     captured_at = _now()
     source_id = _id("src")
-    parsed_as_of = datetime.fromisoformat(source_as_of.replace("Z", "+00:00")) if source_as_of else None
+    parsed_as_of = _parse_timestamp(source_as_of, None)
 
     rows = list(observations)
     for row in rows:
@@ -66,6 +76,7 @@ def record_observations(
             raise ValueError("unsupported dimension_code")
         if not row.get("source_subject_ref"):
             raise ValueError("source_subject_ref is required")
+        _parse_timestamp(row.get("observed_at"), parsed_as_of)
 
     with connect(config) as connection:
         with connection.transaction():
@@ -104,7 +115,7 @@ def record_observations(
                         str(row["source_subject_ref"]),
                         row["dimension_code"],
                         json.dumps(row.get("value"), separators=(",", ":"), sort_keys=True),
-                        parsed_as_of,
+                        _parse_timestamp(row.get("observed_at"), parsed_as_of),
                         row.get("confidence"),
                         str(row.get("provenance_ref") or immutable_ref or source_locator),
                         captured_at,
