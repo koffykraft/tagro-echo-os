@@ -51,7 +51,9 @@ class OwnerOnCallTests(unittest.TestCase):
             evidence_as_of=datetime.now(timezone.utc),
         )
         self.assertEqual(snapshot["sales_before_tax"], Decimal("800.00"))
-        self.assertEqual(snapshot["estimated_gross_profit_known"], Decimal("190.00"))
+        # LIFO-style primary cost uses the latest valid external purchase (300),
+        # while the older 320 price remains comparison evidence rather than being averaged in.
+        self.assertEqual(snapshot["estimated_gross_profit_known"], Decimal("200.00"))
         self.assertEqual(snapshot["cost_coverage_pct"], Decimal("50.00"))
         self.assertEqual(snapshot["cash_position"], Decimal("15000"))
         self.assertEqual(snapshot["branches"]["PKM"]["unknown_cost_lines"], 1)
