@@ -118,6 +118,30 @@ Resources:
             ApiId: !Ref EchoHttpApi
             Path: /owner-on-call
             Method: GET
+        CashDayReadback:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref EchoHttpApi
+            Path: /cash-days
+            Method: GET
+        CashDayOpen:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref EchoHttpApi
+            Path: /cash-days/open
+            Method: POST
+        CashEntryRecord:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref EchoHttpApi
+            Path: /cash-days/entries
+            Method: POST
+        CashDaySubmit:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref EchoHttpApi
+            Path: /cash-days/submit
+            Method: POST
         BillingIssue:
           Type: HttpApi
           Properties:
