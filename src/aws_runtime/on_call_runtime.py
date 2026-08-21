@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from datetime import date, datetime, timezone
 from decimal import Decimal
-from typing import Any
+from typing import Any, Iterable
 
 from src.financial.health import ExpenseEvidence, ExpenseRole, PurchasePriceEvidence, SaleLineEvidence
 from src.financial.on_call import OwnerOnCall
@@ -28,6 +28,30 @@ def _parse_date(value: str | None, name: str) -> date | None:
 
 def _in_period(value: date, start: date | None, end: date | None) -> bool:
     return (start is None or value >= start) and (end is None or value <= end)
+
+
+def _partition_warehouse_sales(
+    echo_sales: Iterable[SaleLineEvidence],
+    warehouse_sales: Iterable[SaleLineEvidence],
+) -> tuple[tuple[SaleLineEvidence, ...], tuple[SaleLineEvidence, ...]]:
+    """Keep imported sales only where they cannot overlap admitted ECHO sales.
+
+    ECHO and BUSY/warehouse sale identifiers are not yet deterministically mapped.
+    During parallel proving, a branch/date containing both streams is therefore
+    ambiguous: adding both can double count turnover, while guessing which imported
+    rows correspond to ECHO bills would fabricate reconciliation. The admitted ECHO
+    rows remain authoritative for that branch/date and all warehouse rows in that
+    ambiguous slice are excluded from the numeric projection and reported separately.
+    """
+    echo_slices = {(s.branch.upper(), s.sale_date) for s in echo_sales}
+    admitted: list[SaleLineEvidence] = []
+    overlap: list[SaleLineEvidence] = []
+    for row in warehouse_sales:
+        if (row.branch.upper(), row.sale_date) in echo_slices:
+            overlap.append(row)
+        else:
+            admitted.append(row)
+    return tuple(admitted), tuple(overlap)
 
 
 def _warehouse_projection(conn, enterprise_id: str, start: date | None, end: date | None, branch: str | None):
@@ -76,8 +100,6 @@ def _warehouse_projection(conn, enterprise_id: str, start: date | None, end: dat
 
     expected = int(manifest.get("sale_line_observations") or 0)
     if len(rows) != expected:
-        # Manifest exists but the run is incomplete/corrupt in the observation
-        # store. Refuse the entire warehouse projection rather than partial P&L.
         return (), (), manifest, source_as_of, {
             "status": "incomplete_financial_observation_run",
             "expected_sale_lines": expected,
@@ -194,9 +216,10 @@ def owner_on_call_readback(
             for product_id, purchase_date, unit_price, code, purchase_id in purchase_rows
         )
 
-        warehouse_sales, warehouse_purchases, warehouse_manifest, warehouse_as_of, warehouse_error = _warehouse_projection(
+        warehouse_sales_raw, warehouse_purchases, warehouse_manifest, warehouse_as_of, warehouse_error = _warehouse_projection(
             conn, enterprise_id, start_date, end_date, branch_code
         )
+        warehouse_sales, warehouse_overlap = _partition_warehouse_sales(echo_sales, warehouse_sales_raw)
         sales = echo_sales + warehouse_sales
         purchases = echo_purchases + warehouse_purchases
 
@@ -298,9 +321,12 @@ def owner_on_call_readback(
         cash_position=cash_position, bank_position=bank_position,
         evidence_as_of=evidence_as_of, prism_status=prism_status,
     )
+    overlap_revenue = sum((row.sale_before_tax for row in warehouse_overlap), Decimal("0"))
     snapshot["runtime_source"] = "echo_postgres_plus_governed_financial_observations"
     snapshot["echo_sale_lines"] = len(echo_sales)
     snapshot["warehouse_sale_lines"] = len(warehouse_sales)
+    snapshot["warehouse_sale_lines_overlap_excluded"] = len(warehouse_overlap)
+    snapshot["warehouse_overlap_revenue_excluded"] = overlap_revenue
     snapshot["warehouse_financial_projection_included"] = bool(warehouse_manifest and not warehouse_error)
     snapshot["historical_warehouse_included"] = bool(
         warehouse_manifest and str(warehouse_manifest.get("sale_start") or "9999-12-31") <= "2007-01-09"
@@ -308,10 +334,17 @@ def owner_on_call_readback(
     snapshot["warehouse_projection_manifest"] = warehouse_manifest
     snapshot["warehouse_projection_error"] = warehouse_error
     snapshot["busy_booking_reconciliation_required"] = True
+    snapshot["sale_stream_overlap_reconciliation_required"] = bool(warehouse_overlap)
     snapshot["warehouse_coverage_boundary"] = (
         "External sealed/current warehouse coverage is not implied beyond the latest completed, manifested financial observation run."
     )
-    if warehouse_error:
+    if warehouse_overlap:
+        snapshot["projection_complete"] = False
+        snapshot["coverage_note"] = (
+            f"{len(warehouse_overlap)} warehouse sale line(s) worth {overlap_revenue} before tax were excluded because the same branch/date also contains admitted ECHO sales. "
+            "BUSY↔ECHO sale reconciliation must deterministically map those streams before combined turnover can be claimed."
+        )
+    elif warehouse_error:
         snapshot["coverage_note"] = "A warehouse financial run was found but is incomplete; it was excluded entirely from P&L."
     elif warehouse_manifest:
         snapshot["coverage_note"] = (
