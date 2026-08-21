@@ -13,7 +13,12 @@
     "Spectral match is necessary where required but does not replace evidence, authority, timing, Enterprise, confidence or passage gates.",
     "Spectral band and vector strength are independent dimensions.",
     "AI may propose spectral classification but may not admit a consequential spectral route or Chord alone.",
-    "Sweepers may flag or retire misrouted active projections but may never delete the originating admitted Event or Evidence."
+    "Sweepers may flag or retire misrouted active projections but may never delete the originating admitted Event or Evidence.",
+    "Uncertainty that is immaterial may remain explicitly uncertain without generating operational noise.",
+    "An Event that materially spikes against its relevant planar context receives an explicit anomaly Ray and is projected into a separate Review dimension; the originating Event is not rewritten merely because it is under review.",
+    "Review routing is triggered by materiality or abnormal planar behaviour, not merely because an Event is imperfect or below 100 percent confidence.",
+    "A Review projection never proves wrongdoing, error, expense, income, stock truth or any other business consequence by itself.",
+    "When evidence is too tightly split for a safe narrower interpretation, the Prism steps outward to the broadest supported meaning and preserves unresolved candidate rays for later evaluation."
   ],
   "bands": [
     {"code":"V","name":"Violet","semantic_scope":"contract_defined"},
@@ -24,6 +29,62 @@
     {"code":"O","name":"Orange","semantic_scope":"contract_defined"},
     {"code":"R","name":"Red","semantic_scope":"contract_defined"}
   ],
+  "material_anomaly_ray": {
+    "principle": "Do not create ripples merely because an Event is uncertain. Create a Ray when the Event is materially abnormal in its applicable Plane or when its potential consequence justifies evaluation.",
+    "candidate_spike_dimensions": [
+      "value",
+      "frequency",
+      "timing",
+      "duration",
+      "direction",
+      "relationship",
+      "location",
+      "identity",
+      "sequence",
+      "quantity",
+      "price_or_rate",
+      "margin_or_yield",
+      "confidence_change",
+      "historical_deviation",
+      "cross_branch_deviation",
+      "expected_consequence"
+    ],
+    "quiet_examples": [
+      "ordinary auto fare within its historical and local operating band",
+      "ordinary bus fare within its historical and local operating band",
+      "ordinary food expense within its historical and local operating band"
+    ],
+    "review_examples": [
+      "an otherwise ordinary expense whose value or frequency materially spikes",
+      "a stock observation whose quantity conflicts materially with recent physical or movement evidence",
+      "a sale whose price or margin materially departs from its supported purchase-cost spectrum",
+      "a transfer or payment whose relationship or direction conflicts with expected paired evidence"
+    ],
+    "review_projection_required_fields": [
+      "originating_event_id",
+      "enterprise_id",
+      "subject_ref",
+      "observed_dimension",
+      "baseline_or_comparison_ref",
+      "spike_measure",
+      "materiality",
+      "confidence",
+      "reason_for_review",
+      "provenance_ref",
+      "created_at",
+      "review_state"
+    ],
+    "review_states": [
+      "observed",
+      "review_required",
+      "explained",
+      "corroborated",
+      "corrected",
+      "dismissed_as_normal",
+      "unresolved"
+    ],
+    "non_consequence_rule": "Routing an Event into Review does not alter financial, stock, service, customer, payment, authority or other canonical consequence until the applicable governed passage/admission rule is satisfied."
+  },
   "prism_due_diligence": [
     "which Event and subject",
     "what dimensions and values are being decomposed",
@@ -38,6 +99,8 @@
     "sensitivity and visibility",
     "matching receiver rule",
     "Chord eligibility",
+    "material anomaly and planar spike behaviour",
+    "Review dimension eligibility and non-consequence boundary",
     "correction reversal and audit behaviour"
   ],
   "processing_model": [
@@ -45,6 +108,8 @@
     "EVENT",
     "PRISM_DECOMPOSITION",
     "SPECTRAL_MATCH",
+    "PLANAR_SPIKE_AND_MATERIALITY_TEST",
+    "ANOMALY_RAY_TO_REVIEW_WHEN_REQUIRED",
     "VECTOR_STRENGTH_AND_PASSAGE",
     "CHORD_FORMATION",
     "AUTHORISED_CONSEQUENCE",
