@@ -15,8 +15,9 @@ class ReferenceRuntimeError(ValueError):
 
 
 def _limit(value: Any) -> int:
+    raw = 40 if value is None or value == "" else value
     try:
-        n = int(value or 40)
+        n = int(raw)
     except (TypeError, ValueError) as exc:
         raise ReferenceRuntimeError("limit must be an integer") from exc
     if n < 1 or n > 100:
