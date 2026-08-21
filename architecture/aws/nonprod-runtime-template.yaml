@@ -98,6 +98,24 @@ Resources:
             ApiId: !Ref EchoHttpApi
             Path: /billing/issue
             Method: POST
+        ServiceIntake:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref EchoHttpApi
+            Path: /service/intake
+            Method: POST
+        PurchaseOrderCreate:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref EchoHttpApi
+            Path: /purchase-orders
+            Method: POST
+        StockCountRecord:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref EchoHttpApi
+            Path: /stock-count/record
+            Method: POST
         ImportReconciliation:
           Type: HttpApi
           Properties:
