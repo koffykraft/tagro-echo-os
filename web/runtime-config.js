@@ -1,0 +1,9 @@
+window.ECHO_RUNTIME_CONFIG=Object.freeze({
+  environment:'nonprod',
+  apiBase:'https://3n1lhlcush.execute-api.ap-south-1.amazonaws.com',
+  region:'ap-south-1',
+  userPoolId:'ap-south-1_F9AcKBFpl',
+  userPoolClientId:'7ctjur525ah5c09pb8dk9ajbgp',
+  cognitoEndpoint:'https://cognito-idp.ap-south-1.amazonaws.com/',
+  issuer:'https://cognito-idp.ap-south-1.amazonaws.com/ap-south-1_F9AcKBFpl'
+});
