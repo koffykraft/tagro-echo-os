@@ -340,6 +340,10 @@ class FinancialHealthEngine:
             else (known_gp / sales_known_cost * Decimal("100")).quantize(Decimal("0.01"))
         )
         confidence_counts = {c.value: sum(1 for p in projected if p.cost.confidence == c) for c in CostConfidence}
+        confidence_revenue = {
+            c.value: money(sum((p.sales_before_tax for p in projected if p.cost.confidence == c), Decimal("0")))
+            for c in CostConfidence
+        }
         role_totals = {
             role.value: money(sum((abs(e.amount) for e in classified_expenses if e.role == role), Decimal("0")))
             for role in ExpenseRole if role != ExpenseRole.UNKNOWN
@@ -373,6 +377,7 @@ class FinancialHealthEngine:
             "cost_coverage_pct": line_coverage,
             "cost_revenue_coverage_pct": revenue_coverage,
             "cost_confidence_counts": confidence_counts,
+            "cost_confidence_revenue": confidence_revenue,
             "projection_complete": not unknown_cost and not unknown_expenses,
             "projections": projected,
             "unknown_expense_evidence": tuple(unknown_expenses),
