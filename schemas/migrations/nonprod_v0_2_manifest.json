@@ -58,6 +58,12 @@
       "path": "schemas/business/payment_receipt_evidence_v0_4.sql",
       "git_blob_sha": "2dbed0f17156291c686431f311484ca196351280",
       "depends_on": ["0002-canonical-business-v0.2"]
+    },
+    {
+      "id": "0010-cash-entry-evidence-v0.4",
+      "path": "schemas/business/cash_entry_evidence_v0_4.sql",
+      "git_blob_sha": "52ddf67fd3a257954a08ad64ea13fd21c506bb58",
+      "depends_on": ["0001-platform-foundation-v0.2", "0004-operational-extensions-v0.3"]
     }
   ]
 }
