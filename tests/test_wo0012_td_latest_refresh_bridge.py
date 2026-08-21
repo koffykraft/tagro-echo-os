@@ -65,8 +65,8 @@ class TdLatestRefreshBridgeTests(unittest.TestCase):
         self.assertIn("Remove-Item Env:\\TAGRO_BUSY_DB_PASSWORD", self.text)
 
     def test_no_ambiguous_variable_colon_interpolation(self) -> None:
-        # PowerShell treats "$name:" as a scoped-variable expression and rejects it.
-        offenders = re.findall(r'\$[A-Za-z_][A-Za-z0-9_]*:', self.text)
+        # "$name:" is invalid in interpolation; scoped forms such as "$env:NAME" are valid PowerShell.
+        offenders = re.findall(r'\$(?!env:|global:|script:|local:|private:)[A-Za-z_][A-Za-z0-9_]*:', self.text)
         self.assertEqual([], offenders, f'ambiguous PowerShell variable interpolation: {offenders}')
 
 
