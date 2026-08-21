@@ -79,4 +79,4 @@ group by
   c.observed_at,c.source_type,c.identity_confidence,c.observation_confidence;
 
 -- Canonical and provisional planes remain separate. Consumers must expose both when they differ.
--- The combined provisional projection never creates or edits stock movements.
+-- The combined provisional projection cannot create stock movements and never edits canonical movements.
