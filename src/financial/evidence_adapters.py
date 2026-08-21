@@ -2,24 +2,25 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import date
 from decimal import Decimal
 
 from src.bank.normalization import BankTransaction
 from src.cash.closing import ClosingCash
 
-from .health import ExpenseEvidence
+from .health import ExpenseEvidence, ExpenseRole
 
 
 @dataclass(frozen=True)
 class ExpenseClassification:
     """Explicit, owner/governance supplied classification rule.
 
-    Adapters never infer a category from narration. A caller may supply a rule
-    keyed by an exact evidence identifier after that rule has been governed.
+    Adapters never infer a category or financial role from narration. A caller
+    may supply a rule keyed by an exact evidence identifier only after that rule
+    has been governed.
     """
 
     category: str
+    role: ExpenseRole
     confidence: str = "exact"
 
 
@@ -41,6 +42,7 @@ def closing_cash_expense_evidence(
         category=rule.category if rule else None,
         source_ref=f"closing-cash:{closing.closing_id}",
         classification_confidence=rule.confidence if rule else "unknown",
+        role=rule.role if rule else ExpenseRole.UNKNOWN,
     )
 
 
@@ -68,6 +70,7 @@ def bank_debit_expense_evidence(
         category=rule.category if rule else None,
         source_ref=f"bank:{transaction.statement_id}:{transaction.source_row}",
         classification_confidence=rule.confidence if rule else "unknown",
+        role=rule.role if rule else ExpenseRole.UNKNOWN,
     )
 
 
