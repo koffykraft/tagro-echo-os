@@ -151,7 +151,7 @@ def record_stock_count(config: RuntimeConfig, *, principal_id: str, membership: 
                 raise OperationalRuntimeError("product does not belong to enterprise")
 
             existing_observation = conn.execute(
-                "select branch_id,product_id,counted_qty,count_id from stock_count_observations where enterprise_id=%s and observation_id=%s",
+                "select branch_id,product_id,counted_qty,count_id,canonical_system_qty,variance_to_canonical from stock_count_observations where enterprise_id=%s and observation_id=%s",
                 (enterprise_id, observation_id),
             ).fetchone()
             if existing_observation:
@@ -162,18 +162,20 @@ def record_stock_count(config: RuntimeConfig, *, principal_id: str, membership: 
                     or str(existing_observation[3]) != count_id
                 ):
                     raise OperationalRuntimeError("idempotency_key was reused with changed stock count payload")
+                stored_system_qty = Decimal(str(existing_observation[4])) if existing_observation[4] is not None else None
+                stored_variance = Decimal(str(existing_observation[5])) if existing_observation[5] is not None else None
                 provisional = conn.execute(
-                    "select quantity,observed_at from provisional_stock_position where enterprise_id=%s and branch_id=%s and product_id=%s",
+                    "select quantity from provisional_stock_position where enterprise_id=%s and branch_id=%s and product_id=%s",
                     (enterprise_id, branch_id, product_id),
                 ).fetchone()
                 return {
                     "count_id": count_id,
                     "observation_id": observation_id,
                     "product_id": product_id,
-                    "system_qty": None,
-                    "system_qty_known": False,
+                    "system_qty": str(stored_system_qty) if stored_system_qty is not None else None,
+                    "system_qty_known": stored_system_qty is not None,
                     "counted_qty": str(counted_qty),
-                    "variance": None,
+                    "variance": str(stored_variance) if stored_variance is not None else None,
                     "provisional_qty": str(provisional[0]) if provisional else str(counted_qty),
                     "provisional_truth_state": "provisional_count",
                     "stock_mutated": False,
@@ -197,8 +199,8 @@ def record_stock_count(config: RuntimeConfig, *, principal_id: str, membership: 
                 sort_keys=True,
             )
             conn.execute(
-                "insert into stock_count_observations(observation_id,enterprise_id,branch_id,count_id,product_id,raw_item_ref,counted_qty,observed_at,observed_by,source_type,source_ref,evidence_id,identity_state,identity_confidence,observation_confidence,provisional_eligible,note,provenance_json) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,'staff_realtime_count',%s,null,'resolved',1,1,true,%s,%s)",
-                (observation_id, enterprise_id, branch_id, count_id, product_id, raw_item_ref, counted_qty, now, user_id, key, location_note, provenance),
+                "insert into stock_count_observations(observation_id,enterprise_id,branch_id,count_id,product_id,raw_item_ref,counted_qty,canonical_system_qty,variance_to_canonical,observed_at,observed_by,source_type,source_ref,evidence_id,identity_state,identity_confidence,observation_confidence,provisional_eligible,note,provenance_json) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'staff_realtime_count',%s,null,'resolved',1,1,true,%s,%s)",
+                (observation_id, enterprise_id, branch_id, count_id, product_id, raw_item_ref, counted_qty, system_qty, variance, now, user_id, key, location_note, provenance),
             )
 
             # Legacy summary is retained only when canonical movement quantity actually exists.
