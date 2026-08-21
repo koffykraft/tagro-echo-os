@@ -56,8 +56,8 @@ class OwnerOnCallRuntimeTests(unittest.TestCase):
             "schema": "tagro.echo.owner-on-call.v1",
             "projection_status": "not_accounting_final",
             "data": {
-                "runtime_source": "echo_postgres_admitted_evidence",
-                "historical_warehouse_included": False,
+                "runtime_source": "echo_postgres_plus_governed_financial_observations",
+                "warehouse_financial_projection_included": False,
             },
         }
         response = lambda_handler(self.event({"start": "2026-08-01", "branch": "KVR"}), None)
@@ -117,9 +117,11 @@ class OwnerOnCallRuntimeTests(unittest.TestCase):
     def test_runtime_projection_source_contract_is_explicit(self):
         with open("src/aws_runtime/on_call_runtime.py", encoding="utf-8") as handle:
             text = handle.read()
-        self.assertIn('"historical_warehouse_included"', text)
-        self.assertIn("False", text)
-        self.assertIn("external sealed/current warehouse coverage is not implied", text)
+        self.assertIn('"warehouse_financial_projection_included"', text)
+        self.assertIn("financial.export_manifest", text)
+        self.assertIn("incomplete_financial_observation_run", text)
+        self.assertIn("non-canonical supporting observations", text)
+        self.assertIn('"busy_booking_reconciliation_required"', text)
         self.assertIn("ExpenseRole.UNKNOWN", text)
 
 
