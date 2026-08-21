@@ -46,6 +46,12 @@
       "path": "schemas/business/platform_import_observations_v0_2_3.sql",
       "git_blob_sha": "491add5bf3cbf300604ca215fd63fceb567fc98f",
       "depends_on": ["0001-platform-foundation-v0.2", "0006-platform-spectral-routing-v0.2.2"]
+    },
+    {
+      "id": "0008-stock-observation-planes-v0.4",
+      "path": "schemas/business/stock_observation_planes_v0_4.sql",
+      "git_blob_sha": "db349e1832b91d809a3f8617f7860c88a9911e36",
+      "depends_on": ["0002-canonical-business-v0.2", "0003-counter-operations-v0.2"]
     }
   ]
 }
