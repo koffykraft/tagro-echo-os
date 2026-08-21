@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=yes">
+<title>TAGRO ECHO · Closing Cash Ver08 Enter Key</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fff}#frame{width:100%;height:100%;border:0;display:block}
+</style>
+</head>
+<body>
+<iframe id="frame" title="TAGRO ECHO Closing Cash Ver08"></iframe>
+<script>
+(()=>{
+'use strict';
+const frame=document.getElementById('frame');
+frame.src='closing-cash-v07-balanced.html?v=08-enter-key-20260821';
+frame.addEventListener('load',()=>{
+  const d=frame.contentDocument;
+  if(!d)return;
+  d.title='TAGRO ECHO · Closing Cash Ver08';
+  const sub=d.querySelector('.sub');
+  if(sub)sub.textContent='Ver08 · normal keyboard + Return/Enter navigation';
+  const note=d.querySelector('.sheet-note');
+  if(note)note.textContent='All entry cells use the normal text keyboard. RETURN/ENTER follows the current job path.';
+  d.querySelectorAll('.grid input, .denom input').forEach(el=>{
+    el.type='text';
+    el.setAttribute('inputmode','text');
+    el.setAttribute('enterkeyhint','enter');
+    el.setAttribute('autocomplete','off');
+    el.removeAttribute('pattern');
+  });
+  // Re-apply attributes after any dynamic row/count render.
+  const observer=new MutationObserver(()=>{
+    d.querySelectorAll('.grid input, .denom input').forEach(el=>{
+      if(el.getAttribute('inputmode')!=='text')el.setAttribute('inputmode','text');
+      if(el.getAttribute('enterkeyhint')!=='enter')el.setAttribute('enterkeyhint','enter');
+    });
+  });
+  observer.observe(d.body,{subtree:true,childList:true});
+});
+})();
+</script>
+</body>
+</html>
