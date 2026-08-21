@@ -33,17 +33,19 @@ class AdaptivePrismTests(unittest.TestCase):
         self.assertTrue(result.requires_more_evidence)
         self.assertTrue(any(ray.band == PrismBand.VALUE for ray in result.rays))
 
-    def test_clear_business_meaning_can_descend(self):
+    def test_tight_adjacent_meanings_step_outward_before_choice(self):
         candidates = (
             PrismCandidate("BUSINESS_PAYMENT", 0.95, PrismDepth.EVENT_FAMILY, "governed identity evidence"),
             PrismCandidate("SALARY", 0.94, PrismDepth.BUSINESS_MEANING, "owner-approved recurring rule"),
         )
         result = AdaptivePrism().resolve(self.observation(narration="Salary Anoop"), candidates)
-        self.assertEqual(result.resolved_depth, PrismDepth.EVENT_FAMILY)
-        # Scores are close: preserve both and step back rather than pretending
-        # that the narrower salary split is certain.
+        # Scores are too close. The shallower candidate is at event-family depth,
+        # so the prism steps one level outward to relationship instead of
+        # pretending that either business interpretation is established.
+        self.assertEqual(result.resolved_depth, PrismDepth.RELATIONSHIP)
         self.assertTrue(result.tight_split)
         self.assertTrue(result.requires_more_evidence)
+        self.assertEqual(len(result.candidates), 2)
 
     def test_clear_single_salary_rule_reaches_business_meaning(self):
         result = AdaptivePrism().resolve(
