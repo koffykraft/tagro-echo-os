@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=yes">
+<title>TAGRO ECHO · Closing Cash Ver09 Column Navigation</title>
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fff}#frame{width:100%;height:100%;border:0;display:block}</style>
+</head>
+<body>
+<iframe id="frame" title="TAGRO ECHO Closing Cash Ver09"></iframe>
+<script>
+(()=>{
+'use strict';
+const frame=document.getElementById('frame');
+frame.src='closing-cash-v07-balanced.html?v=09-column-nav-20260821';
+frame.addEventListener('load',()=>{
+  const w=frame.contentWindow,d=frame.contentDocument;if(!d)return;
+  d.title='TAGRO ECHO · Closing Cash Ver09';
+  const sub=d.querySelector('.sub');if(sub)sub.textContent='Ver09 · normal keyboard + column-aware Return navigation';
+  const note=d.querySelector('.sheet-note');if(note)note.textContent='RETURN follows the column: SALE → BILL → next SALE; EXPENSES → PARTICULARS → next EXPENSE.';
+
+  function normalizeInputs(){
+    d.querySelectorAll('.grid input, .denom input').forEach(el=>{
+      el.type='text';el.setAttribute('inputmode','text');el.setAttribute('enterkeyhint','enter');el.setAttribute('autocomplete','off');el.removeAttribute('pattern');
+    });
+  }
+  normalizeInputs();
+  new MutationObserver(normalizeInputs).observe(d.body,{subtree:true,childList:true});
+
+  function focusCell(row,key){
+    if(!row)return false;
+    const el=row.querySelector(`input[data-key="${key}"]`);if(!el)return false;
+    el.focus({preventScroll:true});try{el.select()}catch{}el.scrollIntoView({block:'nearest',inline:'nearest'});return true;
+  }
+  function nextEntryRow(row){
+    let next=row?.nextElementSibling;
+    if(next)return next;
+    if(typeof w.addRow==='function'){
+      try{w.addRow();next=row.nextElementSibling}catch{}
+    }
+    return next;
+  }
+  function previousEntryRow(row){return row?.previousElementSibling||null}
+  function routeEntry(el,back){
+    const row=el.closest('tr[data-row]'),key=el.dataset.key;
+    if(!row||!key)return false;
+    if(!back){
+      if(key==='sale')return focusCell(row,'bill');
+      if(key==='bill')return focusCell(nextEntryRow(row),'sale');
+      if(key==='expense')return focusCell(row,'part');
+      if(key==='part')return focusCell(nextEntryRow(row),'expense');
+    }else{
+      if(key==='bill')return focusCell(row,'sale');
+      if(key==='sale')return focusCell(previousEntryRow(row),'bill');
+      if(key==='part')return focusCell(row,'expense');
+      if(key==='expense')return focusCell(previousEntryRow(row),'part');
+    }
+    return false;
+  }
+  function routeDenom(el,back){
+    const inputs=[...d.querySelectorAll('.denom input[data-denom]')],i=inputs.indexOf(el);if(i<0)return false;
+    const ni=Math.max(0,Math.min(inputs.length-1,i+(back?-1:1))),target=inputs[ni];
+    if(!target)return false;target.focus({preventScroll:true});try{target.select()}catch{}target.scrollIntoView({block:'nearest'});return true;
+  }
+
+  // Capture before the inherited Ver07 handler so mode can never redirect another column to A1.
+  d.addEventListener('keydown',e=>{
+    if(e.key!=='Enter')return;
+    const el=e.target;if(!(el instanceof w.HTMLInputElement))return;
+    let handled=false;
+    if(el.matches('.grid input[data-key]'))handled=routeEntry(el,e.shiftKey);
+    else if(el.matches('.denom input[data-denom]'))handled=routeDenom(el,e.shiftKey);
+    if(handled){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();}
+  },true);
+});
+})();
+</script>
+</body>
+</html>
