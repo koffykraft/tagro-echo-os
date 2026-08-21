@@ -148,6 +148,7 @@
   function queueWrite(rows){localStorage.setItem(scopedKey('queue'),JSON.stringify(rows));window.dispatchEvent(new CustomEvent('echo:queue-updated',{detail:{count:rows.filter(x=>x.state==='pending').length}}))}
   function journalRead(){return parseJson(localStorage.getItem(scopedKey('journal'))||'[]')||[]}
   function journalAppend(row){const rows=journalRead();rows.push(row);localStorage.setItem(scopedKey('journal'),JSON.stringify(rows.slice(-JOURNAL_LIMIT)))}
+  function acknowledgement(idempotencyKey){return journalRead().slice().reverse().find(x=>x.idempotencyKey===idempotencyKey)||null}
 
   function enqueueMutation({path,body,method='POST',expectedSchema='',idempotencyKey=''}){
     const scope=requireScope();
@@ -193,7 +194,7 @@
     const result=await flushQueue().catch(()=>({acknowledged:0,pending:1,review:0}));
     const pending=queueRead().find(x=>x.idempotencyKey===item.idempotencyKey);
     if(!pending){
-      const journal=journalRead().slice().reverse().find(x=>x.idempotencyKey===item.idempotencyKey);
+      const journal=acknowledgement(item.idempotencyKey);
       return{state:'acknowledged',response:journal?.response||null,queue:item,result};
     }
     return{state:pending.state,response:null,queue:pending,result};
@@ -210,7 +211,7 @@
 
   window.EchoRuntime=Object.freeze({
     EchoRuntimeError,login,completeNewPassword,refresh,ensureSession,request,tenantContext,loadContext,chooseEnterprise,
-    enqueueMutation,enqueueAndFlush,flushQueue,pendingQueue,reviewQueue,localKey,reference,sessionInfo,signOut,
+    enqueueMutation,enqueueAndFlush,flushQueue,pendingQueue,reviewQueue,acknowledgement,localKey,reference,sessionInfo,signOut,
     principalFromSession,emailFromSession,selectedEnterpriseId,deviceId
   });
 })();
