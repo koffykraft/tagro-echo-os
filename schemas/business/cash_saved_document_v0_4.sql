@@ -16,6 +16,7 @@ create table cash_saved_documents (
   rendered_image_png bytea,
   rendered_image_sha256 text,
   rendered_image_mime text,
+  request_hash text not null,
   source_idempotency_key text not null,
   unique(enterprise_id, source_idempotency_key)
 );
