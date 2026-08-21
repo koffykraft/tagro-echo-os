@@ -3,10 +3,13 @@ from __future__ import annotations
 import json
 import os
 import unittest
+from datetime import date
+from decimal import Decimal
 from unittest.mock import patch
 
 from src.aws_runtime.handler import lambda_handler
-from src.aws_runtime.on_call_runtime import OnCallRuntimeError
+from src.aws_runtime.on_call_runtime import OnCallRuntimeError, _partition_warehouse_sales
+from src.financial.health import SaleLineEvidence
 
 
 class OwnerOnCallRuntimeTests(unittest.TestCase):
@@ -107,6 +110,21 @@ class OwnerOnCallRuntimeTests(unittest.TestCase):
         self.assertEqual(400, response["statusCode"])
         self.assertEqual("invalid_on_call_query", json.loads(response["body"])["error"])
 
+    def test_unreconciled_echo_warehouse_overlap_is_not_double_counted(self):
+        echo = [
+            SaleLineEvidence("E1", date(2026, 8, 21), "KVR", "ITEM-A", Decimal("1"), Decimal("100")),
+        ]
+        warehouse = [
+            SaleLineEvidence("W1", date(2026, 8, 21), "KVR", "ITEM-A", Decimal("1"), Decimal("100")),
+            SaleLineEvidence("W2", date(2026, 8, 21), "KVR", "ITEM-B", Decimal("1"), Decimal("200")),
+            SaleLineEvidence("W3", date(2026, 8, 20), "KVR", "ITEM-C", Decimal("1"), Decimal("300")),
+            SaleLineEvidence("W4", date(2026, 8, 21), "PKM", "ITEM-D", Decimal("1"), Decimal("400")),
+        ]
+        admitted, overlap = _partition_warehouse_sales(echo, warehouse)
+        self.assertEqual(["W3", "W4"], [row.sale_id for row in admitted])
+        self.assertEqual(["W1", "W2"], [row.sale_id for row in overlap])
+        self.assertEqual(Decimal("300"), sum((row.sale_before_tax for row in overlap), Decimal("0")))
+
     def test_route_is_jwt_protected_in_sam(self):
         with open("architecture/aws/nonprod-runtime-template.yaml", encoding="utf-8") as handle:
             text = handle.read()
@@ -122,6 +140,7 @@ class OwnerOnCallRuntimeTests(unittest.TestCase):
         self.assertIn("incomplete_financial_observation_run", text)
         self.assertIn("non-canonical supporting observations", text)
         self.assertIn('"busy_booking_reconciliation_required"', text)
+        self.assertIn('"sale_stream_overlap_reconciliation_required"', text)
         self.assertIn("ExpenseRole.UNKNOWN", text)
 
 
