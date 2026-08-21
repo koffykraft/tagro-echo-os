@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any
@@ -25,6 +26,101 @@ def _parse_date(value: str | None, name: str) -> date | None:
         raise OnCallRuntimeError(f"invalid {name} date") from exc
 
 
+def _in_period(value: date, start: date | None, end: date | None) -> bool:
+    return (start is None or value >= start) and (end is None or value <= end)
+
+
+def _warehouse_projection(conn, enterprise_id: str, start: date | None, end: date | None, branch: str | None):
+    """Read only the latest financial run that has its manifest observation present.
+
+    Chunks imported without their final manifest are intentionally invisible.
+    Every row remains an import_observation; no canonical sale/purchase table is
+    written by this bridge.
+    """
+    manifest_row = conn.execute(
+        """
+        select s.immutable_ref,o.observed_value_json,s.source_as_of,s.captured_at
+        from import_observations o
+        join import_sources s on s.source_id=o.source_id
+        where o.enterprise_id=%s
+          and o.subject_kind='financial_snapshot'
+          and o.dimension_code='financial.export_manifest'
+          and s.source_system='tagro_canonical_financial_projection'
+          and o.acceptance_state in ('raw_supporting','reviewed_provisional','accepted_supporting')
+        order by s.captured_at desc
+        limit 1
+        """,
+        (enterprise_id,),
+    ).fetchone()
+    if not manifest_row:
+        return (), (), None, None, None
+
+    immutable_ref = str(manifest_row[0] or "")
+    manifest = json.loads(manifest_row[1])
+    source_as_of = manifest_row[2]
+    rows = conn.execute(
+        """
+        select o.source_subject_ref,o.observed_value_json,o.provenance_ref,s.source_locator
+        from import_observations o
+        join import_sources s on s.source_id=o.source_id
+        where o.enterprise_id=%s
+          and o.subject_kind='financial_sale_line'
+          and o.dimension_code='financial.sale_cost_evidence'
+          and s.source_system='tagro_canonical_financial_projection'
+          and s.immutable_ref=%s
+          and o.acceptance_state in ('raw_supporting','reviewed_provisional','accepted_supporting')
+        order by o.source_subject_ref
+        """,
+        (enterprise_id, immutable_ref),
+    ).fetchall()
+
+    expected = int(manifest.get("sale_line_observations") or 0)
+    if len(rows) != expected:
+        # Manifest exists but the run is incomplete/corrupt in the observation
+        # store. Refuse the entire warehouse projection rather than partial P&L.
+        return (), (), manifest, source_as_of, {
+            "status": "incomplete_financial_observation_run",
+            "expected_sale_lines": expected,
+            "loaded_sale_lines": len(rows),
+            "immutable_ref": immutable_ref,
+        }
+
+    sales: list[SaleLineEvidence] = []
+    purchases_by_ref: dict[str, PurchasePriceEvidence] = {}
+    for source_subject_ref, raw_json, provenance_ref, source_locator in rows:
+        value = json.loads(raw_json)
+        sale_date = date.fromisoformat(str(value["sale_date"]))
+        branch_code = str(value["branch"]).upper()
+        if not _in_period(sale_date, start, end) or (branch and branch_code != branch):
+            continue
+        item_key = str(value["item_key"])
+        sales.append(
+            SaleLineEvidence(
+                sale_id=f"warehouse:{source_subject_ref}",
+                sale_date=sale_date,
+                branch=branch_code,
+                item_key=item_key,
+                quantity=Decimal(str(value["quantity"])),
+                sale_before_tax=Decimal(str(value["sale_before_tax"])),
+                source_ref=str(value.get("source_ref") or provenance_ref or source_locator),
+            )
+        )
+        for reference in value.get("purchase_references") or []:
+            ref = str(reference.get("source_ref") or "")
+            if not ref:
+                continue
+            purchases_by_ref[ref] = PurchasePriceEvidence(
+                item_key=item_key,
+                purchase_date=date.fromisoformat(str(reference["purchase_date"])),
+                cost_before_tax=Decimal(str(reference["cost_before_tax"])),
+                branch=str(reference.get("branch") or "") or None,
+                source_ref=ref,
+                is_stock_transfer=False,
+            )
+
+    return tuple(sales), tuple(purchases_by_ref.values()), manifest, source_as_of, None
+
+
 def owner_on_call_readback(
     config: RuntimeConfig,
     *,
@@ -33,12 +129,12 @@ def owner_on_call_readback(
     end: str | None = None,
     branch: str | None = None,
 ) -> dict[str, Any]:
-    """Build a read-only Owner ON CALL projection from admitted PostgreSQL evidence.
+    """Build a read-only owner projection from canonical ECHO and evidence layers.
 
-    This intentionally does not claim the external historical warehouse has been
-    loaded into PostgreSQL. Coverage/source metadata is returned explicitly.
-    Closing Cash aggregate expense evidence is exposed as unclassified and bank
-    movements remain Prism-unresolved unless a governed consequence exists.
+    Canonical ECHO transactions and imported warehouse observations stay distinct.
+    Imported financial rows never become canonical merely because ON CALL reads
+    them. Closing Cash aggregate expenses stay unclassified and bank movements
+    remain Prism-unresolved until supported consequence evidence exists.
     """
     start_date = _parse_date(start, "start")
     end_date = _parse_date(end, "end")
@@ -67,7 +163,7 @@ def owner_on_call_readback(
             """,
             tuple(params),
         ).fetchall()
-        sales = tuple(
+        echo_sales = tuple(
             SaleLineEvidence(
                 sale_id=str(sale_id), sale_date=sale_date, branch=str(code), item_key=str(product_id),
                 quantity=Decimal(str(qty)), sale_before_tax=Decimal(str(taxable)), source_ref=f"postgres:sale:{sale_id}",
@@ -90,13 +186,19 @@ def owner_on_call_readback(
             """,
             tuple(purchase_params),
         ).fetchall()
-        purchases = tuple(
+        echo_purchases = tuple(
             PurchasePriceEvidence(
                 item_key=str(product_id), purchase_date=purchase_date, cost_before_tax=Decimal(str(unit_price)),
                 branch=str(code), source_ref=f"postgres:purchase:{purchase_id}", is_stock_transfer=False,
             )
             for product_id, purchase_date, unit_price, code, purchase_id in purchase_rows
         )
+
+        warehouse_sales, warehouse_purchases, warehouse_manifest, warehouse_as_of, warehouse_error = _warehouse_projection(
+            conn, enterprise_id, start_date, end_date, branch_code
+        )
+        sales = echo_sales + warehouse_sales
+        purchases = echo_purchases + warehouse_purchases
 
         expense_params: list[Any] = [enterprise_id]
         expense_where = ["c.enterprise_id=%s", "c.cash_expenses>0"]
@@ -187,7 +289,8 @@ def owner_on_call_readback(
             """,
             (enterprise_id, enterprise_id, enterprise_id),
         ).fetchone()
-        evidence_as_of = timestamps[0] if timestamps and timestamps[0].year > 1970 else None
+        postgres_as_of = timestamps[0] if timestamps and timestamps[0].year > 1970 else None
+        evidence_as_of = max((x for x in (postgres_as_of, warehouse_as_of) if x is not None), default=None)
 
     snapshot = OwnerOnCall().snapshot(
         sales, purchases, expenses,
@@ -195,7 +298,23 @@ def owner_on_call_readback(
         cash_position=cash_position, bank_position=bank_position,
         evidence_as_of=evidence_as_of, prism_status=prism_status,
     )
-    snapshot["runtime_source"] = "echo_postgres_admitted_evidence"
-    snapshot["historical_warehouse_included"] = False
-    snapshot["coverage_note"] = "PostgreSQL projection only; external sealed/current warehouse coverage is not implied by this endpoint."
+    snapshot["runtime_source"] = "echo_postgres_plus_governed_financial_observations"
+    snapshot["echo_sale_lines"] = len(echo_sales)
+    snapshot["warehouse_sale_lines"] = len(warehouse_sales)
+    snapshot["warehouse_financial_projection_included"] = bool(warehouse_manifest and not warehouse_error)
+    snapshot["historical_warehouse_included"] = bool(
+        warehouse_manifest and str(warehouse_manifest.get("sale_start") or "9999-12-31") <= "2007-01-09"
+    )
+    snapshot["warehouse_projection_manifest"] = warehouse_manifest
+    snapshot["warehouse_projection_error"] = warehouse_error
+    snapshot["busy_booking_reconciliation_required"] = True
+    if warehouse_error:
+        snapshot["coverage_note"] = "A warehouse financial run was found but is incomplete; it was excluded entirely from P&L."
+    elif warehouse_manifest:
+        snapshot["coverage_note"] = (
+            f"Warehouse sale evidence {warehouse_manifest.get('sale_start')} through {warehouse_manifest.get('sale_end')} is included as non-canonical supporting observations. "
+            "ECHO-originated sales remain a separate source; BUSY booking reconciliation is required before those streams can overlap."
+        )
+    else:
+        snapshot["coverage_note"] = "No completed warehouse financial observation run is loaded; projection uses admitted PostgreSQL evidence only."
     return owner_on_call_payload(snapshot)
