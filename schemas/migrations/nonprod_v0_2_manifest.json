@@ -68,7 +68,7 @@
     {
       "id": "0011-cash-saved-document-v0.4",
       "path": "schemas/business/cash_saved_document_v0_4.sql",
-      "git_blob_sha": "b312e271eb3f355ca0cb420eef3447e71b4fc31f",
+      "git_blob_sha": "3b3ae5e81780a31142312a37f6eedabc462fd2ae",
       "depends_on": ["0010-cash-entry-evidence-v0.4"]
     }
   ]
