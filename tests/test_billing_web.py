@@ -17,7 +17,8 @@ class BillingWebTests(unittest.TestCase):
     def test_runtime_confirmation_required_before_issued_state(self):
         text = (ROOT / "web" / "billing.html").read_text(encoding="utf-8")
         self.assertIn("tagro.echo.bill-issued.v1", text)
-        self.assertIn("body.data?.bill_id", text)
+        self.assertIn("EchoRuntime.enqueueAndFlush", text)
+        self.assertIn("result.response?.data?.bill_id", text)
         self.assertIn("no invoice or BUSY booking has been claimed", text)
 
     def test_billing_page_is_linked_and_cached(self):
