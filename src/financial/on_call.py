@@ -184,6 +184,7 @@ class OwnerOnCall:
             "cost_coverage_pct": summary["cost_coverage_pct"],
             "cost_revenue_coverage_pct": summary["cost_revenue_coverage_pct"],
             "cost_confidence_counts": summary["cost_confidence_counts"],
+            "cost_confidence_revenue": summary["cost_confidence_revenue"],
             "projection_complete": summary["projection_complete"],
             "cash_position": cash_position,
             "bank_position": bank_position,
