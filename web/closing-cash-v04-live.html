@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1180,initial-scale=0.34,minimum-scale=0.25,maximum-scale=3,user-scalable=yes,viewport-fit=cover">
+<title>TAGRO ECHO · Closing Cash Ver04 Sheet</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fff}#ccFrame{width:100%;height:100%;border:0;display:block}.syncflag{position:fixed;right:6px;bottom:6px;z-index:20;background:#111;color:#fff;border-radius:14px;padding:5px 8px;font:10px Arial,sans-serif;box-shadow:0 2px 8px #0003}.syncflag.pending{background:#8a5a00}.syncflag.review{background:#a12622}.syncflag.ok{background:#246b36}.syncflag.local{background:#555}
+</style>
+<script src="runtime-config.js"></script>
+<script src="runtime-client.js"></script>
+</head>
+<body>
+<iframe id="ccFrame" title="TAGRO ECHO Closing Cash Ver04 Sheet"></iframe>
+<div class="syncflag local" id="syncFlag">Standalone ready</div>
+<script>
+(()=>{
+'use strict';
+const frame=document.getElementById('ccFrame'),flag=document.getElementById('syncFlag');
+frame.src='closing-cash-v03.html'+(location.search||'');
+function state(text,kind='local'){flag.textContent=text;flag.className='syncflag '+kind;try{frame.contentDocument.getElementById('saveState').textContent=text}catch{}}
+function blobToDataUrl(blob){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result||''));r.onerror=()=>reject(r.error);r.readAsDataURL(blob)})}
+function sessionState(){try{return window.EchoRuntime?.sessionInfo?.()||{signedIn:false}}catch{return{signedIn:false}}}
+async function syncSaved(saved,w){
+ if(!saved?.rec||!saved?.blob)return;const rec=saved.rec,session=sessionState();
+ if(!session.signedIn||!session.enterpriseId){rec.shared_runtime_state='local_only_sign_in_required';try{await w.dbPut('closing_cash',rec)}catch{};state('Saved locally · sign in to sync','local');return}
+ let imageData='';try{imageData=await blobToDataUrl(saved.blob)}catch{}
+ const payload={enterprise_id:session.enterpriseId,idempotency_key:rec.record_id,branch_code:rec.branch,business_date:rec.business_date,opening_cash:rec.summary?.yesterday??0,declared_closing:rec.summary?.cash??0,entered_for_label:rec.entered_by||'Login user',context_switch_reason:rec.switch_reason||'',document_schema:rec.schema||'tagro.echo.closing-cash-trial.v3',document:rec,entries:[],rendered_image_data_url:imageData};
+ try{state('Saved locally · syncing…','pending');const result=await window.EchoRuntime.enqueueAndFlush({path:'/cash-days/save',method:'POST',body:payload,expectedSchema:'tagro.echo.cash-document-saved.v1',idempotencyKey:rec.record_id});rec.shared_runtime_state=result.state;if(result.state==='acknowledged'){rec.shared_document_id=result.response?.data?.document_id||'';state('Saved · AWS confirmed','ok')}else if(result.state==='review')state('Saved locally · sync needs review','review');else state('Saved locally · sync pending','pending');try{await w.dbPut('closing_cash',rec)}catch{}}
+ catch{rec.shared_runtime_state='local_only_sync_error';try{await w.dbPut('closing_cash',rec)}catch{};state('Saved locally · sync pending','pending')}
+}
+function installSheetView(w,d){
+ const style=d.createElement('style');style.id='echo-v04-sheet-style';style.textContent=`
+ html,body{background:#fff!important;font-size:12px!important;min-width:1080px!important}
+ .top{position:static!important;padding:3px 6px 4px!important;border-bottom:1px solid #bbb!important}
+ .brandrow{min-height:23px!important}.brand{font-size:16px!important}.sub{font-size:9px!important;margin-top:0!important}.home{padding:3px 9px!important;font-size:11px!important}
+ .context{grid-template-columns:130px 110px 180px 1fr!important;gap:5px!important;margin-top:3px!important;align-items:end!important}.context label{font-size:9px!important}.context input,.context select{height:27px!important;border-radius:3px!important;padding:2px 5px!important;font-size:11px!important}.context .switch-note{padding:3px!important}.context .switch-note input{height:25px!important}
+ .toolbar{gap:4px!important;margin-top:3px!important;flex-wrap:nowrap!important}.toolbar button{border-radius:3px!important;padding:4px 7px!important;font-size:11px!important}.status{font-size:9px!important}
+ .desktop{display:block!important;padding:3px 6px!important}.mobile{display:none!important}
+ .desktop-grid{grid-template-columns:minmax(560px,1fr) 365px!important;gap:6px!important;align-items:start!important;max-width:1120px!important;margin:0 auto!important}
+ .sheetbox,.sidebox{border-radius:3px!important}.sheet-scroll{overflow:visible!important}
+ .entry-table{min-width:0!important;width:100%!important;font-size:11px!important}.entry-table col.sale{width:74px!important}.entry-table col.bill{width:82px!important}.entry-table col.expense{width:90px!important}.entry-table col.part{width:280px!important}
+ .entry-table th,.entry-table td{height:25px!important}.entry-table th{font-size:11px!important;padding:2px!important}.cell{height:24px!important;padding:2px 5px!important;font-size:11px!important}
+ .mini-note{padding:3px 6px!important;font-size:8px!important}
+ .sidebox{padding:5px!important}.side-title{font-size:11px!important;margin-bottom:3px!important}.denom-table{margin-top:3px!important;font-size:11px!important}.denom-table th,.denom-table td{height:25px!important}.denom-table th{font-size:9px!important}.denom-table input{height:24px!important;padding:1px 5px!important;font-size:11px!important}.denom-table td:first-child,.denom-table .amt{padding:0 5px!important}
+ .summary-grid{grid-template-columns:1fr 88px!important;font-size:11px!important}.summary-grid div{padding:4px 5px!important;min-height:25px!important}
+ .review-card{max-width:760px!important}.report{max-width:700px!important;padding:10px!important}.report th,.report td{padding:3px!important;font-size:10px!important}
+ @media(max-width:760px){html,body{min-width:1080px!important}.desktop{display:block!important}.mobile{display:none!important}.top{position:static!important}.context{grid-template-columns:130px 110px 180px 1fr!important}.toolbar{overflow:visible!important}.desktop-grid{grid-template-columns:minmax(560px,1fr) 365px!important}.report-meta{grid-template-columns:repeat(3,1fr)!important}}
+ `;d.head.appendChild(style);
+ const fix=d.createElement('script');fix.src='closing-cash-v03-navfix.js';fix.dataset.v04='1';d.body.appendChild(fix);
+}
+frame.addEventListener('load',()=>{
+ const w=frame.contentWindow,d=frame.contentDocument;installSheetView(w,d);
+ const button=d.getElementById('confirmSave');if(!button||typeof w.confirmRecord!=='function'){state('Standalone page unavailable','review');return}
+ button.onclick=async()=>{await w.confirmRecord();let saved=null;try{saved=w.eval('currentSaved')}catch{};if(saved)await syncSaved(saved,w)};
+ const session=sessionState();state(session.signedIn&&session.enterpriseId?'Standalone + AWS ready':'Standalone ready · sign in for AWS','local');
+ window.addEventListener('online',async()=>{try{const r=await window.EchoRuntime.flushQueue();if(r.review)state('Saved locally · sync needs review','review');else if(r.pending)state('Saved locally · sync pending','pending');else if(r.acknowledged)state('Pending saves synchronized','ok')}catch{}});
+});
+})();
+</script>
+</body>
+</html>
