@@ -92,6 +92,12 @@ Resources:
             ApiId: !Ref EchoHttpApi
             Path: /tenant-context
             Method: GET
+        ReferenceData:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref EchoHttpApi
+            Path: /reference-data
+            Method: GET
         OwnerOnCall:
           Type: HttpApi
           Properties:
