@@ -12,7 +12,7 @@ class TdLatestRefreshBridgeTests(unittest.TestCase):
         self.assertIn("$branches.Count -ne 5", self.text)
         self.assertIn("@('KVR','PKM','NDD','MDM','SKT')", self.text)
         self.assertIn("latest\\db12026.bds", self.text)
-        self.assertIn("newest_available_td_snapshot_per_branch", self.text)
+        self.assertIn("newest_available_td_snapshot_per_branch_stable_copy", self.text)
 
     def test_preserves_freshness_separately(self) -> None:
         self.assertIn("heartbeat_state", self.text)
@@ -20,8 +20,20 @@ class TdLatestRefreshBridgeTests(unittest.TestCase):
         self.assertIn("source_modified_utc", self.text)
         self.assertIn("source_sha256", self.text)
 
-    def test_adapts_direct_bds_to_existing_zip_stager(self) -> None:
-        self.assertIn("Compress-Archive", self.text)
+    def test_live_snapshot_is_copied_stably_before_archive(self) -> None:
+        self.assertIn('function Copy-StableSnapshot', self.text)
+        self.assertIn('[System.IO.FileShare]::ReadWrite', self.text)
+        self.assertIn('[System.IO.FileShare]::Delete', self.text)
+        self.assertIn('TD snapshot changed during staging copy.', self.text)
+        self.assertIn('stable_copy_attempts', self.text)
+        copy_call = self.text.index('$staged = Copy-StableSnapshot')
+        archive_call = self.text.index('Compress-Archive -LiteralPath $stableCopy')
+        self.assertLess(copy_call, archive_call)
+        self.assertNotIn('Compress-Archive -LiteralPath $snapshot', self.text)
+        self.assertNotIn('Get-FileHash -Algorithm SHA256 -LiteralPath $snapshot', self.text)
+
+    def test_adapts_stable_bds_copy_to_existing_zip_stager(self) -> None:
+        self.assertIn("Compress-Archive -LiteralPath $stableCopy", self.text)
         self.assertIn("tar.exe -tf", self.text)
         self.assertIn("kind = 'zip'", self.text)
         self.assertIn("auto_refresh_current_fy.ps1", self.text)
@@ -51,6 +63,7 @@ class TdLatestRefreshBridgeTests(unittest.TestCase):
         self.assertIn('sourceRecordCount -ne 5', self.text)
         self.assertIn('FULL PREFLIGHT PASSED - no canonical write has occurred.', self.text)
         self.assertIn('[switch]$PreflightOnly', self.text)
+        self.assertIn('stable_snapshot_copy_verified', self.text)
 
     def test_downstream_python_is_forced_to_aws_runtime_root(self) -> None:
         self.assertIn('$env:TAGRO_AWS_RUNTIME_ROOT = $RuntimeRoot', self.text)
@@ -65,7 +78,6 @@ class TdLatestRefreshBridgeTests(unittest.TestCase):
         self.assertIn("Remove-Item Env:\\TAGRO_BUSY_DB_PASSWORD", self.text)
 
     def test_no_ambiguous_variable_colon_interpolation(self) -> None:
-        # "$name:" is invalid in interpolation; scoped forms such as "$env:NAME" are valid PowerShell.
         offenders = re.findall(r'\$(?!env:|global:|script:|local:|private:)[A-Za-z_][A-Za-z0-9_]*:', self.text)
         self.assertEqual([], offenders, f'ambiguous PowerShell variable interpolation: {offenders}')
 
