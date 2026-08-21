@@ -50,7 +50,7 @@
     {
       "id": "0008-stock-observation-planes-v0.4",
       "path": "schemas/business/stock_observation_planes_v0_4.sql",
-      "git_blob_sha": "51003b9601a4cf5f7b400a1c8c78ba9c9ddf9a66",
+      "git_blob_sha": "c2300bd35e41b5e814e8d5a6ef2b0d5872acc3d7",
       "depends_on": ["0002-canonical-business-v0.2", "0003-counter-operations-v0.2"]
     }
   ]
