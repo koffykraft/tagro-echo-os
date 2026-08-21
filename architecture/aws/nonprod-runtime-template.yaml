@@ -142,6 +142,12 @@ Resources:
             ApiId: !Ref EchoHttpApi
             Path: /cash-days/submit
             Method: POST
+        CashDocumentSave:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref EchoHttpApi
+            Path: /cash-days/save
+            Method: POST
         BillingIssue:
           Type: HttpApi
           Properties:
