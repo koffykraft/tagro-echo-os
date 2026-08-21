@@ -35,6 +35,18 @@ class PageToolboxWebTests(unittest.TestCase):
         self.assertIn('href="page-builder.html"', index)
         self.assertIn("'./page-builder.html'", sw)
 
+    def test_preview_generates_standalone_product_without_admitting_actions(self):
+        text = (ROOT / "web" / "page-builder.html").read_text(encoding="utf-8")
+        self.assertIn('id="preview"', text)
+        self.assertIn("function renderProduct(def)", text)
+        self.assertIn("Content-Security-Policy", text)
+        self.assertIn("declared business/AI actions remain inert", text)
+        self.assertIn("navigate:", text)
+        self.assertIn("query:", text)
+        self.assertIn("command:", text)
+        self.assertIn("ai:", text)
+        self.assertIn("unsafeBinding", text)
+
 
 if __name__ == "__main__":
     unittest.main()
