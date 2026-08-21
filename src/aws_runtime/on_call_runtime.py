@@ -308,6 +308,9 @@ def owner_on_call_readback(
     snapshot["warehouse_projection_manifest"] = warehouse_manifest
     snapshot["warehouse_projection_error"] = warehouse_error
     snapshot["busy_booking_reconciliation_required"] = True
+    snapshot["warehouse_coverage_boundary"] = (
+        "External sealed/current warehouse coverage is not implied beyond the latest completed, manifested financial observation run."
+    )
     if warehouse_error:
         snapshot["coverage_note"] = "A warehouse financial run was found but is incomplete; it was excluded entirely from P&L."
     elif warehouse_manifest:
