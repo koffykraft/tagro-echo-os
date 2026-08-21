@@ -14,6 +14,7 @@ from src.aws_runtime.operational_runtime import (
     create_service_intake,
     record_stock_count,
 )
+from src.aws_runtime.reference_runtime import ReferenceRuntimeError, reference_search
 
 
 def _response(status_code: int, payload: Mapping[str, Any]) -> dict[str, Any]:
@@ -113,6 +114,37 @@ def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
         if not result:
             return _response(403, {"error": "enterprise_membership_required"})
         return _response(200, {"status": "tenant_context_resolved", **result})
+
+    if raw_path == "/reference-data" and method == "GET":
+        subject = str(claims.get("sub") or "")
+        try:
+            context_result = tenant_context(config, subject)
+        except Exception as exc:
+            return _response(503, {"error": "tenant_context_unavailable", "error_type": type(exc).__name__})
+        if not context_result or not context_result.get("enterprises"):
+            return _response(403, {"error": "enterprise_membership_required"})
+        memberships = list(context_result["enterprises"])
+        query = event.get("queryStringParameters") or {}
+        if not isinstance(query, Mapping):
+            query = {}
+        requested_enterprise = str(query.get("enterprise_id") or "")
+        if requested_enterprise:
+            memberships = [m for m in memberships if str(m.get("enterprise_id") or "") == requested_enterprise]
+        if len(memberships) != 1:
+            return _response(409, {"error": "enterprise_selection_required"})
+        try:
+            result = reference_search(
+                config,
+                enterprise_id=str(memberships[0]["enterprise_id"]),
+                kind=str(query.get("kind") or ""),
+                query=str(query.get("q") or ""),
+                limit=query.get("limit") or 40,
+            )
+        except ReferenceRuntimeError as exc:
+            return _response(400, {"error": "invalid_reference_query", "detail": str(exc)})
+        except Exception as exc:
+            return _response(503, {"error": "reference_data_unavailable", "error_type": type(exc).__name__})
+        return _response(200, result)
 
     if raw_path == "/owner-on-call" and method == "GET":
         subject = str(claims.get("sub") or "")
