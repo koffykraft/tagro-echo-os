@@ -10,6 +10,8 @@ create table stock_count_observations (
   product_id text references products(product_id),
   raw_item_ref text not null default '',
   counted_qty numeric(14,3) not null check(counted_qty>=0),
+  canonical_system_qty numeric(14,3),
+  variance_to_canonical numeric(14,3),
   observed_at timestamptz not null,
   observed_by text references users(user_id),
   source_type text not null,
