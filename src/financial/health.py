@@ -108,9 +108,13 @@ class FinancialHealthEngine:
          prior financial years;
       4. in the chosen year prefer same-branch purchase evidence when present,
          otherwise use enterprise-wide evidence;
-      5. take up to the latest four prices (LIFO-like grab), expose the full
-         comparison band, and use their median as the reference cost;
-      6. three/four references are strong, one/two are weak, none is unknown.
+      5. use the latest valid purchase as the LIFO-style estimated acquisition
+         cost; keep up to four recent purchases plus the highest available
+         pre-sale purchase as comparison evidence, without averaging them into
+         a different primary cost;
+      6. three/four recent references are strong, one/two are weak, none is
+         unknown. A protected high may widen the comparison band but does not
+         by itself strengthen confidence.
 
     Expense categories/roles are authoritative inputs. The engine never guesses
     them from narration. Unknown evidence remains visible and is excluded from
@@ -124,6 +128,7 @@ class FinancialHealthEngine:
 
     @staticmethod
     def _median(values: Sequence[Decimal]) -> Decimal:
+        """Comparison helper retained for callers; not the LIFO primary cost."""
         ordered = sorted(Decimal(v) for v in values)
         n = len(ordered)
         if n % 2:
@@ -174,18 +179,28 @@ class FinancialHealthEngine:
         same_branch = [p for p in year_rows if p.branch == sale.branch]
         scoped_rows = same_branch if same_branch else year_rows
         scope = "same_branch" if same_branch else "enterprise_fallback"
-        selected = sorted(
+        ordered = sorted(
             scoped_rows,
             key=lambda p: (p.purchase_date, p.source_ref or ""),
             reverse=True,
-        )[:4]
+        )
+        recent = ordered[:4]
+        latest = recent[0]
+        protected_high = max(scoped_rows, key=lambda p: (p.cost_before_tax, p.purchase_date, p.source_ref or ""))
+        selected = list(recent)
+        if protected_high not in selected:
+            selected.append(protected_high)
 
         values = [p.cost_before_tax for p in selected]
-        reference = money(self._median(values))
-        confidence = CostConfidence.STRONG if len(selected) >= 3 else CostConfidence.WEAK
+        reference = money(latest.cost_before_tax)
+        confidence = CostConfidence.STRONG if len(recent) >= 3 else CostConfidence.WEAK
         source_refs = tuple(p.source_ref for p in selected if p.source_ref)
         fy_label = f"FY {selected_fy}-{str(selected_fy + 1)[-2:]}"
-        policy = f"latest {len(selected)} external purchase price(s) from {fy_label}; {scope}"
+        policy = (
+            f"LIFO-style latest external purchase from {fy_label}; {scope}; "
+            f"comparison uses latest {len(recent)} price(s)"
+            + (" plus protected high" if protected_high not in recent else "")
+        )
         return CostEstimate(
             unit_cost=reference,
             confidence=confidence,
@@ -196,7 +211,7 @@ class FinancialHealthEngine:
             reference_scope=scope,
             reference_low=money(min(values)),
             reference_high=money(max(values)),
-            latest_reference=money(selected[0].cost_before_tax),
+            latest_reference=reference,
         )
 
     def project_sale(
