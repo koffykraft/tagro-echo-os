@@ -81,6 +81,10 @@ class CostEstimate:
     reference_low: Decimal | None = None
     reference_high: Decimal | None = None
     latest_reference: Decimal | None = None
+    latest_reference_age_days: int | None = None
+    recent_reference_count: int = 0
+    recent_dispersion_pct: Decimal | None = None
+    confidence_reason: str = ""
 
 
 @dataclass(frozen=True)
@@ -112,9 +116,11 @@ class FinancialHealthEngine:
          cost; keep up to four recent purchases plus the highest available
          pre-sale purchase as comparison evidence, without averaging them into
          a different primary cost;
-      6. three/four recent references are strong, one/two are weak, none is
-         unknown. A protected high may widen the comparison band but does not
-         by itself strengthen confidence.
+      6. strong requires at least three recent references from the sale FY and
+         a reasonably coherent recent price band. One/two references, prior-FY
+         fallback, or a volatile recent band are weak. No evidence is unknown.
+         A protected historical high broadens comparison evidence but does not
+         by itself weaken confidence.
 
     Expense categories/roles are authoritative inputs. The engine never guesses
     them from narration. Unknown evidence remains visible and is excluded from
@@ -153,6 +159,10 @@ class FinancialHealthEngine:
                 reference_low=exact,
                 reference_high=exact,
                 latest_reference=exact,
+                latest_reference_age_days=0,
+                recent_reference_count=1,
+                recent_dispersion_pct=Decimal("0.00"),
+                confidence_reason="sale-linked acquisition cost is deterministic",
             )
 
         eligible = [
@@ -164,7 +174,10 @@ class FinancialHealthEngine:
             and p.cost_before_tax > 0
         ]
         if not eligible:
-            return CostEstimate(None, CostConfidence.UNKNOWN, 0, (), (), "no valid purchase evidence")
+            return CostEstimate(
+                None, CostConfidence.UNKNOWN, 0, (), (), "no valid purchase evidence",
+                confidence_reason="no qualifying pre-sale purchase-price evidence",
+            )
 
         sale_fy = self.financial_year(sale.sale_date)[0]
         by_fy: dict[int, list[PurchasePriceEvidence]] = {}
@@ -173,7 +186,10 @@ class FinancialHealthEngine:
 
         selected_fy = max((fy for fy in by_fy if fy <= sale_fy), default=None)
         if selected_fy is None:
-            return CostEstimate(None, CostConfidence.UNKNOWN, 0, (), (), "no prior purchase evidence")
+            return CostEstimate(
+                None, CostConfidence.UNKNOWN, 0, (), (), "no prior purchase evidence",
+                confidence_reason="no purchase-price evidence at or before the sale date",
+            )
 
         year_rows = by_fy[selected_fy]
         same_branch = [p for p in year_rows if p.branch == sale.branch]
@@ -192,8 +208,31 @@ class FinancialHealthEngine:
             selected.append(protected_high)
 
         values = [p.cost_before_tax for p in selected]
+        recent_values = [Decimal(p.cost_before_tax) for p in recent]
         reference = money(latest.cost_before_tax)
-        confidence = CostConfidence.STRONG if len(recent) >= 3 else CostConfidence.WEAK
+        recent_low = min(recent_values)
+        recent_high = max(recent_values)
+        dispersion = (
+            Decimal("0.00") if reference == 0
+            else ((recent_high - recent_low) / reference * Decimal("100")).quantize(Decimal("0.01"))
+        )
+        latest_age = (sale.sale_date - latest.purchase_date).days
+        same_fy = selected_fy == sale_fy
+        coherent_band = dispersion <= Decimal("30.00")
+        if len(recent) >= 3 and same_fy and coherent_band:
+            confidence = CostConfidence.STRONG
+            confidence_reason = "three or more coherent purchase references in the sale financial year"
+        else:
+            confidence = CostConfidence.WEAK
+            reasons: list[str] = []
+            if len(recent) < 3:
+                reasons.append("fewer than three recent purchase references")
+            if not same_fy:
+                reasons.append("cost evidence falls back to a prior financial year")
+            if not coherent_band:
+                reasons.append(f"recent purchase-price band is volatile ({dispersion}%)")
+            confidence_reason = "; ".join(reasons) or "purchase evidence is supportive but not deterministic"
+
         source_refs = tuple(p.source_ref for p in selected if p.source_ref)
         fy_label = f"FY {selected_fy}-{str(selected_fy + 1)[-2:]}"
         policy = (
@@ -212,6 +251,10 @@ class FinancialHealthEngine:
             reference_low=money(min(values)),
             reference_high=money(max(values)),
             latest_reference=reference,
+            latest_reference_age_days=latest_age,
+            recent_reference_count=len(recent),
+            recent_dispersion_pct=dispersion,
+            confidence_reason=confidence_reason,
         )
 
     def project_sale(
@@ -263,10 +306,10 @@ class FinancialHealthEngine:
             e for e in classified_expenses
             if e.role in {ExpenseRole.DIRECT, ExpenseRole.BRANCH, ExpenseRole.CENTRAL, ExpenseRole.FINANCE}
         ]
-        operating_expenses = [
-            e for e in classified_expenses
-            if e.role in {ExpenseRole.DIRECT, ExpenseRole.BRANCH, ExpenseRole.CENTRAL}
-        ]
+        direct_expenses = [e for e in classified_expenses if e.role == ExpenseRole.DIRECT]
+        branch_expenses = [e for e in classified_expenses if e.role == ExpenseRole.BRANCH]
+        central_expenses = [e for e in classified_expenses if e.role == ExpenseRole.CENTRAL]
+        operating_expenses = direct_expenses + branch_expenses + central_expenses
         finance_expenses = [e for e in classified_expenses if e.role == ExpenseRole.FINANCE]
 
         known_cost = [p for p in projected if p.estimated_cogs is not None]
@@ -276,7 +319,10 @@ class FinancialHealthEngine:
         sales_unknown_cost = money(sum((p.sales_before_tax for p in unknown_cost), Decimal("0")))
         known_cogs = money(sum((p.estimated_cogs or Decimal("0") for p in known_cost), Decimal("0")))
         known_gp = money(sum((p.estimated_gross_profit or Decimal("0") for p in known_cost), Decimal("0")))
-        operating_total = money(sum((abs(e.amount) for e in operating_expenses), Decimal("0")))
+        direct_total = money(sum((abs(e.amount) for e in direct_expenses), Decimal("0")))
+        branch_total = money(sum((abs(e.amount) for e in branch_expenses), Decimal("0")))
+        central_total = money(sum((abs(e.amount) for e in central_expenses), Decimal("0")))
+        operating_total = money(direct_total + branch_total + central_total)
         finance_total = money(sum((abs(e.amount) for e in finance_expenses), Decimal("0")))
         classified_pnl_total = money(sum((abs(e.amount) for e in pnl_expenses), Decimal("0")))
         unknown_expense_total = money(sum((abs(e.amount) for e in unknown_expenses), Decimal("0")))
@@ -299,6 +345,10 @@ class FinancialHealthEngine:
             for role in ExpenseRole if role != ExpenseRole.UNKNOWN
         }
 
+        contribution = money(known_gp - direct_total)
+        branch_contribution = money(contribution - branch_total)
+        operating_profit = money(branch_contribution - central_total)
+
         return {
             "sales_before_tax": sales_total,
             "sales_with_known_cost": sales_known_cost,
@@ -306,11 +356,16 @@ class FinancialHealthEngine:
             "estimated_cogs_known": known_cogs,
             "estimated_gross_profit_known": known_gp,
             "gross_margin_pct_on_known_cost_sales": known_margin,
+            "classified_direct_selling_costs": direct_total,
+            "classified_branch_operating_expenses": branch_total,
+            "classified_central_overhead": central_total,
             "classified_operating_expenses": operating_total,
             "classified_finance_costs": finance_total,
             "classified_pnl_expenses": classified_pnl_total,
-            "estimated_operating_profit_known": money(known_gp - operating_total),
-            "estimated_profit_after_finance_known": money(known_gp - operating_total - finance_total),
+            "estimated_contribution_known": contribution,
+            "estimated_branch_contribution_known": branch_contribution,
+            "estimated_operating_profit_known": operating_profit,
+            "estimated_profit_after_finance_known": money(operating_profit - finance_total),
             "unclassified_expenses": unknown_expense_total,
             "expense_role_totals": role_totals,
             "sale_lines": len(projected),
