@@ -60,13 +60,13 @@ def record_observations(
     """Store source evidence without granting canonical authority.
 
     This function only writes import_sources/import_observations. Financial
-    projection observations, financial expense observations, and historical
-    stock-count lines are deliberately supporting evidence: their presence never
-    inserts or updates canonical sales, purchases, stock, cash, bank or P&L state.
-    A stock-count observation may preserve raw item naming and a proposed name
-    match, but neither is canonical identity. A financial expense observation may
-    preserve an explicit source-side category/role/confidence, but this importer
-    never derives one from narration or debit/credit direction.
+    projection observations, financial expense observations, and historical stock-count lines
+    are deliberately supporting evidence. It never inserts or updates canonical sales,
+    purchases, stock, cash, bank or P&L state. A stock-count observation may preserve
+    raw item naming and a proposed name match, but neither is canonical identity.
+    A financial expense observation may preserve an explicit source-side
+    category/role/confidence, but this importer never derives one from narration or
+    debit/credit direction.
     """
     if not enterprise_id or not source_system or not source_locator or not source_class:
         raise ValueError("enterprise_id, source_system, source_locator and source_class are required")
