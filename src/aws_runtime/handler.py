@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any, Mapping
 
+from src.aws_runtime.billing_runtime import RuntimeBillingError, issue_bill
 from src.aws_runtime.config import RuntimeConfig
 from src.aws_runtime.database import probe, tenant_context
 from src.aws_runtime.import_reconciliation import reconciliation_readback
@@ -22,6 +23,19 @@ def _jwt_claims(event: Mapping[str, Any]) -> Mapping[str, Any]:
     except (KeyError, TypeError):
         return {}
     return claims if isinstance(claims, Mapping) else {}
+
+
+def _json_body(event: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    raw = event.get("body")
+    if isinstance(raw, Mapping):
+        return raw
+    if not isinstance(raw, str) or not raw.strip():
+        return None
+    try:
+        value = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    return value if isinstance(value, Mapping) else None
 
 
 def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
@@ -64,13 +78,7 @@ def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
         try:
             result = probe(config)
         except Exception as exc:
-            return _response(
-                503,
-                {
-                    "status": "database_unavailable",
-                    "error_type": type(exc).__name__,
-                },
-            )
+            return _response(503, {"status": "database_unavailable", "error_type": type(exc).__name__})
         return _response(200, {"status": "database_reachable", **result})
 
     if raw_path == "/tenant-context" and method == "GET":
@@ -84,6 +92,43 @@ def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
         if not result:
             return _response(403, {"error": "enterprise_membership_required"})
         return _response(200, {"status": "tenant_context_resolved", **result})
+
+    if raw_path == "/billing/issue" and method == "POST":
+        subject = str(claims.get("sub") or "")
+        payload = _json_body(event)
+        if not subject:
+            return _response(401, {"error": "authenticated_subject_missing"})
+        if payload is None:
+            return _response(400, {"error": "invalid_json_body"})
+        try:
+            context_result = tenant_context(config, subject)
+        except Exception as exc:
+            return _response(503, {"error": "tenant_context_unavailable", "error_type": type(exc).__name__})
+        if not context_result or not context_result.get("enterprises"):
+            return _response(403, {"error": "enterprise_membership_required"})
+        requested_enterprise = str(payload.get("enterprise_id") or "")
+        memberships = list(context_result["enterprises"])
+        if requested_enterprise:
+            memberships = [m for m in memberships if str(m.get("enterprise_id") or "") == requested_enterprise]
+        if len(memberships) != 1:
+            return _response(409, {"error": "enterprise_selection_required"})
+        membership = memberships[0]
+        if "SELL" not in {str(x).upper() for x in membership.get("capabilities") or []}:
+            return _response(403, {"error": "sell_capability_required"})
+        try:
+            result = issue_bill(
+                config,
+                principal_id=str(context_result["principal_id"]),
+                membership=membership,
+                payload=payload,
+            )
+        except PermissionError:
+            return _response(403, {"error": "sell_capability_required"})
+        except RuntimeBillingError as exc:
+            return _response(409, {"error": "billing_rejected", "detail": str(exc)})
+        except Exception as exc:
+            return _response(503, {"error": "billing_runtime_unavailable", "error_type": type(exc).__name__})
+        return _response(201, {"schema": "tagro.echo.bill-issued.v1", "data": result})
 
     if raw_path == "/import-reconciliation" and method == "GET":
         subject = str(claims.get("sub") or "")
