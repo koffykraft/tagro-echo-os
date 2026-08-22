@@ -20,6 +20,7 @@ TABLES = (
 )
 CONFIRMATION = "SYNC_OPERATIONAL_TWIN_V1"
 PACKAGE_SCHEMA = "tagro.planar-export/1"
+DEFAULT_SOURCE_LOCATOR = "TAGRO_AWS_OS_WAREHOUSE/databases/planar.sqlite"
 
 
 def stable_json(value: Any) -> str:
@@ -28,6 +29,14 @@ def stable_json(value: Any) -> str:
 
 def sha256_text(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def sha256_file(path: Path, chunk_size: int = 1024 * 1024) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(chunk_size), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -124,9 +133,16 @@ def sync(args: argparse.Namespace) -> dict[str, Any]:
         raise FileNotFoundError(f"Planar database not found: {database}")
     manifest = load_json(manifest_path)
     warehouse_run_id = str(manifest.get("run_id") or database.stat().st_mtime_ns)
-    database_sha = str(((manifest.get("databases") or {}).get("planar") or {}).get("sha256") or "")
+    database_sha = str(((manifest.get("databases") or {}).get("planar") or {}).get("sha256") or "").strip().lower()
+    if not database_sha:
+        raise RuntimeError("warehouse manifest does not provide the required planar database sha256")
+    actual_database_sha = sha256_file(database)
+    if actual_database_sha.lower() != database_sha:
+        raise RuntimeError(
+            "planar.sqlite digest does not match warehouse manifest; refusing to ingest a mixed/stale warehouse snapshot"
+        )
     source_as_of = str(manifest.get("completed_at") or "") or None
-    source_locator = str(database)
+    source_locator = str(args.source_locator or DEFAULT_SOURCE_LOCATOR).strip() or DEFAULT_SOURCE_LOCATOR
 
     checkpoint = load_json(checkpoint_path)
     if checkpoint.get("warehouse_run_id") != warehouse_run_id or checkpoint.get("database_sha256") != database_sha:
@@ -142,6 +158,7 @@ def sync(args: argparse.Namespace) -> dict[str, Any]:
         "warehouse_run_id": warehouse_run_id,
         "database_sha256": database_sha,
         "source_as_of": source_as_of,
+        "source_locator": source_locator,
         "tables": {},
     }
 
@@ -180,6 +197,7 @@ def sync(args: argparse.Namespace) -> dict[str, Any]:
                             "warehouse_run_id": warehouse_run_id,
                             "planar_sha256": database_sha,
                             "manifest": str(manifest_path),
+                            "physical_database_path": str(database),
                             "table": table,
                             "offset": offset,
                         },
@@ -229,6 +247,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--profile", default=os.environ.get("ECHO_AWS_PROFILE", "tagro-echo-nonprod"))
     p.add_argument("--region", default=os.environ.get("AWS_REGION", "ap-south-1"))
     p.add_argument("--function-name", default="echo-nonprod-observation-import")
+    p.add_argument("--source-locator", default=DEFAULT_SOURCE_LOCATOR)
     p.add_argument("--batch-size", type=int, default=500)
     p.add_argument("--dry-run", action="store_true")
     return p
