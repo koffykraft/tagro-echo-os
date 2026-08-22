@@ -16,6 +16,10 @@ class OwnerOnCall:
     not mutate transactions or classify ambiguous evidence. Profitability is
     always accompanied by cost/evidence coverage so partial projections cannot
     masquerade as complete business P&L.
+
+    Branch projections only deduct expenses explicitly attributed to that
+    branch. Enterprise/unallocated expenses remain visible as context and are
+    never silently allocated to a branch by this read model.
     """
 
     def __init__(self, engine: FinancialHealthEngine | None = None) -> None:
@@ -43,10 +47,17 @@ class OwnerOnCall:
             s for s in sales
             if self._in_period(s.sale_date, start, end) and (branch is None or s.branch == branch)
         )
-        expense_rows = tuple(
-            e for e in expenses
-            if self._in_period(e.expense_date, start, end) and (branch is None or e.branch in {None, branch})
-        )
+        period_expenses = tuple(e for e in expenses if self._in_period(e.expense_date, start, end))
+        if branch is None:
+            expense_rows = period_expenses
+            unallocated_context: tuple[ExpenseEvidence, ...] = ()
+        else:
+            # A branch view must never manufacture an allocation for enterprise/
+            # central evidence whose branch is absent. Only explicitly attributed
+            # branch evidence affects branch contribution/P&L. Unallocated rows
+            # remain visible for owner review below.
+            expense_rows = tuple(e for e in period_expenses if e.branch == branch)
+            unallocated_context = tuple(e for e in period_expenses if e.branch is None)
         purchase_rows = tuple(purchases)
         summary = self.engine.summarize(sale_rows, purchase_rows, expense_rows)
 
@@ -141,6 +152,19 @@ class OwnerOnCall:
                 "amount": summary["unclassified_expenses"],
                 "message": "Expense evidence exists but is not authoritatively classified.",
             })
+
+        unallocated_context_amount = sum((abs(e.amount) for e in unallocated_context), Decimal("0"))
+        if branch is not None and unallocated_context:
+            attention.append({
+                "type": "unallocated_expense_context",
+                "count": len(unallocated_context),
+                "amount": unallocated_context_amount,
+                "message": (
+                    "Enterprise/unallocated expense evidence exists for this period. "
+                    "It is shown for owner context but is not deducted from this branch projection without an explicit allocation."
+                ),
+            })
+
         if prism_status:
             unresolved_count = int(prism_status.get("unresolved_count", 0) or 0)
             tight_count = int(prism_status.get("tight_split_count", 0) or 0)
@@ -196,6 +220,9 @@ class OwnerOnCall:
             "cost_confidence_revenue": summary["cost_confidence_revenue"],
             "cost_confidence": cost_confidence,
             "projection_complete": summary["projection_complete"],
+            "branch_allocation_complete": not unallocated_context,
+            "unallocated_expense_context_count": len(unallocated_context),
+            "unallocated_expense_context_amount": unallocated_context_amount,
             "cash_position": cash_position,
             "bank_position": bank_position,
             "evidence_as_of": evidence_as_of,
@@ -206,6 +233,7 @@ class OwnerOnCall:
             "drilldown": {
                 "sale_projections": projections,
                 "unknown_expense_evidence": summary["unknown_expense_evidence"],
+                "unallocated_expense_context": unallocated_context,
                 "prism_review_queue": tuple(prism_status.get("review_queue", ())) if prism_status else (),
             },
             "status": "projection_not_accounting_final",
