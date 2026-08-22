@@ -14,11 +14,11 @@ class Wo0012MigrationLambdaTests(unittest.TestCase):
         self.assertNotIn("Type: HttpApi", block)
         self.assertIn("FunctionName: echo-nonprod-schema-migrate", block)
 
-    def test_migration_requires_v02_confirmation(self) -> None:
+    def test_migration_requires_current_explicit_confirmation(self) -> None:
         handler = (ROOT / "src/aws_runtime/migration_handler.py").read_text(encoding="utf-8")
-        self.assertIn('CONFIRMATION = "APPLY_NONPROD_V0_2"', handler)
+        self.assertIn('CONFIRMATION = "APPLY_NONPROD_V0_3"', handler)
         self.assertIn('event.get("confirm") != CONFIRMATION', handler)
-        self.assertIn('"migration_set": "nonprod_v0_2"', handler)
+        self.assertIn('"migration_set": "nonprod_v0_3"', handler)
 
     def test_build_packages_scripts_and_schemas(self) -> None:
         makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
