@@ -59,6 +59,51 @@ def money(value: Decimal) -> str:
     return format(value.quantize(Decimal("0.01")), "f")
 
 
+def classify_cost_confidence(
+    recent: list[dict[str, Any]],
+    *,
+    selected_fy: int | None,
+    sale_fy: int,
+) -> tuple[str, Decimal | None, str]:
+    """Apply the same guarded confidence rule as FinancialHealthEngine.
+
+    Historical export evidence is supporting/read-only. It must not label a
+    cost reference strong merely because three old prices exist. Strong needs
+    at least three recent references from the sale financial year and a recent
+    price band no wider than 30% of the latest LIFO-style reference. Exact is
+    reserved for deterministic sale-linked acquisition cost and is therefore
+    not emitted by this historical purchase-evidence exporter.
+    """
+    if not recent or selected_fy is None:
+        return "unknown", None, "no qualifying pre-sale purchase-price evidence"
+
+    latest = Decimal(recent[0]["cost_before_tax"])
+    values = [Decimal(p["cost_before_tax"]) for p in recent]
+    low, high = min(values), max(values)
+    dispersion = (
+        Decimal("0.00")
+        if latest == 0
+        else ((high - low) / latest * Decimal("100")).quantize(Decimal("0.01"))
+    )
+    same_fy = selected_fy == sale_fy
+    coherent_band = dispersion <= Decimal("30.00")
+    if len(recent) >= 3 and same_fy and coherent_band:
+        return (
+            "strong",
+            dispersion,
+            "three or more coherent purchase references in the sale financial year",
+        )
+
+    reasons: list[str] = []
+    if len(recent) < 3:
+        reasons.append("fewer than three recent purchase references")
+    if not same_fy:
+        reasons.append("cost evidence falls back to a prior financial year")
+    if not coherent_band:
+        reasons.append(f"recent purchase-price band is volatile ({dispersion}%)")
+    return "weak", dispersion, "; ".join(reasons) or "purchase evidence is supportive but not deterministic"
+
+
 def parse_args() -> argparse.Namespace:
     runtime = Path(os.environ.get("TAGRO_AWS_RUNTIME_ROOT", r"T:\TAGRO_AWS_RUNTIME"))
     parser = argparse.ArgumentParser(description="Export read-only TAGRO financial projection observations.")
@@ -143,7 +188,7 @@ def main() -> None:
     sales = list(con.execute(sale_sql, (*branches, args.sale_start, sale_end)))
 
     observations: list[dict[str, Any]] = []
-    cost_counts = {"strong": 0, "weak": 0, "unknown": 0}
+    cost_counts = {"exact": 0, "strong": 0, "weak": 0, "unknown": 0}
     for row in sales:
         key = item_key(row)
         sale_fy = fy_start(str(row["vch_date"]))
@@ -153,7 +198,7 @@ def main() -> None:
             by_fy[fy_start(p["purchase_date"])].append(p)
         selected_fy = max((fy for fy in by_fy if fy <= sale_fy), default=None)
         selected: list[dict[str, Any]] = []
-        recent_count = 0
+        recent: list[dict[str, Any]] = []
         scope = "none"
         if selected_fy is not None:
             year_rows = by_fy[selected_fy]
@@ -162,12 +207,15 @@ def main() -> None:
             scope = "same_branch" if same_branch else "enterprise_fallback"
             ordered = sorted(scoped, key=lambda p: (p["purchase_date"], p["purchase_vch_code"], p["item_line_id"]), reverse=True)
             recent = ordered[:4]
-            recent_count = len(recent)
             selected = list(recent)
             protected_high = max(scoped, key=lambda p: (p["cost_before_tax"], p["purchase_date"], p["purchase_vch_code"], p["item_line_id"]))
             if protected_high not in selected:
                 selected.append(protected_high)
-        confidence = "strong" if recent_count >= 3 else "weak" if recent_count else "unknown"
+        confidence, dispersion, confidence_reason = classify_cost_confidence(
+            recent,
+            selected_fy=selected_fy,
+            sale_fy=sale_fy,
+        )
         cost_counts[confidence] += 1
         sale_ref = f"{row['branch']}|{row['voucher_id']}|{row['item_line_id']}"
         value = {
@@ -185,9 +233,12 @@ def main() -> None:
             "sale_before_tax": money(abs(Decimal(str(row["taxable_amount"] or 0)))),
             "sale_total": money(abs(Decimal(str(row["total_amount"] or 0)))),
             "cost_reference_confidence": confidence,
+            "cost_reference_confidence_reason": confidence_reason,
+            "cost_reference_recent_count": len(recent),
+            "cost_reference_recent_dispersion_pct": None if dispersion is None else str(dispersion),
             "cost_reference_scope": scope,
             "cost_reference_fy_start": selected_fy,
-            "cost_policy": "LIFO-style latest external purchase; up to four recent comparison prices plus protected pre-sale high; prior-FY fallback",
+            "cost_policy": "LIFO-style latest external purchase; up to four recent comparison prices plus protected pre-sale high; prior-FY fallback; strong requires sale-FY coherent evidence",
             "purchase_references": [
                 {
                     "branch": p["branch"],
@@ -256,7 +307,7 @@ def main() -> None:
         "chunk_count": len(chunk_files),
         "chunk_files": chunk_files,
         "cost_reference_counts": cost_counts,
-        "cost_policy": "LIFO-style latest external purchase; up to four recent comparison prices plus protected pre-sale high; stock transfers excluded; prior-FY fallback",
+        "cost_policy": "LIFO-style latest external purchase; up to four recent comparison prices plus protected pre-sale high; stock transfers excluded; prior-FY fallback; strong requires same-FY coherent evidence",
         "canonical_write": False,
     }
     manifest_package = {
@@ -284,7 +335,11 @@ def main() -> None:
     print(f"Financial observation export complete: {run_id}")
     print(f"Source quick_check={quick} sha256={source_hash}")
     print(f"Sale lines={len(observations)} chunks={len(chunk_files)}")
-    print(f"Cost references strong={cost_counts['strong']} weak={cost_counts['weak']} unknown={cost_counts['unknown']}")
+    print(
+        "Cost references "
+        f"exact={cost_counts['exact']} strong={cost_counts['strong']} "
+        f"weak={cost_counts['weak']} unknown={cost_counts['unknown']}"
+    )
     print(f"RunHash={run_hash}")
     print(f"Output={run_dir}")
     print("CanonicalWrite=False")
