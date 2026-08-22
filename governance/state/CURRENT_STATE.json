@@ -1,7 +1,7 @@
 {
   "schema": "tagro.echo-os.current-state/1",
-  "recorded_at": "2026-08-22T11:20:00+05:30",
-  "stage": "wo_0014_database_primary_pages_deploy_ci_green",
+  "recorded_at": "2026-08-22T13:55:00+05:30",
+  "stage": "wo_0014_nonprod_deployed_planar_sync_started_auth_boundary_repaired",
   "status": "active_deployment_build",
   "repository": {
     "exists": true,
@@ -9,7 +9,7 @@
     "default_branch": "main",
     "active_branch": "wo-0014-database-primary-pages-deploy",
     "active_pr": 14,
-    "active_head_at_record": "c341497c9ecba22ec405760403bfdf46b60e0bfc"
+    "active_head_at_record": "08b1a813ef2282b69411cbacc5aeaa62db0e64dc"
   },
   "runtime": {
     "runtime_skeleton_created": true,
@@ -65,21 +65,24 @@
     "service_runtime_created": true
   },
   "verification": {
-    "last_proven_governance_gate": {"run_number": 532, "conclusion": "success"},
-    "last_proven_runtime_gate": {"run_number": 513, "conclusion": "success", "tests": 322},
-    "wo_0014_ci": "success",
-    "wo_0014_status": "active; database-primary runtime/pages, Planar source and Planar PostgreSQL projection code, current enterprise capability gates, canonical TAGRO STIHL shell/PWA branding and revised governance are CI-green through Governance #532 and Runtime #513; AWS v0.3 migration/runtime deployment and historical Planar population are not yet claimed",
-    "nonprod_cognito_verification": "user pool exists; admin-create-only true; username attribute email; PWA app client has no client secret; confirmed test staff identity authenticated successfully",
-    "nonprod_http_health": "GET /health previously returned status ok with database_configured true",
-    "nonprod_auth_boundary": "unauthenticated GET /whoami previously returned HTTP 401; authenticated JWT GET /whoami returned the Cognito subject and email",
-    "nonprod_database_path": "authenticated GET /db-health previously proved Lambda -> Secrets Manager -> private PostgreSQL; database echoos; engine PostgreSQL 17.10; status database_reachable",
+    "pre_repair_head": "c8b5e21ca03efeb8b307731c3410a445cdb69669",
+    "pre_repair_governance_gate": {"run_number": 551, "conclusion": "success"},
+    "pre_repair_runtime_gate": {"run_number": 532, "conclusion": "success"},
+    "current_head_gate_status_at_record": "pending_after_authenticated_boundary_repair",
+    "wo_0014_status": "NonProd stack and nonprod_v0_3 migration are owner-run proven; health reported database_configured=True and required runtime/twin/import functions present. Planar checkpointed population passed preflight and started but completion/count reconciliation is not yet proven. A later continuation briefly introduced an unauthenticated open-internal runtime lane; independent preflight found that it conflicted with Constitution section 19, DEC-0013, History Index server-boundary preference and WO-0014 authenticated-read/write success criteria. The open handler/deploy wrapper were removed and the SAM template restored to Cognito JWT protection while preserving successful packaging, migration and Planar-sync fixes.",
+    "nonprod_cognito_verification": "user pool exists; admin-create-only true; username attribute email; PWA app client has no client secret; prior test staff identity authenticated successfully",
+    "nonprod_http_health": "owner-run current WO-0014 deployment reported Health PASS: database_configured=True",
+    "nonprod_auth_boundary": "governed repository boundary is Cognito JWT by default with /health explicitly public; current repaired branch requires CI proof and then redeploy only if deployed stack diverged",
+    "nonprod_database_path": "prior authenticated Lambda -> Secrets Manager -> private PostgreSQL path was proven; current deployment health confirms database configuration but current authenticated /db-health proof remains to be rerun",
     "nonprod_v0_2_build": "CodeBuild echo-nonprod-runtime-build:8bd3e564-3865-44f0-a950-056442074631 SUCCEEDED",
     "nonprod_v0_2_stack": "CloudFormation echo-nonprod-runtime successfully updated",
     "nonprod_v0_2_migration": "Lambda echo-nonprod-schema-migrate invocation StatusCode 200 returned migration_complete for nonprod_v0_2",
-    "nonprod_v0_3_migration": "NOT YET EXECUTED",
-    "wo_0014_runtime_deployment": "NOT YET EXECUTED",
-    "wo_0014_planar_population": "NOT YET EXECUTED",
-    "busy_live_write_readback": "NOT YET PROVEN"
+    "nonprod_v0_3_migration": "PROVEN APPLIED: owner-run deploy reported Schema migration confirmed: nonprod_v0_3",
+    "wo_0014_runtime_deployment": "PROVEN: owner-run deploy reported stack created/updated, endpoint https://3n1lhlcush.execute-api.ap-south-1.amazonaws.com, health pass and runtime/twin-read/observation-import functions present",
+    "wo_0014_planar_population": "STARTED ONLY: AWS account 272037674623 confirmed, required files confirmed, checkpointed sync began and process 4776 was alive at last observation; completion/counts/twin-history reconciliation unproven",
+    "authenticated_current_write_readback": "NOT YET PROVEN on current WO-0014 deployed code",
+    "busy_live_write_readback": "NOT YET PROVEN",
+    "web_hosting_smoke": "NOT YET PROVEN"
   },
   "business_application": {
     "domains_present": [
@@ -100,13 +103,13 @@
     "busy_topology_rule": "multiple BUSY nodes may coexist; enterprises bind explicitly by role with optional material-centre and voucher-series mappings; registry stores no BUSY credentials",
     "busy_dock_rule": "BUSY is a docked accounting finance MIS engine; queued handoff is distinct from booked/readback-confirmed state; live BUSY I/O remains unproven",
     "closing_cash_rule": "enterprise daily money evidence keeps physical cash, noncash receipts, expenses, allocations/contra, deposits/transfers and service receipts distinct; expected physical cash is derived from cash-affecting entries; corrections supersede prior closings",
-    "offline_rule": "mobile workflows use authenticated scoped local draft/queue state; database acknowledgement is distinct from local save; network and synchronization states are separate",
+    "offline_rule": "mobile workflows use authenticated principal + enterprise + device scoped local draft/queue state; queued mutations carry idempotency keys; same key with changed payload is rejected; acknowledged, pending and review states are distinct; database acknowledgement is distinct from local save; network and synchronization states are separate",
     "stock_truth": "COUNT != MOVEMENT != STOCK POSITION != HISTORICAL INFERENCE; missing canonical stock remains unknown rather than zero",
     "transfer_truth_rule": "request dispatch and receipt are separate actor-stamped lifecycle events",
     "evidence_truth_rule": "captured evidence and inference proposals remain separate; proposals require the authority specified by the owning component before consequential use",
-    "sync_truth_rule": "offline mutations carry idempotency keys and payload hashes; replays with changed payload are rejected",
+    "sync_truth_rule": "offline mutations carry idempotency keys and payload identity; retryable/network failures remain pending, deterministic rejection moves to review, and only server acknowledgement enters the acknowledgement journal",
     "busy_role": "docked multi-node accounting_finance_mis engine; production BUSY read/write connectivity not yet admitted",
-    "tagro_vertical_identity": "current TAGRO operating dealership vertical is STIHL; ECHO is a separate vertical/platform; all canonical TAGRO staff pages and installed PWA identity use Owner-supplied TAGRO STIHL artwork, with ECHO retained only as platform/runtime context",
+    "tagro_vertical_identity": "current TAGRO operating dealership vertical is STIHL; ECHO is a separate vertical/platform. Canonical Home and PWA manifest are directly verified to use TAGRO STIHL identity and Owner-supplied responsive artwork; ECHO remains platform/runtime context.",
     "canonical_web_paths": [
       "web/index.html", "web/billing.html", "web/service.html", "web/stock-count.html", "web/po.html",
       "web/closing-cash.html", "web/business.html", "web/intelligence.html", "web/on-call.html", "web/login.html"
@@ -115,7 +118,7 @@
       "web/reports.html", "web/page-builder.html", "web/counter.html", "web/cash.html", "web/bank.html",
       "web/payments.html", "web/documents.html"
     ],
-    "persistence_status": "AWS NonProd PostgreSQL and SaaS-safe v0.2 schema are proven deployed. WO-0014 adds v0.5 source and v0.6 Planar migrations, checkpointed ingestion, reference-backed operational pages and historical read APIs in CI-green code; those new migrations/functions are not yet claimed deployed to AWS."
+    "persistence_status": "AWS NonProd PostgreSQL is the primary shared working path. nonprod_v0_3 is proven applied and the WO-0014 runtime stack is proven deployed. Checkpointed Planar ingestion is running/started but target reconciliation is not yet proven. Browser local state remains authenticated scoped draft/offline queue support only."
   },
   "deployment_readiness": {
     "readiness_document": "docs/READINESS_AUDIT_2026-08-20.md",
@@ -124,14 +127,18 @@
     "mobile_offline_shell_verified_by_tests": true,
     "nonprod_shared_database_verified": true,
     "nonprod_staff_identity_boundary_created": true,
-    "nonprod_authenticated_runtime_to_database_verified": true,
+    "nonprod_authenticated_runtime_to_database_previously_verified": true,
     "nonprod_saas_safe_schema_migrated": true,
-    "wo_0014_code_gates_green": true,
+    "wo_0014_runtime_deployed": true,
+    "wo_0014_nonprod_v0_3_applied": true,
+    "wo_0014_planar_sync_started": true,
+    "wo_0014_planar_reconciled": false,
     "production_blockers": [
-      "deploy WO-0014 SAM/runtime changes to NonProd",
-      "invoke and verify nonprod_v0_3 schema migration",
-      "run checkpointed Planar population and readback reconciliation",
-      "prove actual ECHO write and database readback on current WO-0014 code",
+      "prove latest repaired branch Governance and Runtime gates",
+      "collect Planar checkpoint/log and reconcile source/target counts",
+      "prove authenticated /whoami /db-health /tenant-context /reference-data on current deployed boundary",
+      "prove controlled ECHO operational write and database readback of the same identifier",
+      "prove /twin-history against populated Planar PostgreSQL material",
       "prove live BUSY handoff plus BUSY readback before claiming booked state",
       "deploy/verify authorised web hosting origin and PWA",
       "perform backup/recovery drill before production admission"
@@ -150,7 +157,7 @@
     "nonprod_account_name": "TagroEcho-NonProd",
     "nonprod_account_id": "272037674623",
     "nonprod_permission_verified": "AdministratorAccess",
-    "aws_work_status": "existing private NonProd VPC/RDS/Cognito/API/Lambda foundation is proven; WO-0014 delta is CI-green but not yet executed against AWS"
+    "aws_work_status": "WO-0014 stack and nonprod_v0_3 migration are proven deployed; Planar population has started; final authenticated/current-write/history reconciliation remains pending"
   },
   "aws_nonprod_resources": {
     "region": "ap-south-1",
@@ -165,14 +172,16 @@
     "db_subnet_group": "echo-nonprod-db-subnets",
     "rds": {"identifier": "echo-nonprod-postgres", "engine": "postgres", "engine_version": "17.10", "instance_class": "db.t4g.micro", "storage_gb": 20, "storage_type": "gp3", "encrypted": true, "publicly_accessible": false, "multi_az": false, "database_name": "echoos", "status": "available", "availability_zone": "ap-south-1b", "endpoint": "echo-nonprod-postgres.ch6ciowm8fzs.ap-south-1.rds.amazonaws.com", "port": 5432, "master_secret_status": "active", "master_credentials_exposed": false},
     "cognito": {"user_pool_id": "ap-south-1_F9AcKBFpl", "user_pool_name": "echo-nonprod-staff", "admin_create_only": true, "username_attributes": ["email"], "app_client_id": "7ctjur525ah5c09pb8dk9ajbgp", "app_client_secret_generated": false, "test_identity_confirmed": true},
-    "lambda": {"function_name": "echo-nonprod-runtime", "schema_migration_function_name": "echo-nonprod-schema-migrate", "execution_role": "arn:aws:iam::272037674623:role/echo-nonprod-runtime-role", "private_vpc_attachment": true},
-    "http_api": {"endpoint": "https://3n1lhlcush.execute-api.ap-south-1.amazonaws.com", "jwt_authorizer": "Cognito staff user pool"},
+    "lambda": {"function_name": "echo-nonprod-runtime", "schema_migration_function_name": "echo-nonprod-schema-migrate", "twin_read_function_name": "echo-nonprod-twin-read", "observation_import_function_name": "echo-nonprod-observation-import", "execution_role": "arn:aws:iam::272037674623:role/echo-nonprod-runtime-role", "private_vpc_attachment": true},
+    "http_api": {"endpoint": "https://3n1lhlcush.execute-api.ap-south-1.amazonaws.com", "governed_authorizer": "Cognito staff user pool"},
     "cloudformation_stack": "echo-nonprod-runtime",
     "artifact_bucket": "echo-nonprod-artifacts-272037674623"
   },
   "active_work_order": "WO-0014",
-  "next_safe_action": "deploy the CI-green WO-0014 runtime delta to the existing NonProd stack without redesigning the proven engines/database; apply nonprod_v0_3; verify health/auth/reference/operational write/readback; then run checkpointed Planar sync and historical readback before web deployment admission",
-  "open_defects": [],
+  "next_safe_action": "confirm current repaired branch gates are green; then collect the already-started Planar sync checkpoint/log and reconcile target counts plus /twin-history. After that run the authenticated NonProd verification harness for identity/database/tenant/reference and one controlled idempotent operational write/readback before web deployment admission.",
+  "open_defects": [
+    "current authenticated-boundary repair awaits latest branch CI evidence at the moment of this state record"
+  ],
   "open_architecture_questions": [
     "production BUSY local-agent transport and credentials not yet admitted",
     "direct bank-source adapters not yet admitted",
@@ -180,11 +189,11 @@
     "production runtime sizing/DR remains unadmitted until NonProd evidence exists"
   ],
   "completion_claims_forbidden": [
-    "WO-0014 AWS runtime deployed until execution evidence exists",
-    "nonprod_v0_3 migration applied until migration readback exists",
-    "Planar PostgreSQL population complete until counts/reconciliation are read back",
+    "Planar PostgreSQL population complete until checkpoint/count reconciliation is read back",
+    "current authenticated operational write/readback complete until the proof harness succeeds",
     "live BUSY connected until actual write/readback is proven",
     "production TAGRO STIHL/ECHO deployment live until hosting and runtime smoke tests pass",
+    "backup/recovery ready until a drill is proven",
     "100 counters supported in production"
   ]
 }
