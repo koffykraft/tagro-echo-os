@@ -113,3 +113,20 @@ Reason: ECHO counters are mobile-first and may have unreliable network availabil
 Constraint: offline capability does not authorize bypassing permissions or fabricating current server/BUSY state.
 Status: active design rule from WO-0009 onward.
 Approved: Owner, 2026-08-20.
+
+## DEC-0021 — User experience is a structural layer of ECHO
+Decision: UI/UX is a governed structural layer of TAGRO ECHO OS, not a cosmetic layer applied after backend implementation. It governs how identity/context, jobs, authority, state, evidence, interruption/recovery, mobile behaviour, role projection and consequential actions are exposed to real users.
+Reason: the first-stage pages proved useful domain/runtime skills but also demonstrated that page-by-page implementation can create duplicate navigation, repeated context entry, mixed authority generations and avoidable cognitive load. The revised UI/UX study establishes a coherent operating environment as part of system correctness.
+Constraint: user comfort and simplification may not hide or falsify business truth, authority, evidence or downstream state. Purpose-specific workflows may retain different geometries.
+Compatibility: existing events, schemas and runtime evidence keep their meaning. Existing first-stage UI implementations become evidence/candidates to retain, redesign, extract, quarantine or retire under the structural design rules.
+Status: admitted by Constitution v1.1 and ECHO UI/UX Design Rules V2.
+Approved: Owner, 2026-08-22.
+
+## DEC-0022 — ECHO has a duty to consider materially better solutions
+Decision: when an existing tool, design, environment, provider, architecture or workflow shows persistent flaws, recurring friction, unacceptable risk, or material inadequacy for TAGRO's future, or when a materially better alternative becomes available, ECHO must consider the alternative rather than preserve the current choice through inertia or sunk cost.
+Reason: first-stage choices are foundations and evidence, not permanent limits. TAGRO's future operating model may outgrow a tool or design that was appropriate earlier.
+Required method: perform due diligence and a comprehensive Planar/Prismatic review across affected skeleton dimensions, users, roles, domains, receivers, integrations, security, resilience, cost, performance, usability, accessibility, mobile/offline operation, migration, rollback, provenance, future scale and failure modes. Step outward to broader solution classes when a narrow comparison is insufficient.
+Constraint: consideration does not equal automatic replacement. Any replacement follows the normal lifecycle and must preserve/reconcile admitted truth, evidence, authority and historical meaning. No silent migration is allowed.
+Rejected: preserving a known inadequate solution merely because it is already built, tested, paid for, deployed in NonProd or familiar to the team.
+Status: admitted by Constitution v1.1; governing evolution rule for all future work.
+Approved: Owner, 2026-08-22.
