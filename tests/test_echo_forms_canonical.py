@@ -13,10 +13,18 @@ def test_canonical_form_family_exists():
     assert "localStorage" in js
 
 
-def test_forms_launcher_exposes_all_workflows():
+def test_forms_launcher_routes_immediate_work_to_purpose_specific_surfaces():
     html = (ROOT / "web/forms/index.html").read_text(encoding="utf-8")
-    for key in ("closing", "invoice", "estimate", "quotation", "service", "purchase", "stock", "receipt", "payment"):
+    assert 'href="closing-cash.html"' in html
+    assert 'href="billing.html"' in html
+    assert 'href="../service.html"' in html
+    assert 'href="../po.html"' in html
+    assert 'href="../stock-count.html"' in html
+    assert 'href="../reports.html"' in html
+    for key in ("estimate", "quotation", "receipt", "payment"):
         assert f"type={key}" in html
+    assert "BUSY remains a distinct proving/reconciliation series" in html
+    assert "Physical count evidence kept separate" in html
 
 
 def test_mobile_and_a4_are_distinct_render_planes():
