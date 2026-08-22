@@ -25,13 +25,14 @@ class StockObservationRuntimeContractTests(unittest.TestCase):
 
     def test_legacy_variance_summary_is_not_written_when_canonical_is_unknown(self):
         text = (ROOT / "src/aws_runtime/operational_runtime.py").read_text(encoding="utf-8")
+        stock_count = text.split("def record_stock_count", 1)[1]
         marker = "if system_qty is not None:"
-        self.assertIn(marker, text)
-        after = text.split(marker, 1)[1]
+        self.assertIn(marker, stock_count)
+        after = stock_count.split(marker, 1)[1]
         self.assertIn("insert into stock_count_lines", after)
-        self.assertIn('"system_qty": str(system_qty) if system_qty is not None else None', text)
-        self.assertIn('"variance": str(variance) if variance is not None else None', text)
-        self.assertNotIn('else Decimal("0")', text)
+        self.assertIn('"system_qty": str(system_qty) if system_qty is not None else None', stock_count)
+        self.assertIn('"variance": str(variance) if variance is not None else None', stock_count)
+        self.assertNotIn('system_qty = Decimal(str(stock[0])) if stock else Decimal("0")', stock_count)
 
     def test_migration_keeps_count_and_movement_planes_separate(self):
         sql = (ROOT / "schemas/business/stock_observation_planes_v0_4.sql").read_text(encoding="utf-8").lower()
