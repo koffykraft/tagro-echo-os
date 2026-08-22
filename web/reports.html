@@ -59,7 +59,8 @@ function legacySnapshot(){
  return{jobs,pos,vars};
 }
 function metric(){
- closingMetric.textContent=presence('closing');invoiceMetric.textContent=presence('invoice');serviceMetric.textContent=(canonical('service')?1:0)+legacySnapshot().jobs.length;purchaseMetric.textContent=presence('purchase');stockMetric.textContent=(canonical('stock')?1:0)+legacySnapshot().vars.length;receiptMetric.textContent=presence('receipt');paymentMetric.textContent=presence('payment');
+ const legacy=legacySnapshot();
+ closingMetric.textContent=presence('closing');invoiceMetric.textContent=presence('invoice');serviceMetric.textContent=Number(presence('service'))+legacy.jobs.length;purchaseMetric.textContent=presence('purchase');stockMetric.textContent=Number(presence('stock'))+legacy.vars.length;receiptMetric.textContent=presence('receipt');paymentMetric.textContent=presence('payment');
 }
 function table(headers,rows){if(!rows.length)return'<p class="muted">No local evidence for this report.</p>';return'<table><tr>'+headers.map(h=>'<th>'+esc(h[0])+'</th>').join('')+'</tr>'+rows.map(r=>'<tr>'+headers.map(h=>'<td>'+esc(r[h[1]]??'')+'</td>').join('')+'</tr>').join('')+'</table>'}
 function canonicalView(type){
