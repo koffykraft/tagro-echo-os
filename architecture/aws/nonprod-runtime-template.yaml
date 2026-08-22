@@ -1,15 +1,17 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: TAGRO ECHO OS NonProd governed runtime and Operational Twin data boundary
+Description: TAGRO ECHO OS NonProd operational runtime and Operational Twin data boundary
 
 Parameters:
   UserPoolId:
     Type: String
+    Description: Retained for deployment compatibility; open internal runtime does not use Cognito.
   UserPoolClientId:
     Type: String
+    Description: Retained for deployment compatibility; open internal runtime does not use Cognito.
   WebAllowedOrigin:
     Type: String
-    Description: Exact HTTPS origin hosting the ECHO web/PWA shell; required for authenticated browser CORS.
+    Description: Exact HTTPS origin hosting the TAGRO web/PWA shell.
   LambdaExecutionRoleArn:
     Type: String
   DbSecretArn:
@@ -35,22 +37,13 @@ Resources:
         AllowOrigins:
           - !Ref WebAllowedOrigin
         AllowHeaders:
-          - Authorization
           - Content-Type
+          - X-Tagro-Branch
         AllowMethods:
           - GET
           - POST
           - OPTIONS
         MaxAge: 600
-      Auth:
-        DefaultAuthorizer: EchoStaffJwt
-        Authorizers:
-          EchoStaffJwt:
-            IdentitySource: '$request.header.Authorization'
-            JwtConfiguration:
-              issuer: !Sub 'https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPoolId}'
-              audience:
-                - !Ref UserPoolClientId
 
   EchoRuntimeFunction:
     Type: AWS::Serverless::Function
@@ -60,7 +53,7 @@ Resources:
       FunctionName: echo-nonprod-runtime
       Runtime: python3.12
       Architectures: [arm64]
-      Handler: src.aws_runtime.handler.lambda_handler
+      Handler: src.aws_runtime.open_handler.lambda_handler
       CodeUri: ../..
       Role: !Ref LambdaExecutionRoleArn
       MemorySize: 256
@@ -76,7 +69,7 @@ Resources:
         SecurityGroupIds: [!Ref AppSecurityGroup]
         SubnetIds: [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
       Events:
-        PublicHealth: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /health, Method: GET, Auth: {Authorizer: NONE}}}
+        PublicHealth: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /health, Method: GET}}
         WhoAmI: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /whoami, Method: GET}}
         DatabaseHealth: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /db-health, Method: GET}}
         TenantContext: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /tenant-context, Method: GET}}
@@ -101,7 +94,7 @@ Resources:
       FunctionName: echo-nonprod-twin-read
       Runtime: python3.12
       Architectures: [arm64]
-      Handler: src.aws_runtime.twin_read_handler.lambda_handler
+      Handler: src.aws_runtime.open_handler.lambda_handler
       CodeUri: ../..
       Role: !Ref LambdaExecutionRoleArn
       MemorySize: 256
