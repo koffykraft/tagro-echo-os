@@ -58,13 +58,17 @@ def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
         }:
             result = sync_planar_records(**kwargs)
             return {
+                **result,
                 "status": "operational_twin_planar_sync_complete",
                 "database_primary": True,
                 "planar_preserved": True,
-                **result,
             }
         result = sync_source_records(**kwargs)
     except (TwinIngestError, TwinPlanarError) as exc:
         return {"status": "refused", "reason": "invalid_operational_twin_package", "detail": str(exc)}
 
-    return {"status": "operational_twin_sync_complete", "database_primary": True, **result}
+    return {
+        **result,
+        "status": "operational_twin_sync_complete",
+        "database_primary": True,
+    }
