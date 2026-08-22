@@ -9,9 +9,11 @@ ROOT = Path(__file__).resolve().parents[1]
 class PoStockWebTests(unittest.TestCase):
     def test_po_draft_does_not_claim_supplier_order(self):
         text = (ROOT / "web" / "po.html").read_text(encoding="utf-8")
-        self.assertIn("awaiting_owner_approval", text)
+        self.assertIn("SAVE FOR APPROVAL", text)
         self.assertIn("supplier_order_sent:false", text)
-        self.assertIn("nothing has been sent to the supplier", text)
+        self.assertIn("It has not been sent to the supplier", text)
+        self.assertIn("creates the shared purchase-order draft", text)
+        self.assertIn("owner-approved", text)
 
     def test_stock_count_evidence_does_not_mutate_stock(self):
         text = (ROOT / "web" / "stock-count.html").read_text(encoding="utf-8")
