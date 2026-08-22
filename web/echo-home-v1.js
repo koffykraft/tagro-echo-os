@@ -1,0 +1,114 @@
+(()=>{
+  'use strict';
+
+  const $=id=>document.getElementById(id);
+  let hideTimer=null;
+
+  function toast(message){
+    const el=$('toast');
+    el.textContent=message;
+    el.classList.remove('hidden');
+    clearTimeout(hideTimer);
+    hideTimer=setTimeout(()=>el.classList.add('hidden'),2200);
+  }
+
+  function initials(value){
+    const s=String(value||'ECHO').trim();
+    const name=s.includes('@')?s.split('@')[0]:s;
+    return name.split(/[._\s-]+/).filter(Boolean).slice(0,2).map(x=>x[0]?.toUpperCase()).join('')||'E';
+  }
+
+  function updateNetwork(){
+    const online=navigator.onLine;
+    $('networkState').classList.toggle('offline',!online);
+    $('networkLabel').textContent=online?'Online':'Offline';
+    updateQueue();
+  }
+
+  function updateQueue(){
+    if(!window.EchoRuntime)return;
+    try{
+      const pending=EchoRuntime.pendingQueue().length;
+      const review=EchoRuntime.reviewQueue().length;
+      $('pendingText').textContent=pending?`${pending} ${pending===1?'record':'records'} waiting`:'Nothing waiting';
+      $('reviewText').textContent=review?`${review} ${review===1?'item':'items'} to review`:'No local review items';
+      $('truthLine').textContent=navigator.onLine
+        ? (pending?'Online · local work still waiting to send':'Online · no local queued work')
+        : (pending?`Offline · ${pending} retained locally`:'Offline · no local queued work');
+    }catch{
+      $('pendingText').textContent='Sign in to view';
+      $('reviewText').textContent='Sign in to view';
+    }
+  }
+
+  function findMembership(ctx,enterpriseId){
+    const ents=Array.isArray(ctx?.enterprises)?ctx.enterprises:[];
+    return ents.find(x=>x.enterprise_id===enterpriseId)||ents[0]||null;
+  }
+
+  function applyCapabilities(membership){
+    const caps=new Set(Array.isArray(membership?.enabled_capabilities)?membership.enabled_capabilities:[]);
+    if(!caps.size)return;
+    document.querySelectorAll('[data-capability]').forEach(el=>{
+      const cap=el.getAttribute('data-capability');
+      el.classList.toggle('hidden',!caps.has(cap));
+    });
+  }
+
+  async function load(){
+    if(!window.EchoRuntime){
+      $('person').textContent='ECHO runtime unavailable';
+      $('place').textContent='Candidate shell only';
+      return;
+    }
+
+    const info=EchoRuntime.sessionInfo();
+    if(!info.signedIn){
+      location.href='login.html';
+      return;
+    }
+
+    $('avatar').textContent=initials(info.email);
+    $('person').textContent=info.email||'Signed-in staff';
+    $('place').textContent='Resolving enterprise…';
+    updateQueue();
+
+    try{
+      const ctx=await EchoRuntime.loadContext();
+      const selected=EchoRuntime.sessionInfo().enterpriseId;
+      const m=findMembership(ctx,selected);
+      if(m){
+        const name=m.display_name||m.principal_name||m.user_name||info.email||'Staff';
+        const role=m.role_code||m.role||'Staff';
+        const enterprise=m.enterprise_code||m.enterprise_name||'ECHO';
+        $('person').textContent=`${name} · ${role.replaceAll('_',' ')}`;
+        $('place').textContent=enterprise;
+        $('roleTitle').textContent=String(role).toUpperCase().includes('OWNER')?'OWNER':'COUNTER';
+        applyCapabilities(m);
+      }else{
+        $('place').textContent=selected?'Enterprise selected':'Enterprise context unavailable';
+      }
+    }catch(err){
+      $('place').textContent='Context temporarily unavailable';
+      toast('Your signed-in session is safe. Context could not refresh.');
+    }
+  }
+
+  function notYet(label){return()=>toast(`${label} is not admitted in this shell yet.`)}
+
+  $('quick').addEventListener('click',notYet('Quick actions'));
+  $('menu').addEventListener('click',notYet('Menu'));
+  $('searchAction').addEventListener('click',notYet('Search'));
+  $('createAction').addEventListener('click',notYet('Create'));
+  $('attentionAction').addEventListener('click',()=>location.href='on-call.html');
+  $('menuAction').addEventListener('click',notYet('Menu'));
+  $('pendingCard').addEventListener('click',e=>{e.preventDefault();updateQueue();toast($('pendingText').textContent)});
+  $('reviewCard').addEventListener('click',e=>{e.preventDefault();updateQueue();toast($('reviewText').textContent)});
+
+  addEventListener('online',updateNetwork);
+  addEventListener('offline',updateNetwork);
+  addEventListener('echo:queue-updated',updateQueue);
+
+  updateNetwork();
+  load();
+})();
