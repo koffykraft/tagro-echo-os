@@ -93,6 +93,19 @@ class BusySeriesConfig:
     voucher_series: str
     material_centre_ref: str | None = None
 
+    def validate_proving_boundary(self) -> None:
+        branch = self.branch_code.strip().upper()
+        series = self.voucher_series.strip().upper()
+        if not branch or not series:
+            raise BillingError("BUSY proving series requires branch_code and voucher_series")
+        # During proving, ECHO-originated vouchers must never share an ordinary
+        # production/accounting series. Requiring an explicit ECHO marker makes
+        # the segregation visible and deterministic without guessing a series.
+        if "ECHO" not in series:
+            raise BillingError("BUSY proving voucher series must be a distinct ECHO-marked series")
+        if branch not in series:
+            raise BillingError("BUSY proving voucher series must include the branch code")
+
 
 @dataclass(frozen=True)
 class BusyBookingHandoff:
@@ -213,8 +226,11 @@ class BillingEngine:
         series_by_branch: Mapping[str, BusySeriesConfig],
     ) -> BusyBookingHandoff:
         config = series_by_branch.get(bill.branch_code.upper())
-        if config is None or not config.voucher_series.strip():
+        if config is None:
             raise BillingError("BUSY voucher series is not configured for this branch")
+        config.validate_proving_boundary()
+        if config.branch_code.strip().upper() != bill.branch_code.upper():
+            raise BillingError("BUSY proving series branch does not match bill branch")
         payload: dict[str, object] = {
             "source": "ECHO",
             "echo_bill_id": bill.bill_id,
