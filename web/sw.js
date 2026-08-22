@@ -1,8 +1,9 @@
-const CACHE='tagro-echo-os-v7';
+const CACHE='tagro-echo-os-v8';
 const CORE=[
   './','./index.html','./login.html','./styles.css','./app.js','./runtime-config.js','./runtime-client.js',
   './on-call.html','./billing.html','./service.html','./po.html','./stock-count.html','./reports.html','./page-builder.html',
-  './counter.html','./cash.html','./bank.html','./payments.html','./documents.html','./manifest.webmanifest','./icon.svg'
+  './counter.html','./cash.html','./bank.html','./payments.html','./documents.html','./manifest.webmanifest','./icon.svg',
+  './forms/index.html','./forms/form.html','./forms/closing-cash.html','./forms/billing.html','./forms/echo-forms.css','./forms/echo-forms.js'
 ];
 const STATIC_URLS=new Set(CORE.map(path=>new URL(path,self.registration.scope).href));
 
