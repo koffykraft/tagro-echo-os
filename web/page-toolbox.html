@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TAGRO ECHO · Page Toolbox</title>
+<link rel="stylesheet" href="page-toolbox.css">
+</head>
+<body>
+<header class="bar">
+  <button id="menuBtn" class="icon" aria-label="Toggle toolbox">☰</button>
+  <div><strong>PAGE TOOLBOX</strong><span class="sub">Owner workbench · local draft only</span></div>
+  <div class="spacer"></div>
+  <button id="previewBtn">Preview</button>
+  <button id="saveBtn" class="primary">Save draft</button>
+</header>
+<div class="layout">
+  <aside id="toolbox" class="toolbox" aria-label="Page components">
+    <section>
+      <h2>Page</h2>
+      <label>Name<input id="pageName" autocomplete="off" placeholder="My ECHO page"></label>
+      <label>Purpose<textarea id="pagePurpose" rows="2" placeholder="What job should this page help complete?"></textarea></label>
+    </section>
+    <section>
+      <h2>Add</h2>
+      <div id="palette" class="palette"></div>
+    </section>
+    <section>
+      <h2>Selected</h2>
+      <div id="inspector" class="inspector muted">Select a component.</div>
+    </section>
+    <section>
+      <h2>Definition</h2>
+      <button id="copySpecBtn">Copy AI build spec</button>
+      <button id="exportBtn">Export JSON</button>
+      <label class="import">Import JSON<input id="importFile" type="file" accept="application/json"></label>
+      <p class="note">Saving here preserves a local page definition only. It does not publish, deploy, classify financial data, or change canonical truth.</p>
+    </section>
+  </aside>
+  <main class="stage-wrap">
+    <div class="stage-head">
+      <div><b>Canvas</b><span id="draftState">Unsaved local draft</span></div>
+      <div class="device-switch" role="group" aria-label="Preview width"><button data-device="phone">Phone</button><button data-device="tablet">Tablet</button><button data-device="desktop" class="active">Desktop</button></div>
+    </div>
+    <div id="stage" class="stage desktop" aria-live="polite"></div>
+  </main>
+</div>
+<dialog id="previewDialog">
+  <form method="dialog" class="dialog-head"><b>Responsive preview</b><button>Close</button></form>
+  <div id="previewSurface" class="preview-surface"></div>
+</dialog>
+<script src="page-toolbox.js"></script>
+</body>
+</html>
