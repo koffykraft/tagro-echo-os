@@ -1,0 +1,39 @@
+{
+  "work_order_id": "WO-0013",
+  "status": "active",
+  "activated_date": "2026-08-22",
+  "objective": "Build the first governed TAGRO ECHO mobile-first shell/Home candidate and define replaceable docked integration contracts for logistics and UPI payments, without live vendor credentials, live shipment creation, live payment collection, production deployment or changing WO-0012 runtime truth.",
+  "authority_basis": "Owner explicitly instructed: go ahead and build; also asked whether Amazon Shipping, Delhivery and UPI payments can be integrated.",
+  "parent_context": "WO-0012 remains the active NonProd shared-runtime proof lane. WO-0013 is a separate UI/integration candidate lane based from the current WO-0012 branch state.",
+  "allowed": [
+    "web/ candidate shell/Home HTML CSS JS that reuses existing authenticated EchoRuntime without changing its business semantics",
+    "docs/ UI shell and user-experience specifications",
+    "contracts/integrations/ replaceable adapter contracts for logistics and payment providers",
+    "research-backed provider capability notes for Amazon Shipping, Delhivery and UPI payment gateways",
+    "tests limited to static/shell behavior and non-consequential adapter contract validation",
+    "session-ledger entries for WO-0013",
+    "work-orders/WO-0013.json"
+  ],
+  "forbidden": [
+    "production deployment",
+    "live Amazon Shipping shipment creation/cancellation/NDR mutation",
+    "live Delhivery shipment/pickup/NDR mutation",
+    "live UPI charge/refund/payout",
+    "storing vendor secrets in browser code or repository",
+    "browser direct vendor API credentials",
+    "changing ECHO constitutional truth or runtime event semantics",
+    "claiming any vendor integration live before credentials, sandbox tests, callbacks/webhooks, idempotency and reconciliation are proven",
+    "merging/replacing the current index shell before candidate review",
+    "modifying WO-0012 shared-runtime admission claims"
+  ],
+  "success": [
+    "one visually coherent Option-3-derived shell/Home candidate exists and binds to authenticated ECHO context where available",
+    "shell handles mobile safe areas, touch sizing, offline/network state and pending/review queue counts without confusing network availability with synchronization",
+    "current operational pages remain reachable only as candidate destinations; old feature-directory Home is not deleted",
+    "logistics contract keeps ECHO order/shipment truth separate from carrier acknowledgement and delivery events",
+    "payment contract keeps ECHO sale/payment evidence separate from gateway intent, authorization/capture and settlement",
+    "Amazon Shipping and Delhivery are modeled as replaceable carrier adapters",
+    "UPI is modeled through a replaceable payment-service adapter rather than hardwired to one provider",
+    "no live external consequence occurs under this work order"
+  ]
+}
