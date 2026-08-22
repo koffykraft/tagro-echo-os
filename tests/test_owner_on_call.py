@@ -7,7 +7,7 @@ from decimal import Decimal
 from src.bank.normalization import BankTransaction
 from src.cash.closing import create_closing
 from src.financial.evidence_adapters import ExpenseClassification, collect_expense_evidence
-from src.financial.health import PurchasePriceEvidence, SaleLineEvidence
+from src.financial.health import ExpenseEvidence, ExpenseRole, PurchasePriceEvidence, SaleLineEvidence
 from src.financial.on_call import OwnerOnCall
 
 
@@ -59,6 +59,35 @@ class OwnerOnCallTests(unittest.TestCase):
         self.assertEqual(snapshot["branches"]["PKM"]["unknown_cost_lines"], 1)
         self.assertEqual(snapshot["attention"][0]["type"], "unknown_cost")
         self.assertEqual(snapshot["status"], "projection_not_accounting_final")
+
+    def test_branch_snapshot_keeps_unallocated_enterprise_expense_out_of_branch_pnl(self):
+        sales = (
+            SaleLineEvidence(
+                "S1", date(2026, 8, 20), "KVR", "A", Decimal("1"), Decimal("1000"),
+                explicit_cost_before_tax=Decimal("600"),
+            ),
+        )
+        expenses = (
+            ExpenseEvidence(
+                "E-KVR", date(2026, 8, 20), Decimal("100"), branch="KVR",
+                category="local_delivery", classification_confidence="exact", role=ExpenseRole.BRANCH,
+            ),
+            ExpenseEvidence(
+                "E-HO", date(2026, 8, 20), Decimal("250"), branch=None,
+                category="head_office_rent", classification_confidence="exact", role=ExpenseRole.CENTRAL,
+            ),
+        )
+        snapshot = OwnerOnCall().snapshot(sales, (), expenses, branch="KVR")
+
+        self.assertEqual(snapshot["estimated_gross_profit_known"], Decimal("400.00"))
+        self.assertEqual(snapshot["classified_branch_operating_expenses"], Decimal("100.00"))
+        self.assertEqual(snapshot["classified_central_overhead"], Decimal("0.00"))
+        self.assertEqual(snapshot["estimated_profit_after_finance_known"], Decimal("300.00"))
+        self.assertEqual(snapshot["unallocated_expense_context_amount"], Decimal("250"))
+        self.assertFalse(snapshot["branch_allocation_complete"])
+        self.assertEqual(snapshot["drilldown"]["unallocated_expense_context"][0].expense_id, "E-HO")
+        self.assertIn("unallocated_expense_context", {row["type"] for row in snapshot["attention"]})
+        self.assertNotIn("UNALLOCATED", snapshot["branches"])
 
     def test_owner_snapshot_exposes_prism_uncertainty_instead_of_hiding_it(self):
         prism_status = {
