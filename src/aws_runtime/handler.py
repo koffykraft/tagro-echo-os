@@ -250,10 +250,10 @@ def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
         return _operational_post(config, claims, event, capability="SERVICE", operation=create_service_intake, schema="tagro.echo.service-intake.v1")
 
     if raw_path == "/purchase-orders" and method == "POST":
-        return _operational_post(config, claims, event, capability="PURCHASE_ORDER", operation=create_purchase_order, schema="tagro.echo.purchase-order.v1")
+        return _operational_post(config, claims, event, capability="PURCHASE", operation=create_purchase_order, schema="tagro.echo.purchase-order.v1")
 
     if raw_path == "/stock-count/record" and method == "POST":
-        return _operational_post(config, claims, event, capability="STOCK_COUNT", operation=record_stock_count, schema="tagro.echo.stock-count.v1")
+        return _operational_post(config, claims, event, capability="STOCK", operation=record_stock_count, schema="tagro.echo.stock-count.v1")
 
     if raw_path == "/import-reconciliation" and method == "GET":
         subject = str(claims.get("sub") or "")
