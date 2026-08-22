@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TAGRO ECHO · Reports</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.page{max-width:980px;margin:auto}.report-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}.report-card{min-height:120px;text-decoration:none;color:inherit}.report-card strong{display:block;font-size:18px;margin-bottom:8px}.metric{font-size:26px}.table-wrap{overflow:auto}.state-row{display:grid;grid-template-columns:minmax(120px,1fr) minmax(90px,.7fr);gap:8px;padding:8px 0;border-bottom:1px solid #e5e5e5}.state-row:last-child{border-bottom:0}.state-label{font-weight:700}.state-value{text-align:right}.evidence-note{font-size:12px;color:#555;margin-top:8px}.form-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.form-links a{font-size:12px}
+@media(max-width:640px){.report-grid{grid-template-columns:1fr 1fr}.report-card{min-height:105px}.metric{font-size:22px}.page{padding:8px}.state-row{grid-template-columns:1fr auto}}
+</style>
+</head>
+<body>
+<header><div><b>TAGRO × ECHO</b><small>Essential Reports</small></div><a class="pill" href="index.html">Home</a></header>
+<main class="page">
+<div class="notice"><b>Evidence status is explicit.</b> Local counts and form states below are device evidence only unless synchronization is separately confirmed. No accounting, GST or historical reconciliation conclusion is inferred from a local form.</div>
+<section class="report-grid">
+<a class="card report-card" href="on-call.html"><strong>Financial Health</strong><span>Sales · estimated COGS · GP · expenses · estimated P/L · Prism evidence</span></a>
+<div class="card report-card"><strong>Closing Cash</strong><span id="closingMetric" class="metric">—</span><small>canonical local record</small></div>
+<div class="card report-card"><strong>Invoice</strong><span id="invoiceMetric" class="metric">—</span><small>canonical local record</small></div>
+<div class="card report-card"><strong>Service</strong><span id="serviceMetric" class="metric">—</span><small>canonical/local evidence</small></div>
+<div class="card report-card"><strong>Purchase</strong><span id="purchaseMetric" class="metric">—</span><small>canonical local record</small></div>
+<div class="card report-card"><strong>Stock Count</strong><span id="stockMetric" class="metric">—</span><small>canonical/local evidence</small></div>
+<div class="card report-card"><strong>Receipt</strong><span id="receiptMetric" class="metric">—</span><small>canonical local record</small></div>
+<div class="card report-card"><strong>Payment</strong><span id="paymentMetric" class="metric">—</span><small>canonical local record</small></div>
+</section>
+<section class="card">
+<div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
+<label>Report<select id="report">
+<option value="closing">Closing Cash state</option>
+<option value="invoice">Invoice state</option>
+<option value="service">Service state</option>
+<option value="purchase">Purchase state</option>
+<option value="stock">Stock Count state</option>
+<option value="receipt">Receipt state</option>
+<option value="payment">Payment state</option>
+<option value="legacy-service">Legacy service queue</option>
+<option value="legacy-po">Legacy PO approvals</option>
+<option value="legacy-stock">Legacy stock variances</option>
+</select></label>
+<button id="refresh">Refresh</button>
+</div>
+<div id="status" class="muted"></div>
+<div id="output" class="table-wrap"></div>
+<div class="form-links"><a href="forms/index.html">Open canonical ECHO Forms</a><a href="forms/closing-cash.html">Closing Cash</a><a href="forms/form.html?type=invoice">Invoice</a><a href="forms/form.html?type=service">Service</a><a href="forms/form.html?type=purchase">Purchase</a><a href="forms/form.html?type=stock">Stock Count</a></div>
+</section>
+</main>
+<footer>For financial, GST, audit or statutory conclusions, use the governed runtime/accounting evidence and its freshness/confidence state.</footer>
+<script>
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function get(k,f){try{return JSON.parse(localStorage.getItem(k)||f)}catch{return JSON.parse(f)}}
+function canonical(type){return get('echo.form.'+type,'null')}
+function presence(type){return canonical(type)?'1':'0'}
+function legacySnapshot(){
+ const core=get('tagro-echo-os-prototype-v1','{}'),podb=get('tagro-echo-po-v1','{"drafts":[]}'),stockdb=get('tagro-echo-stock-count-v1','{"rows":[]}');
+ const jobs=(core.serviceJobs||[]).filter(x=>!['ready','closed','delivered'].includes(String(x.status).toLowerCase()));
+ const pos=(podb.drafts||[]).filter(x=>x.status==='awaiting_owner_approval');
+ const vars=(stockdb.rows||[]).filter(x=>Number(x.variance)!==0);
+ return{jobs,pos,vars};
+}
+function metric(){
+ const legacy=legacySnapshot();
+ closingMetric.textContent=presence('closing');invoiceMetric.textContent=presence('invoice');serviceMetric.textContent=Number(presence('service'))+legacy.jobs.length;purchaseMetric.textContent=presence('purchase');stockMetric.textContent=Number(presence('stock'))+legacy.vars.length;receiptMetric.textContent=presence('receipt');paymentMetric.textContent=presence('payment');
+}
+function table(headers,rows){if(!rows.length)return'<p class="muted">No local evidence for this report.</p>';return'<table><tr>'+headers.map(h=>'<th>'+esc(h[0])+'</th>').join('')+'</tr>'+rows.map(r=>'<tr>'+headers.map(h=>'<td>'+esc(r[h[1]]??'')+'</td>').join('')+'</tr>').join('')+'</table>'}
+function canonicalView(type){
+ const s=canonical(type);if(!s)return'<p class="muted">No canonical local record on this device.</p>';
+ const ctx=s.context||{}, rows=Array.isArray(s.rows)?s.rows:[], fields=s.fields||{};
+ const activeRows=rows.filter(r=>r&&Object.values(r).some(v=>String(v??'').trim()!==''));
+ const facts=[['Record ID',s.id||''],['Status',s.status||'draft'],['Date',ctx.date||''],['Branch',ctx.branch||''],['Entered by',ctx.enteredBy||''],['Populated rows',String(activeRows.length)],['Created',s.createdAt||''],['Saved / updated',s.savedAt||s.updatedAt||'']];
+ const fieldCount=Object.values(fields).filter(v=>String(v??'').trim()!=='').length;facts.push(['Populated header fields',String(fieldCount)]);
+ return'<div>'+facts.map(([a,b])=>'<div class="state-row"><span class="state-label">'+esc(a)+'</span><span class="state-value">'+esc(b||'—')+'</span></div>').join('')+'<p class="evidence-note">LOCAL DEVICE EVIDENCE · not synchronization confirmation · values are shown without financial or historical classification.</p></div>';
+}
+function render(){
+ const type=report.value,l=legacySnapshot();status.textContent='LOCAL DEVICE EVIDENCE · not synchronization confirmation';
+ if(['closing','invoice','service','purchase','stock','receipt','payment'].includes(type))output.innerHTML=canonicalView(type);
+ if(type==='legacy-service')output.innerHTML=table([['Job','job_id'],['Machine','model'],['Complaint','complaint'],['Status','status'],['Counter','branch_id']],l.jobs);
+ if(type==='legacy-po')output.innerHTML=table([['PO','po_id'],['Counter','branch_id'],['Supplier','supplier_id'],['Status','status'],['Created','created_at']],l.pos);
+ if(type==='legacy-stock')output.innerHTML=table([['Product','product_id'],['Counter','branch_id'],['System','system_qty'],['Counted','counted_qty'],['Variance','variance']],l.vars);
+ metric();
+}
+refresh.onclick=render;report.onchange=render;render();
+</script>
+</body>
+</html>

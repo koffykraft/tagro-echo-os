@@ -1,0 +1,141 @@
+{
+  "schema": "tagro.echo-os.page-ecology-contract/1",
+  "contract_id": "PAGE_ECOLOGY_V0_1",
+  "purpose": "Govern how inherited and newly built page-world elements are admitted, placed, connected, filtered and retired inside ECHO.",
+  "axioms": [
+    "A page is an operational projection, not merely HTML.",
+    "Layout, text, labels, controls, data bindings, navigation, visibility, timing, environment and omission can all alter the business event horizon.",
+    "Presence does not create relevance; absence can be consequential when it breaks required continuity.",
+    "Every admitted page element must have a purpose, a place, an authority boundary and a valid planar connection to the rest of the page world.",
+    "Inherited skills from older TAGRO resources are evidence/candidates, never automatically canonical design.",
+    "A page element that has no semantic receiver match is inert and should not consume attention or screen space unless required for continuity, safety, accessibility, provenance or recovery.",
+    "A required element omitted from its proper plane is a defect even when the page still renders.",
+    "Static, orphaned, duplicated, stale or wrongly placed elements are pollution and must be identified for quarantine, retirement or redesign rather than silently propagated."
+  ],
+  "dimensions": [
+    "purpose",
+    "user_role",
+    "task",
+    "environment",
+    "device",
+    "location",
+    "time",
+    "authority",
+    "sensitivity",
+    "data_source",
+    "provenance",
+    "freshness",
+    "connection",
+    "interaction_cost",
+    "accessibility",
+    "failure_recovery",
+    "offline_state",
+    "visual_priority"
+  ],
+  "admission_questions": [
+    "Is this needed here?",
+    "If absent, does its absence disrupt a required event horizon, relationship, decision, recovery path or continuity?",
+    "If present, does it create noise, ambiguity, duplicate truth or wrong authority?",
+    "Is it in the correct page, region, hierarchy and interaction sequence?",
+    "Is it planarly connected to the correct data, event, role and destination?",
+    "Does its label state what the user is actually doing rather than exposing implementation language?",
+    "Does it receive only dimensions meaningful to it?",
+    "Does it preserve provenance and freshness where the displayed fact can become stale?",
+    "Does it behave correctly for the current environment, device, network state, role and time context?",
+    "Can it fail without leaving stale controls, orphan state or misleading completion cues?"
+  ],
+  "inherited_asset_rule": {
+    "status": "candidate_only",
+    "allowed_sources": [
+      "tagro-service",
+      "tagro-os",
+      "tagro-aws-os",
+      "TD",
+      "TAGRO warehouse",
+      "older approved TAGRO pages and artifacts"
+    ],
+    "candidate_kinds": [
+      "page_design",
+      "layout_pattern",
+      "interaction_pattern",
+      "control",
+      "label",
+      "copy_text",
+      "workflow_fragment",
+      "data_binding",
+      "navigation_connection",
+      "responsive_behavior",
+      "offline_behavior",
+      "failure_behavior"
+    ],
+    "rule": "Extract verified useful skill/behavior separately from old visual or architectural baggage. Re-admit it through current ECHO contracts before reuse."
+  },
+  "placement_rule": {
+    "principle": "a place for everything, and everything in its governed place",
+    "required_checks": [
+      "correct_page",
+      "correct_region",
+      "correct_sequence",
+      "correct_visibility",
+      "correct_role",
+      "correct_environment",
+      "correct_data_connection",
+      "correct_event_connection",
+      "correct_failure_path"
+    ]
+  },
+  "spectral_rule": {
+    "principle": "Page-world elements are receivers of event dimensions through the same selective relevance model as operational receivers.",
+    "non_match": "semantically_inert",
+    "effect": "A delivered dimension that does not match the element's admitted receiver rule must not change label, state, visibility, workflow, consequence or user attention."
+  },
+  "omission_rule": {
+    "principle": "Required absence is observable state.",
+    "examples": [
+      "missing provenance on a consequential number",
+      "missing branch context on a stock action",
+      "missing network/offline state on a sync-dependent operation",
+      "missing back/recovery path",
+      "missing evidence link where a decision depends on evidence",
+      "missing authority cue before a consequential action",
+      "missing required connection between related page planes"
+    ],
+    "treatment": "record as disruption/static candidate; do not dismiss because the page still loads"
+  },
+  "pollution_rule": {
+    "static_classes": [
+      "orphan_control",
+      "stale_label",
+      "duplicate_action",
+      "duplicate_truth",
+      "wrong_receiver",
+      "dead_navigation",
+      "unbound_data",
+      "hidden_required_context",
+      "decorative_noise",
+      "environment_mismatch",
+      "role_mismatch",
+      "stale_projection"
+    ],
+    "actions": [
+      "review",
+      "reposition",
+      "rebind",
+      "quarantine",
+      "retire"
+    ]
+  },
+  "acceptance": {
+    "must_prove": [
+      "functional_need_or_continuity_need",
+      "correct planar placement",
+      "correct spectral receiver match",
+      "correct authority boundary",
+      "correct data/event binding",
+      "usable wording and labels",
+      "responsive/mobile behavior",
+      "environment behavior",
+      "failure/recovery behavior"
+    ]
+  }
+}

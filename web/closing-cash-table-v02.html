@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TAGRO ECHO · Closing Cash Ver02</title>
+<style>
+:root{--grid:#111;--sale:#c9f7c9;--expense:#fff98c;--grey:#c9c9c9;--summary:#fff500;--cash:#ccf7cc;--blue:#2368d5;--red:#ff1f14;--focus:#2d78ff}
+*{box-sizing:border-box}body{margin:0;background:#f2f2f2;color:#111;font-family:Arial,Helvetica,sans-serif}.top{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#fff;border-bottom:1px solid #bbb;position:sticky;top:0;z-index:20}.top b{font-size:17px}.top small{display:block;color:#666;margin-top:2px}.top a{color:#111;text-decoration:none;border:1px solid #aaa;padding:7px 11px;border-radius:16px;font-size:13px}.toolbar{display:flex;gap:7px;flex-wrap:wrap;padding:8px 8px 6px;background:#f2f2f2;position:sticky;top:58px;z-index:18}.toolbar button{border:1px solid #999;background:#fff;border-radius:6px;padding:8px 11px;font-weight:700}.toolbar .primary{background:#111;color:#fff}.wrap{padding:0 6px 10px;overflow:auto;-webkit-overflow-scrolling:touch}.sheet{min-width:1160px;background:#fff;border-collapse:collapse;table-layout:fixed}.sheet th,.sheet td{border:1.4px solid var(--grid);height:34px;padding:0;font-size:14px;font-weight:600;vertical-align:middle}.sheet th{font-size:16px;padding:3px 5px}.sale{background:var(--sale)}.exp{background:var(--expense)}.grey{background:var(--grey)}.cash{background:var(--cash)}.sumhi{background:var(--summary)}.red{color:var(--red);font-weight:800}.blue{color:var(--blue);font-weight:800}.right{text-align:right}.center{text-align:center}.w-sale{width:92px}.w-bill{width:96px}.w-exp{width:98px}.w-part{width:310px}.w-label{width:158px}.w-num{width:98px}.w-small{width:82px}.w-summary{width:180px}.w-summarynum{width:112px}.cell{width:100%;height:100%;min-height:32px;border:0;background:transparent;padding:4px 6px;font:inherit;color:inherit;border-radius:0;outline:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cell.num{text-align:right;font-variant-numeric:tabular-nums}.cell.center{text-align:center}.cell:focus{box-shadow:inset 0 0 0 2px var(--focus);background:#eef5ff}.row-focus td{box-shadow:inset 0 1px 0 #74a6ff,inset 0 -1px 0 #74a6ff}.calc{padding:4px 6px;text-align:right;font-variant-numeric:tabular-nums}.label{padding:4px 6px}.note{font-size:12px;color:#555;margin:8px}.mini{font-size:11px;color:#666;padding:0 8px 6px}.stickyhead th{position:sticky;top:103px;z-index:15}.suggest{position:fixed;z-index:50;background:white;border:1px solid #aaa;box-shadow:0 3px 12px #9996;max-height:190px;overflow:auto;display:none;min-width:220px}.suggest button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid #eee;background:#fff;padding:10px;font-size:14px}.suggest button.active{background:#eef5ff}
+@media(max-width:700px){.top{padding:8px 10px}.toolbar{top:56px;padding:6px}.toolbar button{padding:7px 9px}.sheet th,.sheet td{height:38px;font-size:14px}.cell{min-height:36px;font-size:16px}.stickyhead th{top:99px}}
+</style>
+</head>
+<body>
+<header class="top"><div><b>TAGRO × ECHO</b><small>Closing Cash · Ver02</small></div><a href="index.html">Home</a></header>
+<div class="toolbar"><button class="primary" id="addSale">+ SALE</button><button id="addExpense">+ EXPENSE</button><button id="addOther">+ CASH / OTHER</button><button id="undo">Undo row</button></div>
+<div class="mini">ENTER/Next moves down the current job column. TAB moves across. Cells stay single-line.</div>
+<div class="wrap" id="wrap">
+<table class="sheet" id="sheet">
+<colgroup><col class="w-sale"><col class="w-bill"><col class="w-exp"><col class="w-part"><col class="w-label"><col class="w-num"><col class="w-small"><col class="w-small"><col class="w-small"><col class="w-summary"><col class="w-summarynum"></colgroup>
+<thead><tr class="stickyhead"><th class="sale">SALE</th><th>BILL</th><th class="exp">EXPENSES</th><th>PARTICULARS</th><th>DATE / CASH</th><th></th><th></th><th></th><th></th><th>SUMMARY</th><th></th></tr></thead>
+<tbody id="entries"></tbody>
+<tbody>
+<tr><td class="sale"></td><td></td><td class="exp"></td><td></td><td class="cash label">Opening Cash</td><td class="grey"><input class="cell num nav" id="opening" inputmode="decimal" enterkeyhint="next" value="849"></td><td></td><td></td><td></td><td class="label">Yesterday Closing</td><td class="calc" id="yesterday">849</td></tr>
+<tr><td class="sale"></td><td></td><td class="exp"></td><td></td><td class="cash"><input class="cell num denom" value="500" readonly tabindex="-1"></td><td class="grey"><input class="cell num nav qty" inputmode="numeric" enterkeyhint="next" value="0"></td><td class="cash calc amt">0</td><td class="grey"><input class="cell num nav qty2" inputmode="numeric" enterkeyhint="next" value="1"></td><td class="grey calc amt2">500</td><td class="label">Today sale</td><td class="calc" id="todaySale"></td></tr>
+<tr><td class="sale"></td><td></td><td class="exp"></td><td></td><td class="cash"><input class="cell num denom" value="200" readonly tabindex="-1"></td><td class="grey"><input class="cell num nav qty" inputmode="numeric" enterkeyhint="next" value="0"></td><td class="cash calc amt">0</td><td class="grey"><input class="cell num nav qty2" inputmode="numeric" enterkeyhint="next" value="0"></td><td class="grey calc amt2">0</td><td class="label">TOTAL</td><td class="calc" id="totalCash"></td></tr>
+<tr><td class="sale"></td><td></td><td class="exp"></td><td></td><td class="cash"><input class="cell num denom" value="100" readonly tabindex="-1"></td><td class="grey"><input class="cell num nav qty" inputmode="numeric" enterkeyhint="next" value="7"></td><td class="cash calc amt">700</td><td class="grey"><input class="cell num nav qty2" inputmode="numeric" enterkeyhint="next" value="0"></td><td class="grey calc amt2">0</td><td class="label">Expenses</td><td class="calc red" id="todayExpense"></td></tr>
+<tr><td class="sale"></td><td></td><td class="exp"></td><td></td><td class="cash"><input class="cell num denom" value="50" readonly tabindex="-1"></td><td class="grey"><input class="cell num nav qty" inputmode="numeric" enterkeyhint="next" value="2"></td><td class="cash calc amt">100</td><td class="grey"><input class="cell num nav qty2" inputmode="numeric" enterkeyhint="next" value="1"></td><td class="grey calc amt2">50</td><td class="label blue">Balance Due</td><td class="calc blue" id="balanceDue"></td></tr>
+<tr><td class="sale"></td><td></td><td class="exp"></td><td></td><td class="cash"><input class="cell num denom" value="20" readonly tabindex="-1"></td><td class="grey"><input class="cell num nav qty" inputmode="numeric" enterkeyhint="next" value="1"></td><td class="cash calc amt">20</td><td class="grey"><input class="cell num nav qty2" inputmode="numeric" enterkeyhint="next" value="4"></td><td class="grey calc amt2">80</td><td class="label">CASH in hand</td><td class="calc" id="cashHand"></td></tr>
+<tr><td class="sale"></td><td></td><td class="exp"></td><td></td><td class="cash"><input class="cell num denom" value="10" readonly tabindex="-1"></td><td class="grey"><input class="cell num nav qty" inputmode="numeric" enterkeyhint="next" value="1"></td><td class="cash calc amt">10</td><td class="grey"><input class="cell num nav qty2" inputmode="numeric" enterkeyhint="next" value="5"></td><td class="grey calc amt2">50</td><td class="label sumhi red">Difference</td><td class="calc sumhi red" id="difference"></td></tr>
+<tr><td class="sale"></td><td></td><td class="exp"></td><td></td><td class="cash label">Coins</td><td class="grey"><input class="cell num nav coin" inputmode="decimal" enterkeyhint="next" value="19"></td><td class="cash calc coinAmt">19</td><td class="grey"><input class="cell num nav coin2" inputmode="decimal" enterkeyhint="done" value="19"></td><td class="grey calc coinAmt2">19</td><td></td><td></td></tr>
+</tbody>
+</table>
+<p class="note">Ver02 navigation prototype. It does not yet write Closing Cash to AWS.</p>
+</div>
+<div class="suggest" id="suggest"></div>
+<script>
+const seed=[
+ {sale:'1100',bill:'649',expense:'1000',part:'Paytm HDFC Bill NO , 655'},
+ {sale:'2595',bill:'650',expense:'2078',part:'Paytm HDFC Bill NO , 657'},
+ {sale:'42000',bill:'651',expense:'270',part:'Paytm HDFC Bill NO , 656'},
+ {sale:'490',bill:'653',expense:'70',part:'Parm Oil'},
+ {sale:'1010',bill:'654',expense:'70',part:'DTDC Courier'},
+ {sale:'1000',bill:'655',expense:'200',part:'Auto PLR'},
+ {sale:'270',bill:'656',expense:'35000',part:'MS 382 cash Separate Box ( JJ )'},
+ {sale:'2078',bill:'657',expense:'',part:''},
+ {sale:'75000',bill:'Service Cash',expense:'75000',part:'SBI Deposit - Service Cash'},
+ {sale:'',bill:'',expense:'3500',part:'Service Cash'},
+ {sale:'',bill:'',expense:'1000',part:'Spare Cash Axis'},
+ {sale:'',bill:'',expense:'1500',part:'Chitty Cash'},
+ {sale:'',bill:'',expense:'2000',part:'GST Cash'},
+ {sale:'',bill:'',expense:'4000',part:'Stihl Cash'}
+];
+const phrases=['Paytm HDFC Bill NO','DIRECT SALES','TO CASH BOX','BANK TRANSFER','Service Cash','Spare Cash Axis','Chitty Cash','GST Cash','Stihl Cash','SBI Deposit - Service Cash','Auto PLR','DTDC Courier','Parm Oil','MS 382 cash Separate Box ( JJ )'];
+const entries=document.getElementById('entries'),suggest=document.getElementById('suggest');
+let lastAdded=null;
+const n=v=>{const x=Number(String(v??'').replace(/,/g,'').trim());return Number.isFinite(x)?x:0};
+function cell(value,cls,job,mode='text'){return `<td class="${cls||''}"><input class="cell nav ${mode==='num'?'num':''}" data-job="${job}" value="${String(value??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" ${mode==='num'?'inputmode="decimal"':''} enterkeyhint="next" autocomplete="off"></td>`}
+function makeRow(row={sale:'',bill:'',expense:'',part:''},focusJob='sale'){
+ const tr=document.createElement('tr');tr.className='entry-row';tr.innerHTML=cell(row.sale,'sale','sale','num')+cell(row.bill,'','bill')+cell(row.expense,'exp','expense','num')+cell(row.part,'','part')+'<td></td><td></td><td></td><td></td><td></td><td></td><td></td>';entries.appendChild(tr);bindRow(tr);lastAdded=tr;recalc();if(focusJob){const el=tr.querySelector(`[data-job="${focusJob}"]`);if(el)setTimeout(()=>focusSelect(el),0)}return tr}
+function bindRow(tr){tr.querySelectorAll('.cell').forEach(el=>{el.addEventListener('focus',()=>{document.querySelectorAll('.row-focus').forEach(r=>r.classList.remove('row-focus'));tr.classList.add('row-focus');if(el.dataset.job==='part')showSuggest(el)});el.addEventListener('blur',()=>setTimeout(()=>hideSuggest(),120));el.addEventListener('input',()=>{recalc();if(el.dataset.job==='part')showSuggest(el)});el.addEventListener('keydown',handleKey)})}
+function focusSelect(el){el.focus({preventScroll:true});try{el.select()}catch{}el.scrollIntoView({block:'nearest',inline:'nearest'})}
+function nextByJob(el,dir=1){const job=el.dataset.job;if(!job)return;const rows=[...entries.querySelectorAll('.entry-row')];const row=el.closest('tr');let i=rows.indexOf(row)+dir;if(i<0)i=0;if(i>=rows.length){if(dir>0){const r=makeRow({},job);return r.querySelector(`[data-job="${job}"]`)}return}const target=rows[i].querySelector(`[data-job="${job}"]`);if(target)focusSelect(target)}
+function adjacent(el,dir){const all=[...document.querySelectorAll('.nav:not([tabindex="-1"])')];const i=all.indexOf(el);const t=all[i+dir];if(t)focusSelect(t)}
+function handleKey(e){const el=e.currentTarget;if(e.key==='Enter'){e.preventDefault();if(el.dataset.job==='part'&&suggest.style.display==='block'){const a=suggest.querySelector('button.active')||suggest.querySelector('button');if(a){el.value=a.textContent;hideSuggest();recalc();return}}nextByJob(el,e.shiftKey?-1:1)}else if(e.key==='ArrowDown'){e.preventDefault();nextByJob(el,1)}else if(e.key==='ArrowUp'){e.preventDefault();nextByJob(el,-1)}else if(e.key==='ArrowRight'&&el.selectionStart===el.value.length){e.preventDefault();adjacent(el,1)}else if(e.key==='ArrowLeft'&&el.selectionStart===0){e.preventDefault();adjacent(el,-1)}}
+function showSuggest(el){const q=el.value.trim().toLowerCase();const matches=phrases.filter(x=>!q||x.toLowerCase().includes(q)).slice(0,7);if(!matches.length){hideSuggest();return}suggest.innerHTML=matches.map((x,i)=>`<button type="button" class="${i===0?'active':''}">${x}</button>`).join('');suggest.querySelectorAll('button').forEach(b=>b.onclick=()=>{el.value=b.textContent;hideSuggest();recalc();focusSelect(el)});const r=el.getBoundingClientRect();suggest.style.left=Math.max(6,Math.min(window.innerWidth-240,r.left))+'px';suggest.style.top=Math.min(window.innerHeight-200,r.bottom+2)+'px';suggest.style.display='block'}
+function hideSuggest(){suggest.style.display='none'}
+function recalc(){const rows=[...entries.querySelectorAll('.entry-row')];const sales=rows.reduce((s,r)=>s+n(r.querySelector('[data-job="sale"]')?.value),0);const exp=rows.reduce((s,r)=>s+n(r.querySelector('[data-job="expense"]')?.value),0);const opening=n(document.getElementById('opening').value);document.getElementById('todaySale').textContent=sales.toFixed(0);document.getElementById('totalCash').textContent=(opening+sales).toFixed(0);document.getElementById('todayExpense').textContent=exp.toFixed(0);const due=opening+sales-exp;document.getElementById('balanceDue').textContent=due.toFixed(0);let left=0,right=0;document.querySelectorAll('input.denom').forEach(d=>{const tr=d.closest('tr'),den=n(d.value),q=n(tr.querySelector('.qty')?.value),q2=n(tr.querySelector('.qty2')?.value),a=den*q,a2=den*q2;tr.querySelector('.amt').textContent=a.toFixed(0);tr.querySelector('.amt2').textContent=a2.toFixed(0);left+=a;right+=a2});left+=n(document.querySelector('.coin')?.value);right+=n(document.querySelector('.coin2')?.value);document.querySelector('.coinAmt').textContent=n(document.querySelector('.coin')?.value).toFixed(0);document.querySelector('.coinAmt2').textContent=n(document.querySelector('.coin2')?.value).toFixed(0);document.getElementById('cashHand').textContent=right.toFixed(1);document.getElementById('difference').textContent=(right-due).toFixed(1)}
+seed.forEach(r=>makeRow(r,''));
+document.querySelectorAll('.nav').forEach(el=>{if(!el.closest('.entry-row')){el.addEventListener('focus',()=>focusSelect(el));el.addEventListener('input',recalc);el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();adjacent(el,e.shiftKey?-1:1)}})}});
+document.getElementById('addSale').onclick=()=>makeRow({},'sale');document.getElementById('addExpense').onclick=()=>makeRow({},'expense');document.getElementById('addOther').onclick=()=>makeRow({},'part');document.getElementById('undo').onclick=()=>{if(lastAdded&&lastAdded.isConnected){lastAdded.remove();lastAdded=null;recalc()}};
+recalc();
+</script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+{
+  "work_order_id": "WO-0012",
+  "status": "active",
+  "activated_date": "2026-08-20",
+  "objective": "Deploy and prove the smallest controlled TAGRO ECHO NonProd shared runtime boundary on AWS: private shared PostgreSQL persistence, server-side staff authentication, governed API/Lambda application boundary, and first shared synchronization path without claiming production readiness or admitting BUSY production write.",
+  "authority_basis": "Owner explicitly authorised creation of WO-0012 and update of CURRENT_STATE.json after verifying the first AWS NonProd persistence resources.",
+  "environment": {
+    "aws_account_name": "TagroEcho-NonProd",
+    "aws_account_id": "272037674623",
+    "region": "ap-south-1"
+  },
+  "already_proven_at_activation": {
+    "vpc_id": "vpc-0d24ee12b61ed4830",
+    "vpc_cidr": "10.20.0.0/16",
+    "private_subnets": [
+      {"subnet_id":"subnet-0120b92ce4c054c06","cidr":"10.20.10.0/24","availability_zone":"ap-south-1a","public_ipv4_on_launch":false},
+      {"subnet_id":"subnet-0bc49cd8240da5922","cidr":"10.20.20.0/24","availability_zone":"ap-south-1b","public_ipv4_on_launch":false}
+    ],
+    "private_route_table_id": "rtb-01d59189125e36885",
+    "private_route_policy": "local VPC route only; no Internet Gateway route and no NAT Gateway route",
+    "app_security_group_id": "sg-09231e827f3723d1e",
+    "database_security_group_id": "sg-0fe8421fbb2223917",
+    "database_ingress_rule": "TCP 5432 from app security group only",
+    "db_subnet_group": "echo-nonprod-db-subnets",
+    "database": {
+      "identifier": "echo-nonprod-postgres",
+      "engine": "postgres",
+      "engine_version": "17.10",
+      "instance_class": "db.t4g.micro",
+      "storage_gb": 20,
+      "storage_type": "gp3",
+      "encrypted": true,
+      "publicly_accessible": false,
+      "multi_az": false,
+      "database_name": "echoos",
+      "master_credentials": "AWS Secrets Manager managed",
+      "status": "available",
+      "port": 5432,
+      "availability_zone": "ap-south-1b"
+    }
+  },
+  "allowed": [
+    "AWS NonProd VPC/subnet/route/security-group resources required by the admitted architecture",
+    "RDS PostgreSQL NonProd shared persistence and its private connectivity controls",
+    "Amazon Cognito User Pool and application clients for staff authentication",
+    "API Gateway HTTP API",
+    "AWS Lambda application handlers and least-privilege IAM roles",
+    "Secrets Manager references required by the application runtime",
+    "database schema migration and controlled NonProd seed/configuration",
+    "first Enterprise/user/role/tool-pack configuration",
+    "offline create -> reconnect -> idempotent shared synchronization verification",
+    "tests/**",
+    "architecture/**",
+    "docs/**",
+    "governance/state/CURRENT_STATE.json",
+    "governance/decisions/** when a new owner-approved decision is actually required",
+    "session-ledger/**",
+    "work-orders/WO-0012.json"
+  ],
+  "forbidden": [
+    "production AWS provisioning",
+    "public PostgreSQL exposure",
+    "browser/mobile direct database access",
+    "standing AWS IAM credentials in the mobile/web client",
+    "production BUSY write",
+    "production bank mutation",
+    "Observer operational write authority",
+    "Service Memory expansion before deployment verification",
+    "AI consequential write authority without owning-contract confirmation",
+    "claiming production/shared runtime completion before end-to-end evidence"
+  ],
+  "success": [
+    "NonProd shared PostgreSQL persistence is private, encrypted and reachable only through the governed application boundary",
+    "staff authentication is deployed with no public self-registration and server-side authorization remains authoritative",
+    "HTTP API and Lambda command boundary can authenticate a staff user and reach shared persistence through least-privilege network/IAM paths",
+    "existing canonical relational schema is migrated or mapped without silently changing business meaning",
+    "one real Enterprise and controlled test users/roles/tool packs are configured",
+    "offline create -> reconnect -> idempotent sync -> acknowledged shared state is proven",
+    "backup/restore path for the NonProd database is documented and at least one recovery check is performed before first-counter admission",
+    "governance and runtime tests remain green",
+    "no production readiness claim exceeds observed evidence"
+  ],
+  "next_sequence": [
+    "record verified AWS foundation in CURRENT_STATE",
+    "deploy Cognito staff authentication boundary",
+    "deploy API Gateway HTTP API and Lambda application boundary",
+    "connect Lambda to PostgreSQL using Secrets Manager without exposing credentials",
+    "apply canonical relational schema to shared NonProd persistence",
+    "configure first Enterprise and test identities",
+    "prove offline reconnect synchronization",
+    "then connect BUSY through read-only/copied-company bridge before any write admission"
+  ]
+}
