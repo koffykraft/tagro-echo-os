@@ -1,0 +1,35 @@
+{
+  "schema": "tagro.echo-os.warehouse-move-phase1/1",
+  "contract_id": "WAREHOUSE-MOVE-PHASE1-001",
+  "status": "owner_admitted_design",
+  "purpose": "Use the independent TAGRO warehouse as the first historical/structural evidence source without mistaking warehouse-derived classifications for current canonical truth.",
+  "source": {
+    "root": "/TAGRO_AUTOMATION/TAGRO_AWS_OS_WAREHOUSE",
+    "policy": "read_only",
+    "primary_phase1_database": "databases/planar.sqlite",
+    "manifest": "manifests/latest.json"
+  },
+  "invariants": [
+    "Warehouse data is evidence and history, not automatic current truth.",
+    "Warehouse-derived branch status remains explicitly warehouse-derived until reconciled with current sources.",
+    "Source run identity and database digest must accompany every exported observation package.",
+    "Phase 1 exports branch observations only; person observations wait for current OS/Service/TD sources.",
+    "No exporter writes to warehouse databases.",
+    "No import package may directly mutate canonical branches, principals, users or memberships.",
+    "Conflicts are preserved for reconciliation rather than overwritten.",
+    "Later live branch connectors are separate sources and do not erase warehouse history."
+  ],
+  "phase1_dimensions": [
+    "branch.code",
+    "branch.name",
+    "branch.operational_state"
+  ],
+  "source_class": "warehouse_derived_historical_backbone",
+  "next_sources": [
+    "TD current operating state",
+    "TAGRO OS current branch/person state",
+    "Service current branch/person/contact state",
+    "branch folders and current information banks",
+    "BUSY accounting/finance read-side where applicable"
+  ]
+}

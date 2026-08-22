@@ -31,6 +31,7 @@ constitution_path = require("governance/constitution/ECHO_OS_CONSTITUTION.md")
 foundation = load_json("governance/state/ECHO_OS_FOUNDATION.json")
 state = load_json("governance/state/CURRENT_STATE.json")
 require("governance/decisions/DECISION_LEDGER.md")
+require("governance/directives/TAGRO_VERTICAL_DEPLOYMENT_DIRECTIVE_2026-08-22.md")
 require("schemas/core/EVENT_ENVELOPE.schema.json")
 require("contracts/core/COMPONENT_CONTRACT.schema.json")
 observer_path = require("observer/OBSERVER_CONTRACT.md")
@@ -75,7 +76,7 @@ if constitution_path.exists():
     text = constitution_path.read_text(encoding="utf-8")
     required_phrases = [
         "AI builders have no architectural sovereignty",
-        "BUSY is a controlled accounting/statutory adapter",
+        "BUSY is a docked accounting, finance and MIS engine",
         "Observer is structurally read-only",
         "Even the skeleton is versioned and replaceable",
     ]

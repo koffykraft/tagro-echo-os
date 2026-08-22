@@ -1,0 +1,22 @@
+{
+  "schema": "tagro.echo-os.schema-migration-manifest/1",
+  "manifest_id": "nonprod-v0.2",
+  "target": "AWS NonProd PostgreSQL echoos",
+  "transaction_policy": "one transaction per migration; record only after successful SQL execution",
+  "drift_policy": "refuse an already-recorded migration when its admitted Git blob SHA differs",
+  "migrations": [
+    {"id":"0001-platform-foundation-v0.2","path":"schemas/business/platform_foundation_v0_2.sql","git_blob_sha":"74ffdfea3cd45ab2bbc2307571c4401c266bc684","depends_on":[]},
+    {"id":"0002-canonical-business-v0.2","path":"schemas/business/canonical_tables_v0_2.sql","git_blob_sha":"a248fe0a93b2887123422b829b0f3fa85c46442b","depends_on":["0001-platform-foundation-v0.2"]},
+    {"id":"0003-counter-operations-v0.2","path":"schemas/business/counter_ops_v0_2.sql","git_blob_sha":"464a28dfc2537a8184f74e7d061f072cd64a807d","depends_on":["0001-platform-foundation-v0.2","0002-canonical-business-v0.2"]},
+    {"id":"0004-operational-extensions-v0.3","path":"schemas/business/operational_extensions_v0_3.sql","git_blob_sha":"7ad7997c58fd6e060f68d038169af283ec5ea937","depends_on":["0001-platform-foundation-v0.2","0002-canonical-business-v0.2"]},
+    {"id":"0005-platform-identity-constraints-v0.2.1","path":"schemas/business/platform_identity_constraints_v0_2_1.sql","git_blob_sha":"8f24c6071ec20f12cedce28b4eadc0dc9bb0b522","depends_on":["0001-platform-foundation-v0.2"]},
+    {"id":"0006-platform-spectral-routing-v0.2.2","path":"schemas/business/platform_spectral_routing_v0_2_2.sql","git_blob_sha":"758250f1403897598b036920b61e44fc72938cca","depends_on":["0001-platform-foundation-v0.2"]},
+    {"id":"0007-platform-import-observations-v0.2.3","path":"schemas/business/platform_import_observations_v0_2_3.sql","git_blob_sha":"491add5bf3cbf300604ca215fd63fceb567fc98f","depends_on":["0001-platform-foundation-v0.2","0006-platform-spectral-routing-v0.2.2"]},
+    {"id":"0008-stock-observation-planes-v0.4","path":"schemas/business/stock_observation_planes_v0_4.sql","git_blob_sha":"61cbede2d988783d9efd56fb18d6be73964dd37a","depends_on":["0002-canonical-business-v0.2","0003-counter-operations-v0.2"]},
+    {"id":"0009-payment-receipt-evidence-v0.4","path":"schemas/business/payment_receipt_evidence_v0_4.sql","git_blob_sha":"2dbed0f17156291c686431f311484ca196351280","depends_on":["0002-canonical-business-v0.2"]},
+    {"id":"0010-cash-entry-evidence-v0.4","path":"schemas/business/cash_entry_evidence_v0_4.sql","git_blob_sha":"52ddf67fd3a257954a08ad64ea13fd21c506bb58","depends_on":["0001-platform-foundation-v0.2","0004-operational-extensions-v0.3"]},
+    {"id":"0011-cash-saved-document-v0.4","path":"schemas/business/cash_saved_document_v0_4.sql","git_blob_sha":"3b3ae5e81780a31142312a37f6eedabc462fd2ae","depends_on":["0010-cash-entry-evidence-v0.4"]},
+    {"id":"0012-operational-twin-source-v0.5","path":"schemas/business/operational_twin_source_v0_5.sql","git_blob_sha":"a45fe25cb5ff377d223978a88401afc2ff58599c","depends_on":["0001-platform-foundation-v0.2"]},
+    {"id":"0013-operational-twin-planar-v0.6","path":"schemas/business/operational_twin_planar_v0_6.sql","git_blob_sha":"4c3b2d1e81b146fe4a9c1cbf4cdf2f6a6593f9c8","depends_on":["0012-operational-twin-source-v0.5"]}
+  ]
+}

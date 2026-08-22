@@ -1,0 +1,92 @@
+{
+  "schema": "tagro.echo-os.history-index/1",
+  "status": "owner_required_continuity",
+  "updated": "2026-08-22",
+  "purpose": "Prevent future builders from accidentally regressing to superseded ECHO tools, environments, architectures or methods by requiring explicit historical comparison before reuse.",
+  "named_prior_chat_sources": [
+    "Access shared chat",
+    "Troubleshoot Access Limitations",
+    "Verify AWS account status",
+    "Build Product Database"
+  ],
+  "current_preferences": {
+    "operational_cloud": "AWS",
+    "shared_operational_database": "PostgreSQL",
+    "client_posture": "mobile_first_offline_capable",
+    "server_boundary": "authenticated_api_lambda",
+    "historical_ingestion": "preserve_existing_planar_warehouse_decomposition",
+    "validation_environment": "ECHO_operational_twin_using_TAGRO_historical_multibranch_baseline",
+    "accounting_engine": "BUSY_docked_with_write_readback_reconciliation",
+    "intelligence_boundary": "Observer_read_only_to_operational_truth",
+    "ui_ux": "structural_architecture",
+    "evolution": "better_solution_requires_planar_prismatic_due_diligence"
+  },
+  "supersessions": [
+    {
+      "older": "older_TAGRO_STIHL_Jain_runtime_as_build_base",
+      "current": "independent_TAGRO_ECHO_OS",
+      "reason": "ECHO requires independent scale, cloud, operating model and replaceability; legacy systems remain evidence/skill sources only.",
+      "authority": ["DEC-0001", "Constitution 1.1+"]
+    },
+    {
+      "older": "localStorage_or_static_JSON_as_shared_business_truth",
+      "current": "PostgreSQL_backed_shared_runtime_with_local_offline_drafts_only",
+      "reason": "AWS NonProd proved authenticated transactional shared persistence and readback; browser-local state is unsuitable as primary multi-counter truth.",
+      "authority": ["WO-0012 runtime evidence", "DEC-0020"]
+    },
+    {
+      "older": "wrapper_on_wrapper_page_revision",
+      "current": "coherent_canonical_shell_and_purpose_specific_workflows",
+      "reason": "Repeated Closing Cash/page fixes created layout, keyboard, navigation and mobile/desktop regressions.",
+      "authority": ["PRODUCT_DESIGN_ENGINEERING_CONTRACT", "ECHO_UI_UX_DESIGN_RULES_V2", "historical build evidence"]
+    },
+    {
+      "older": "BUSY_as_merely_generic_adapter",
+      "current": "BUSY_as_docked_accounting_finance_inventory_MIS_engine",
+      "reason": "Historical TAGRO evidence showed mature native accounting/inventory/report capability; ECHO should orchestrate rather than duplicate it.",
+      "authority": ["DEC-0019"]
+    },
+    {
+      "older": "empty_ECHO_validation_warehouse_or_synthetic_demo_only",
+      "current": "TAGRO_history_as_operational_twin_baseline",
+      "reason": "Real multi-branch historical patterns are necessary to validate ECHO against actual business complexity.",
+      "authority": ["DEC-0023"]
+    },
+    {
+      "older": "generic_flat_history_import",
+      "current": "existing_TAGRO_AWS_OS_WAREHOUSE_planar.sqlite_as_historical_planar_interface",
+      "reason": "The warehouse already separates Busy, Closing Cash, Bank, Service and projects them into entities/events/evidence/relationships; flattening would discard established structure and duplicate work.",
+      "authority": ["WAREHOUSE_MOVE_PHASE1_CONTRACT", "STOCK_PLANES_PRISM_DOCTRINE", "VIBGYOR_PRISM_CONTRACT"]
+    },
+    {
+      "older": "count_equals_stock_or_BUSY_opening_stock_equals_truth",
+      "current": "separate_count_provisional_stock_canonical_movement_historical_inference_planes",
+      "reason": "Physical count, movement history, projected stock and historical inference are different evidence/state classes.",
+      "authority": ["STOCK_PLANES_PRISM_DOCTRINE_2026-08-21"]
+    },
+    {
+      "older": "UI_as_cosmetic_after_backend",
+      "current": "UI_UX_as_governed_structural_layer",
+      "reason": "Operational correctness includes context, authority visibility, mobile ergonomics, interruption recovery, truthful state and role/job flow.",
+      "authority": ["DEC-0021", "Constitution 1.1+"]
+    },
+    {
+      "older": "preserve_existing_tool_due_to_sunk_cost_or_familiarity",
+      "current": "consider_materially_better_solution_after_due_diligence",
+      "reason": "Persistent flaws or future inadequacy must trigger broader Planar/Prismatic comparison rather than inertia.",
+      "authority": ["DEC-0022", "PLANAR_PRISMATIC_EVOLUTION_RULE_V1"]
+    }
+  ],
+  "mandatory_preflight": [
+    "governance/constitution/ECHO_OS_CONSTITUTION.md",
+    "governance/state/ECHO_OS_FOUNDATION.json",
+    "governance/state/CURRENT_STATE.json",
+    "governance/decisions/DECISION_LEDGER.md",
+    "governance/history/ECHO_HISTORY_MEMORY.md",
+    "governance/history/ECHO_HISTORY_INDEX.json",
+    "affected_contracts",
+    "active_work_order",
+    "latest_relevant_session_ledger_and_tests"
+  ],
+  "regression_rule": "If a proposed design resembles an older superseded path, the builder must identify the supersession and state what new evidence justifies revisiting it before implementation."
+}

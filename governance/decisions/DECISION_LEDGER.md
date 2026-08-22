@@ -48,6 +48,7 @@ Approved: Owner, 2026-08-19.
 ## DEC-0010 — Warehouse begins empty and receives continuous governed feeds
 Decision: the ECHO warehouse begins with no inherited TAGRO operational history and is designed for continuous receipt of ECHO accounting, bank, cash, stock, service, logistics, marketing and other admitted events/evidence.
 Approved: Owner, 2026-08-19.
+Status: superseded for the validation/operational-twin environment by DEC-0023. The principle that ECHO production history must have clear provenance remains active.
 
 ## DEC-0011 — AWS workload separation begins multi-account
 Decision: production and non-production ECHO workloads are to be separated at AWS account level before production launch; workload accounts are not organized by district/reporting hierarchy.
@@ -113,3 +114,31 @@ Reason: ECHO counters are mobile-first and may have unreliable network availabil
 Constraint: offline capability does not authorize bypassing permissions or fabricating current server/BUSY state.
 Status: active design rule from WO-0009 onward.
 Approved: Owner, 2026-08-20.
+
+## DEC-0021 — User experience is a structural layer of ECHO
+Decision: UI/UX is a governed structural layer of TAGRO ECHO OS, not a cosmetic layer applied after backend implementation. It governs how identity/context, jobs, authority, state, evidence, interruption/recovery, mobile behaviour, role projection and consequential actions are exposed to real users.
+Reason: the first-stage pages proved useful domain/runtime skills but also demonstrated that page-by-page implementation can create duplicate navigation, repeated context entry, mixed authority generations and avoidable cognitive load. The revised UI/UX study establishes a coherent operating environment as part of system correctness.
+Constraint: user comfort and simplification may not hide or falsify business truth, authority, evidence or downstream state. Purpose-specific workflows may retain different geometries.
+Compatibility: existing events, schemas and runtime evidence keep their meaning. Existing first-stage UI implementations become evidence/candidates to retain, redesign, extract, quarantine or retire under the structural design rules.
+Status: admitted by Constitution v1.1 and ECHO UI/UX Design Rules V2.
+Approved: Owner, 2026-08-22.
+
+## DEC-0022 — ECHO has a duty to consider materially better solutions
+Decision: when an existing tool, design, environment, provider, architecture or workflow shows persistent flaws, recurring friction, unacceptable risk, or material inadequacy for TAGRO's future, or when a materially better alternative becomes available, ECHO must consider the alternative rather than preserve the current choice through inertia or sunk cost.
+Reason: first-stage choices are foundations and evidence, not permanent limits. TAGRO's future operating model may outgrow a tool or design that was appropriate earlier.
+Required method: perform due diligence and a comprehensive Planar/Prismatic review across affected skeleton dimensions, users, roles, domains, receivers, integrations, security, resilience, cost, performance, usability, accessibility, mobile/offline operation, migration, rollback, provenance, future scale and failure modes. Step outward to broader solution classes when a narrow comparison is insufficient.
+Constraint: consideration does not equal automatic replacement. Any replacement follows the normal lifecycle and must preserve/reconcile admitted truth, evidence, authority and historical meaning. No silent migration is allowed.
+Rejected: preserving a known inadequate solution merely because it is already built, tested, paid for, deployed in NonProd or familiar to the team.
+Status: admitted by Constitution v1.1; governing evolution rule for all future work.
+Approved: Owner, 2026-08-22.
+
+## DEC-0023 — TAGRO historical data is the isolated ECHO operational-twin baseline
+Decision: the ECHO validation environment may contain and actively use imported TAGRO historical and multi-branch business data from inception as a realistic operational baseline. ECHO shall be exercised against this dataset as though it were a live multi-branch business so that sales, stock, service, purchase, cash, finance, logistics, reporting and intelligence behaviour can be tested and compared with the real TAGRO operating history.
+Reason: synthetic demo data is too weak to prove whether ECHO can serve a real business. TAGRO's actual historical patterns, branch variation, customers, products, movements and financial/service behaviour provide the most useful validation corpus.
+Isolation: ECHO validation writes, corrections, simulated events, BUSY test postings and generated intelligence have zero writeback authority into TAGRO's actual operational systems or books. The real TAGRO operating environment remains independent. This isolation is infrastructure/environmental, not a reason to weaken the realism of ECHO testing.
+Operational-twin posture: within the isolated ECHO environment, builders should run realistic end-to-end business operations rather than artificially suppressing writes or workflows merely because the baseline originated from TAGRO actuals. The aim is to discover whether ECHO can outperform or improve upon the real operating model.
+Comparison: where useful, ECHO outcomes may be compared with historical/actual TAGRO outcomes for accuracy, speed, usability, stock integrity, service turnaround, financial visibility, logistics, customer follow-up, reporting and management intelligence.
+Provenance: imported historical records and ECHO-generated validation events must remain distinguishable by source/provenance so comparisons are meaningful; this distinction is analytical truth, not a protective restriction on simulation.
+Compatibility: this supersedes DEC-0010 only for the validation/operational-twin environment. Future production data migration/import policy remains a separate admission decision.
+Status: admitted for ECHO validation and realistic business simulation.
+Approved: Owner, 2026-08-22.

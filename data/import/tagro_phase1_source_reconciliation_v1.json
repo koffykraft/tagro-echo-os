@@ -1,0 +1,76 @@
+{
+  "schema": "tagro.echo-os.move-house-source-reconciliation/1",
+  "phase": "PHASE_1_BRANCHES_PEOPLE",
+  "enterprise_code": "TAGRO",
+  "state": "candidate_only",
+  "operational_write_authorized": false,
+  "sources": [
+    {
+      "source_id": "td-safe-base-2026-08-07",
+      "source_ref": "/TAGRO_AUTOMATION/safe_base/td_daily/latest/diary.md",
+      "as_of": "2026-08-07",
+      "use": "active branch presence/status"
+    },
+    {
+      "source_id": "warehouse-evidence-map-2026-07-19",
+      "source_ref": "/TAGRO_AUTOMATION/TAGRO_WAREHOUSE.md",
+      "as_of": "2026-07-19",
+      "use": "branch history, warehouse coverage and operational/historical classification"
+    },
+    {
+      "source_id": "service-context-2026-06-27",
+      "source_ref": "/Citane_Project/CitaneProject_Claude/TAGRO Service — Full Context & Stat.txt",
+      "as_of": "2026-06-27",
+      "use": "staff name/branch/role/phone candidates"
+    },
+    {
+      "source_id": "tagro-service-live-code",
+      "source_ref": "github:koffykraft/tagro-service/main/staff-admin.html",
+      "as_of": "repository current head at reconciliation time",
+      "use": "confirms seven branch vocabulary and that current staff records are loaded from server/KV rather than hard-coded page data"
+    },
+    {
+      "source_id": "tagro-os-live-code",
+      "source_ref": "github:koffykraft/tagro-os/main",
+      "as_of": "repository current head at reconciliation time",
+      "use": "additional operating-system source to reconcile before admission"
+    }
+  ],
+  "active_branch_candidates": [
+    {"code":"KVR","name":"Karavaloor","evidence":["td-safe-base-2026-08-07","warehouse-evidence-map-2026-07-19"],"confidence":"CONFIRMED"},
+    {"code":"PKM","name":"Ponkunnam","evidence":["td-safe-base-2026-08-07","warehouse-evidence-map-2026-07-19"],"confidence":"CONFIRMED"},
+    {"code":"NDD","name":"Nedumangad","evidence":["td-safe-base-2026-08-07","warehouse-evidence-map-2026-07-19"],"confidence":"CONFIRMED"},
+    {"code":"MDM","name":"Marthandam","evidence":["td-safe-base-2026-08-07","warehouse-evidence-map-2026-07-19"],"confidence":"CONFIRMED"},
+    {"code":"SKT","name":"Shencottai","evidence":["td-safe-base-2026-08-07","warehouse-evidence-map-2026-07-19"],"confidence":"CONFIRMED"}
+  ],
+  "noncurrent_or_review_branch_candidates": [
+    {"code":"OYR","state":"review_required","reason":"older service source names it as a branch; warehouse evidence says closing/non-functional; TD does not count it among five active branches"},
+    {"code":"SDM","state":"review_required","reason":"older service source names it as a branch; warehouse evidence says historical/non-current; TD does not count it among five active branches"},
+    {"code":"CMD","state":"historical_closed"},
+    {"code":"MDT","state":"historical_closed"},
+    {"code":"PTM","state":"historical_closed"}
+  ],
+  "people_policy": {
+    "current_staff_authority": "must be reconciled against a current server/live source before operational admission",
+    "historical_service_snapshot": "candidate evidence only",
+    "phone_handling": "preserve as sensitive contact evidence; do not expose through unrelated spectral receivers",
+    "identity_rule": "name, branch, role and phone are separate dimensions; agreement on one does not imply agreement on all"
+  },
+  "spectral_validation": {
+    "event": "SOURCE_IDENTITY_OBSERVATION",
+    "prism": [
+      {"dimension":"person identity","receiver":"IDENTITY"},
+      {"dimension":"branch relationship","receiver":"AUTHORITY_CONTEXT"},
+      {"dimension":"role","receiver":"AUTHORIZATION"},
+      {"dimension":"phone/contact","receiver":"CONTACT","sensitivity":"restricted"},
+      {"dimension":"source/as-of","receiver":"AUDIT_PROVENANCE"}
+    ],
+    "rule": "A matching colour makes a dimension relevant to a receiver; it does not by itself make the observation current, true or operationally admitted."
+  },
+  "next_required_evidence": [
+    "extract current staff records from the live TAGRO Service server/KV or an equivalent current export",
+    "inspect TAGRO OS current branch/staff/contact source",
+    "reconcile against TD and warehouse evidence",
+    "produce exceptions rather than overwrite disagreements"
+  ]
+}

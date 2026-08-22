@@ -1,0 +1,10 @@
+{
+  "schema": "tagro.echo-os.td-live-sources/1",
+  "branches": [
+    {"branch":"KVR","outbox":"T:\\Dropbox\\TAgrO_KVR_2018\\Software\\TD2026KVR\\outbox"},
+    {"branch":"PKM","outbox":"T:\\Dropbox\\Tagro pk\\Software\\TD2026PKM\\outbox"},
+    {"branch":"NDD","outbox":"T:\\Dropbox\\NDD 2014\\Software\\TD2026NDD\\outbox"},
+    {"branch":"MDM","outbox":"T:\\Dropbox\\TAGRO_MDM_2018\\Software\\TD2026MDM\\outbox"},
+    {"branch":"SKT","outbox":"T:\\Dropbox\\TAGRO_SKT_2019\\Software\\TD2026SKT\\outbox"}
+  ]
+}

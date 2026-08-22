@@ -1,0 +1,28 @@
+version: 0.2
+
+env:
+  shell: bash
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.12
+    commands:
+      - python --version
+      - pip install --upgrade pip
+      - pip install -r src/aws_runtime/requirements.txt
+      - pip install aws-sam-cli
+  pre_build:
+    commands:
+      - python -m unittest discover -s tests -p 'test_*.py'
+  build:
+    commands:
+      - sam validate --template-file architecture/aws/nonprod-runtime-template.yaml --lint
+      - sam build --template-file architecture/aws/nonprod-runtime-template.yaml
+      - test -n "$ARTIFACT_BUCKET"
+      - sam package --s3-bucket "$ARTIFACT_BUCKET" --s3-prefix echo-nonprod/runtime --output-template-file packaged-nonprod-runtime.yaml
+      - aws s3 cp packaged-nonprod-runtime.yaml "s3://$ARTIFACT_BUCKET/echo-nonprod/runtime/packaged-nonprod-runtime.yaml"
+
+artifacts:
+  files:
+    - packaged-nonprod-runtime.yaml

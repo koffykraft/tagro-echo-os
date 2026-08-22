@@ -1,0 +1,47 @@
+{
+  "work_order_id": "WO-0013",
+  "status": "active",
+  "activated_date": "2026-08-22",
+  "objective": "Establish the revised TAGRO ECHO user-experience structure as a governed structural layer; build the first mobile-first shell/Home candidate; define replaceable docked logistics and UPI payment contracts; and record an explicit evolution duty requiring consideration of better tools, environments, designs and approaches when existing choices are persistently flawed or inadequate for TAGRO's future.",
+  "authority_basis": "Owner explicitly instructed on 2026-08-22 to go ahead and build, then explicitly directed governance and rules to be rewritten so the UI/UX revision becomes a new structural layer and earlier first-stage choices do not limit future development. Owner further directed that better tools/designs/environments must be considered after due diligence and comprehensive Planar/Prismatic review when existing choices are persistently flawed or inadequate.",
+  "parent_context": "WO-0012 remains the NonProd shared-runtime proof lane. WO-0013 is the governed structural UX/evolution and integration candidate lane based from the current WO-0012 branch state; it may amend governance only to the extent explicitly owner-approved above and must not overstate WO-0012 runtime evidence.",
+  "allowed": [
+    "owner-approved constitutional version increment and structural UX/evolution amendments",
+    "governance/decisions records required by the owner-approved structural revision",
+    "contracts/core/ revised UI/UX structural rules and Planar/Prismatic evolution rules",
+    "governance/state/foundation records needed to reflect the structural revision without rewriting observed runtime facts",
+    "web/ candidate shell/Home HTML CSS JS that reuses existing authenticated EchoRuntime without changing unapproved business semantics",
+    "docs/ UI shell and user-experience specifications",
+    "contracts/integrations/ replaceable adapter contracts for logistics and payment providers",
+    "research-backed provider capability notes for Amazon Shipping, Delhivery and UPI payment gateways",
+    "tests limited to governance/static/shell behavior and non-consequential adapter contract validation",
+    "session-ledger entries for WO-0013",
+    "work-orders/WO-0013.json"
+  ],
+  "forbidden": [
+    "production deployment",
+    "live Amazon Shipping shipment creation/cancellation/NDR mutation",
+    "live Delhivery shipment/pickup/NDR mutation",
+    "live UPI charge/refund/payout",
+    "storing vendor secrets in browser code or repository",
+    "browser direct vendor API credentials",
+    "changing operational event meaning without explicit owning-contract review and migration",
+    "claiming any vendor integration live before credentials, sandbox tests, callbacks/webhooks, idempotency and reconciliation are proven",
+    "merging/replacing the current index shell before candidate review",
+    "modifying or overstating WO-0012 shared-runtime admission claims",
+    "using the new evolution rule as permission for unreviewed technology churn or silent migration"
+  ],
+  "success": [
+    "Constitution explicitly recognizes governed user experience as a structural layer rather than late cosmetic treatment",
+    "first-stage implementations are explicitly classified as evidence/candidates rather than ceilings on future development",
+    "a durable better-solution rule requires due diligence and comprehensive Planar/Prismatic review before replacement/admission decisions",
+    "replacement preserves evidence, truth, authority, provenance, compatibility/migration and rollback obligations",
+    "one visually coherent Option-3-derived shell/Home candidate exists and binds to authenticated ECHO context where available",
+    "shell handles mobile safe areas, touch sizing, offline/network state and pending/review queue counts without confusing network availability with synchronization",
+    "logistics contract keeps ECHO order/shipment truth separate from carrier acknowledgement and delivery events",
+    "payment contract keeps ECHO sale/payment evidence separate from gateway intent, confirmation and settlement",
+    "Amazon Shipping and Delhivery are modeled as replaceable carrier adapters",
+    "UPI is modeled through a replaceable payment-service adapter rather than hardwired to one provider",
+    "no live external consequence occurs under this work order"
+  ]
+}

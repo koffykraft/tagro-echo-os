@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#faf9f7">
+  <title>TAGRO ECHO · Home Candidate</title>
+  <link rel="stylesheet" href="echo-home-v1.css">
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar">
+      <button class="iconbtn" id="quick" aria-label="Quick actions" title="Quick actions">＋</button>
+      <div class="brand">TAGRO <span>×</span> <span class="echo">ECHO</span></div>
+      <button class="iconbtn" id="menu" aria-label="Menu" title="Menu">•••</button>
+    </div>
+
+    <main>
+      <section class="context" id="contextCard" aria-label="Current ECHO context">
+        <div class="avatar" id="avatar">E</div>
+        <div class="identity">
+          <strong id="person">Resolving ECHO…</strong>
+          <span id="place">Checking access</span>
+        </div>
+        <div class="net" id="networkState"><span class="dot"></span><span id="networkLabel">Online</span></div>
+      </section>
+
+      <div class="desktop-grid">
+        <section>
+          <div class="section-title" id="roleTitle">COUNTER</div>
+          <div class="jobs" id="jobs">
+            <a class="job" href="billing.html" data-capability="SELL" aria-label="Sell">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M3 4h2l2.2 10.1a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 7H6"/><circle cx="10" cy="20" r="1.2"/><circle cx="18" cy="20" r="1.2"/></svg>
+              <span>SELL</span>
+            </a>
+            <a class="job" href="service.html" data-capability="SERVICE" aria-label="Service">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M14.7 6.3a4 4 0 0 0-5-5l2.2 2.2-2.8 2.8-2.2-2.2a4 4 0 0 0 5 5l7.1 7.1a2 2 0 0 1-2.8 2.8l-7.1-7.1"/></svg>
+              <span>SERVICE</span>
+            </a>
+            <a class="job" href="documents.html" data-capability="SELL" aria-label="Estimate">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v5h5M9 12h6M9 16h5"/></svg>
+              <span>ESTIMATE</span>
+            </a>
+          </div>
+        </section>
+
+        <section>
+          <div class="section-title">TODAY</div>
+          <div class="continuity">
+            <a class="status-card hidden" href="#" id="continueCard">
+              <span class="mark">↻</span>
+              <span><strong>Continue</strong><small id="continueText">Work in progress</small></span>
+              <span class="chev">›</span>
+            </a>
+            <a class="status-card" href="#" id="pendingCard">
+              <span class="mark">↑</span>
+              <span><strong>Waiting to send</strong><small id="pendingText">Checking local work…</small></span>
+              <span class="chev">›</span>
+            </a>
+            <a class="status-card" href="#" id="reviewCard">
+              <span class="mark">!</span>
+              <span><strong>Needs attention</strong><small id="reviewText">Checking…</small></span>
+              <span class="chev">›</span>
+            </a>
+          </div>
+          <p class="quiet" id="truthLine">Network state and synchronization are shown separately.</p>
+        </section>
+      </div>
+
+      <div class="environment">OPERATIONAL TWIN · REAL TAGRO HISTORY · ISOLATED FROM TAGRO ACTUALS</div>
+    </main>
+  </div>
+
+  <nav class="bottomnav" aria-label="Primary navigation">
+    <div class="bottomnav-inner">
+      <a class="navitem active" href="echo-home-v1.html"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M3 11 12 3l9 8v10h-6v-6H9v6H3z"/></svg><span>Home</span></a>
+      <a class="navitem" href="business.html"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 20V8h5v12M10 20V4h5v16M16 20v-9h4v9"/></svg><span>Business</span></a>
+      <a class="navitem" href="intelligence.html"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="m12 3 1.7 4.3L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7L12 3Z"/><path d="m18 15 .9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9L18 15Z"/></svg><span>Intelligence</span></a>
+      <button class="navitem" id="attentionAction"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span>Attention</span></button>
+      <button class="navitem" id="menuAction"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>Menu</span></button>
+    </div>
+  </nav>
+
+  <div class="toast hidden" id="toast" role="status"></div>
+
+  <script src="runtime-config.js"></script>
+  <script src="runtime-client.js"></script>
+  <script src="echo-home-v1.js"></script>
+</body>
+</html>

@@ -1,35 +1,49 @@
 {
-  "schema": "tagro.echo-os.foundation/1",
+  "schema": "tagro.echo-os.foundation/1.1",
   "system_id": "TAGRO-ECHO-OS",
-  "generation": "1",
-  "recorded_at": "2026-08-19T18:12:00+05:30",
-  "status": "repository_bootstrapped_runtime_not_built",
+  "generation": "1.1",
+  "recorded_at": "2026-08-22T08:59:00+05:30",
+  "status": "constitutional_structure_v1_1_active_nonprod_build_continues",
   "business": {
     "brand": "TAGRO x ECHO",
     "venture": "independent ECHO venture",
     "projected_counter_count": 100,
     "projected_district_count": 7,
     "primary_device": "mobile_phone",
-    "desktop_optional": true
+    "desktop_optional_enhanced_surface": true
   },
   "independence": {
     "legacy_tagro_runtime_dependency": false,
     "legacy_tagro_data_dependency": false,
     "busy_operational_source_of_truth": false,
-    "busy_role": "controlled_accounting_adapter",
+    "busy_role": "docked_accounting_finance_mis_engine_with_separate_confirmation",
     "dropbox_role": "project_archive_evidence_resilience_transport",
-    "operational_cloud": "AWS",
-    "aws_resources_provisioned": false
+    "operational_cloud_current": "AWS",
+    "operational_cloud_immutable": false,
+    "aws_nonprod_resources_provisioned": true
   },
   "repository": {
     "created": true,
     "full_name": "koffykraft/tagro-echo-os",
     "default_branch": "main",
-    "role": "independent_engineering_source"
+    "role": "independent_engineering_and_governance_source"
   },
   "skeleton": {
     "version": "1.0",
-    "elements": ["identity","event","evidence","relationship","time","location","authority","state","provenance","confidence"]
+    "elements": ["identity","event","evidence","relationship","time","location","authority","state","provenance","confidence"],
+    "replaceable_by_explicit_migration": true
+  },
+  "structural_layers": {
+    "operational_driver": true,
+    "observer_attention_intelligence": true,
+    "data_persistence_events": true,
+    "evidence_provenance": true,
+    "integration_docks": true,
+    "user_experience_interaction": true,
+    "device_environment": true,
+    "recovery_continuity_observability": true,
+    "ui_ux_is_cosmetic_only": false,
+    "active_ui_ux_contract": "contracts/core/ECHO_UI_UX_DESIGN_RULES_V2.md"
   },
   "control_model": {
     "front_seat_driver": "operational_command_path",
@@ -37,6 +51,17 @@
     "observer_operational_write_authority": false,
     "ai_architectural_sovereignty": false,
     "ai_consequential_truth_authority": false
+  },
+  "evolution": {
+    "first_stage_is_future_ceiling": false,
+    "sunk_cost_is_admission_criterion": false,
+    "better_solution_consideration_required_when_credible_trigger_exists": true,
+    "review_contract": "contracts/core/PLANAR_PRISMATIC_EVOLUTION_RULE_V1.md",
+    "replacement_requires_due_diligence": true,
+    "replacement_requires_planar_review": true,
+    "replacement_requires_prismatic_review": true,
+    "silent_semantic_migration_forbidden": true,
+    "migration_and_rollback_required_before_admission": true
   },
   "component_lifecycle": ["idea","experiment","candidate","tested","admitted","active","superseded","retired"],
   "protected_governance": ["governance/constitution","governance/decisions","contracts/core","schemas/core"],
@@ -47,9 +72,15 @@
     "hard_coded_local_username_paths",
     "direct_browser_database_access",
     "observer_to_operational_write_path",
-    "ai_direct_consequential_write_without_contractual_confirmation"
+    "ai_direct_consequential_write_without_contractual_confirmation",
+    "first_stage_implementation_as_permanent_constraint",
+    "sunk_cost_as_reason_to_suppress_better_solution_review"
   ],
-  "current_stage": "repository_control_plane_bootstrap",
-  "next_gate": "core_contracts_and_builder_protocols_present_and_validated",
+  "current_stage": "aws_nonprod_runtime_proof_plus_structural_ui_ux_candidate_build",
+  "parallel_gates": [
+    "complete WO-0012 shared-runtime synchronization/recovery evidence without overclaim",
+    "prove WO-0013 structural shell and core journeys against UI/UX V2",
+    "apply Planar/Prismatic review when persistent flaws or materially better alternatives arise"
+  ],
   "certification_claim": false
 }
