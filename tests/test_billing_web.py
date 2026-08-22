@@ -10,16 +10,20 @@ class BillingWebTests(unittest.TestCase):
     def test_billing_page_is_mobile_and_explicit_about_draft_truth(self):
         text = (ROOT / "web" / "billing.html").read_text(encoding="utf-8")
         self.assertIn('name="viewport"', text)
+        self.assertIn("viewport-fit=cover", text)
         self.assertIn("LOCAL DRAFT", text)
-        self.assertIn("A local draft is not an issued invoice", text)
-        self.assertIn("queued", text.lower() if "queued" in text.lower() else "queued")
+        self.assertIn("Draft has not been issued", text)
+        self.assertIn("WAITING TO SEND", text)
+        self.assertIn("BUSY is not shown as booked until separate readback confirms it", text)
 
     def test_runtime_confirmation_required_before_issued_state(self):
         text = (ROOT / "web" / "billing.html").read_text(encoding="utf-8")
         self.assertIn("tagro.echo.bill-issued.v1", text)
         self.assertIn("EchoRuntime.enqueueAndFlush", text)
-        self.assertIn("result.response?.data?.bill_id", text)
-        self.assertIn("no invoice or BUSY booking has been claimed", text)
+        self.assertIn("r.state==='acknowledged'", text)
+        self.assertIn("r.response?.data?.bill_id", text)
+        self.assertIn("ECHO ISSUED", text)
+        self.assertIn("BUSY: not booked / not confirmed", text)
 
     def test_billing_page_is_linked_and_cached(self):
         index = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
