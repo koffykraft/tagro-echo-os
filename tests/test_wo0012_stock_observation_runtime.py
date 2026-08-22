@@ -29,7 +29,9 @@ class StockObservationRuntimeContractTests(unittest.TestCase):
         self.assertIn(marker, text)
         after = text.split(marker, 1)[1]
         self.assertIn("insert into stock_count_lines", after)
-        self.assertIn("UNKNOWN and must never be encoded as numeric zero", text)
+        self.assertIn('"system_qty": str(system_qty) if system_qty is not None else None', text)
+        self.assertIn('"variance": str(variance) if variance is not None else None', text)
+        self.assertNotIn('else Decimal("0")', text)
 
     def test_migration_keeps_count_and_movement_planes_separate(self):
         sql = (ROOT / "schemas/business/stock_observation_planes_v0_4.sql").read_text(encoding="utf-8").lower()
