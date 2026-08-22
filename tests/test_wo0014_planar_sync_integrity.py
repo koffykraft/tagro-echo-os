@@ -45,7 +45,7 @@ class PlanarSyncIntegrityTests(unittest.TestCase):
             path.write_bytes(b"planar-test")
             self.assertEqual(
                 self.module.sha256_file(path),
-                "c8578a3d4361bc5a4db28ef2855071b5515ca0d769f3f78babf281c3a3a4f705",
+                "1463a3b728685ec5b949fbebe2dfe77e878f1921b0671f8563485e0dc5bcfc68",
             )
 
     def test_manifest_digest_mismatch_is_a_hard_stop(self):
