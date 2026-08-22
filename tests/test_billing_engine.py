@@ -89,6 +89,20 @@ class BillingEngineTests(unittest.TestCase):
         self.assertEqual(handoff.payload["source"], "ECHO")
         self.assertEqual(handoff.payload["echo_bill_id"], bill.bill_id)
 
+    def test_busy_handoff_rejects_ordinary_or_wrong_branch_series(self):
+        engine = BillingEngine()
+        bill = engine.issue(self.request(), {"P1": Decimal("5")})
+        with self.assertRaises(BillingError):
+            engine.prepare_busy_handoff(
+                bill,
+                {"KVR": BusySeriesConfig("KVR", "SALES-KVR", "KVR")},
+            )
+        with self.assertRaises(BillingError):
+            engine.prepare_busy_handoff(
+                bill,
+                {"KVR": BusySeriesConfig("KVR", "ECHO-PKM", "KVR")},
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
