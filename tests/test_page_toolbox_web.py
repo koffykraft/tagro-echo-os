@@ -29,11 +29,12 @@ class PageToolboxWebTests(unittest.TestCase):
         self.assertIn('id="height"', text)
         self.assertIn('wireDrag', text)
 
-    def test_builder_is_linked_and_cached(self):
+    def test_builder_is_retained_but_not_primary_counter_navigation(self):
         index = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
         sw = (ROOT / "web" / "sw.js").read_text(encoding="utf-8")
-        self.assertIn('href="page-builder.html"', index)
-        self.assertIn("'./page-builder.html'", sw)
+        self.assertTrue((ROOT / "web" / "page-builder.html").is_file())
+        self.assertNotIn('href="page-builder.html"', index)
+        self.assertNotIn("'./page-builder.html'", sw)
 
     def test_preview_generates_standalone_product_without_admitting_actions(self):
         text = (ROOT / "web" / "page-builder.html").read_text(encoding="utf-8")
