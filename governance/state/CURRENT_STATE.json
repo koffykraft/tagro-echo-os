@@ -1,6 +1,6 @@
 {
   "schema": "tagro.echo-os.current-state/1",
-  "recorded_at": "2026-08-22T14:08:00+05:30",
+  "recorded_at": "2026-08-22T14:12:00+05:30",
   "stage": "wo_0014_nonprod_deployed_auth_repaired_ci_green_planar_sync_started",
   "status": "active_deployment_build",
   "repository": {
@@ -9,7 +9,7 @@
     "default_branch": "main",
     "active_branch": "wo-0014-database-primary-pages-deploy",
     "active_pr": 14,
-    "active_head_at_record": "0794bbc85a647bee818016b0b89e39107b03697a"
+    "active_head_at_record": "aa69e1eceaccf8d2c305e471e370ecdd300295d8"
   },
   "runtime": {
     "runtime_skeleton_created": true,
@@ -38,22 +38,27 @@
     "tagro_stihl_brand_assets_admitted": true,
     "migration_lambda_deployed": true,
     "aws_deployed": true,
+    "aws_resources_created": true,
     "database_created": true,
+    "warehouse_created": false,
+    "mobile_app_created": false,
     "cognito_user_pool_created": true,
     "cognito_app_client_created": true,
     "lambda_runtime_deployed": true,
     "http_api_deployed": true,
     "observer_runtime_created": false,
     "busy_adapter_created": false,
-    "bank_adapter_created": false
+    "bank_adapter_created": false,
+    "cash_adapter_created": false,
+    "service_runtime_created": true
   },
   "verification": {
     "repaired_head": "0794bbc85a647bee818016b0b89e39107b03697a",
     "latest_proven_governance_gate": {"run_number": 558, "conclusion": "success"},
-    "latest_proven_runtime_gate": {"run_number": 539, "conclusion": "success"},
-    "authentication_regression_reconciled": "A later continuation introduced an open-internal handler/deploy lane that resolved requests as a server-selected OWNER actor. Independent preflight found this conflicted with Constitution section 19, DEC-0013, History Index authenticated_api_lambda preference, the TAGRO vertical directive protected identity/server-authority invariant and WO-0014 authenticated read/write success criteria. The duplicate open handler/deploy wrapper were removed and the SAM template restored to Cognito JWT protection; the repaired head is Governance and Runtime green.",
+    "latest_proven_runtime_gate": {"run_number": 541, "conclusion": "success"},
+    "authentication_regression_reconciled": "A later continuation introduced an open-internal handler/deploy lane that resolved requests as a server-selected OWNER actor. Independent preflight found this conflicted with Constitution section 19, DEC-0013, History Index authenticated_api_lambda preference, the TAGRO vertical directive protected identity/server-authority invariant and WO-0014 authenticated read/write success criteria. The duplicate open handler/deploy wrapper were removed and the SAM template restored to Cognito JWT protection.",
     "nonprod_http_health": "PROVEN: owner-run WO-0014 deployment reported Health PASS: database_configured=True",
-    "nonprod_auth_boundary": "REPOSITORY PROVEN: Cognito JWT is the default API authorizer; /health alone is explicitly public. The repaired boundary is CI-green. If the deployed stack was changed by the superseded open-runtime lane, it must be redeployed from this repaired branch before current authenticated endpoint proof.",
+    "nonprod_auth_boundary": "REPOSITORY PROVEN: Cognito JWT is the default API authorizer; /health alone is explicitly public. If the deployed stack was changed by the superseded open-runtime lane, it must be redeployed from this repaired branch before current authenticated endpoint proof.",
     "nonprod_database_path": "PostgreSQL is the primary shared working database. Prior authenticated Lambda -> Secrets Manager -> private PostgreSQL readback was proven; current repaired deployment still needs authenticated /db-health rerun after boundary alignment.",
     "nonprod_v0_3_migration": "PROVEN APPLIED: owner-run deploy reported Schema migration confirmed: nonprod_v0_3",
     "wo_0014_runtime_deployment": "PROVEN: stack echo-nonprod-runtime updated in ap-south-1; endpoint https://3n1lhlcush.execute-api.ap-south-1.amazonaws.com; runtime/twin-read/observation-import functions reported present",
@@ -97,7 +102,7 @@
     "nonprod_account_name": "TagroEcho-NonProd",
     "nonprod_account_id": "272037674623",
     "region": "ap-south-1",
-    "aws_work_status": "WO-0014 stack and v0.3 are deployed; repaired authenticated repo boundary is CI-green; Planar population completion and current authenticated write/history proofs remain pending"
+    "aws_work_status": "WO-0014 stack and v0.3 are deployed; repaired authenticated repo boundary is CI-proven; Planar population completion and current authenticated write/history proofs remain pending"
   },
   "aws_nonprod_resources": {
     "region": "ap-south-1",
