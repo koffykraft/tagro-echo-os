@@ -18,11 +18,13 @@ class ReportsWebTests(unittest.TestCase):
         self.assertIn("not synchronization confirmation", text)
         self.assertIn("LOCAL DRAFT · NOT ISSUED", text)
 
-    def test_reports_page_is_linked_and_cached(self):
+    def test_reports_utility_is_retained_but_business_is_primary_home_projection(self):
         index = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
         sw = (ROOT / "web" / "sw.js").read_text(encoding="utf-8")
-        self.assertIn('href="reports.html"', index)
-        self.assertIn("'./reports.html'", sw)
+        self.assertTrue((ROOT / "web" / "reports.html").is_file())
+        self.assertIn('href="business.html"', index)
+        self.assertNotIn('href="reports.html"', index)
+        self.assertNotIn("'./reports.html'", sw)
 
 
 if __name__ == "__main__":
