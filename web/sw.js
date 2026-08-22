@@ -1,4 +1,4 @@
-const CACHE='tagro-echo-os-v9';
+const CACHE='tagro-stihl-os-v10';
 const CORE=[
   './','./index.html','./login.html','./runtime-config.js','./runtime-client.js','./echo-home-v1.css','./echo-home-v1.js',
   './operation.css','./business-intelligence.css','./business.js','./intelligence.js',
