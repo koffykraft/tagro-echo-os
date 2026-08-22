@@ -3,7 +3,7 @@
 function install(){
   if(typeof window.renderDenoms!=='function' || typeof DENOMS==='undefined' || typeof counts==='undefined') return false;
   window.renderDenoms=function(){
-    const html=DENOMS.map(d=>`<tr><td>${d==='Coins'?'Coins':'₹'+d}</td><td><input data-denom="${d}" inputmode="${d==='Coins'?'decimal':'numeric'}" enterkeyhint="next" value="${counts[d]??0}"></td><td class="amt" data-amt="${d}">${money(d==='Coins'?counts[d]:n(d)*counts[d]).toFixed(0)}</td></tr>`).join('');
+    const html=DENOMS.map(d=>`<tr><td>${d==='Coins'?'Coins':'₹'+d}</td><td><input type="text" data-denom="${d}" inputmode="text" enterkeyhint="next" autocomplete="off" value="${counts[d]??0}"></td><td class="amt" data-amt="${d}">${money(d==='Coins'?counts[d]:n(d)*counts[d]).toFixed(0)}</td></tr>`).join('');
     deskDenoms.innerHTML=html;
     mobDenoms.innerHTML=html;
     [deskDenoms,mobDenoms].forEach(t=>{
@@ -24,8 +24,9 @@ function install(){
           if(e.key==='Enter'){
             e.preventDefault();
             e.stopPropagation();
-            const target=inputs[e.shiftKey?Math.max(0,i-1):Math.min(inputs.length-1,i+1)];
-            if(target){target.focus({preventScroll:true});try{target.select()}catch{}target.scrollIntoView({block:'nearest'});}
+            const ni=e.shiftKey?Math.max(0,i-1):Math.min(inputs.length-1,i+1);
+            const target=inputs[ni];
+            if(target){target.focus({preventScroll:true});try{target.select()}catch{}target.scrollIntoView({block:'nearest',inline:'nearest'});}
           } else if(e.key==='ArrowDown'){
             e.preventDefault();
             const target=inputs[Math.min(inputs.length-1,i+1)]; if(target){target.focus({preventScroll:true});try{target.select()}catch{}}
