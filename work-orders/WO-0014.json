@@ -1,0 +1,52 @@
+{
+  "work_order_id": "WO-0014",
+  "status": "active",
+  "activated_date": "2026-08-22",
+  "objective": "Make ECHO PostgreSQL the primary working business database, preserve and ingest the existing Planar/Prismatic TAGRO historical warehouse structure, connect continuous Dropbox/AWS source refresh into the ECHO database, prove database-backed frontend read/write, then build and deploy the actual TAGRO ECHO operational pages using the admitted UI/UX structure and approved TAGRO ECHO brand assets.",
+  "authority_basis": "Owner explicitly directed on 2026-08-22 to record durable history and pre-action reference directives, perform database diligence first, then fulfil actual page engineering and deployment of TAGRO ECHO. Owner explicitly directed that the database be primary access material, Dropbox scripts continuously update the database and frontend, and that prior safe-duplicate/babysitting posture not constrain realistic Operational Twin operation.",
+  "supersedes_scope_limits": ["WO-0013 prohibition on production deployment and index replacement for this newly authorised lane"],
+  "preflight_required": [
+    "governance/constitution/ECHO_OS_CONSTITUTION.md",
+    "governance/constitution/AMENDMENT_2026-08-22_HISTORICAL_CONTINUITY.md",
+    "governance/state/ECHO_OS_FOUNDATION.json",
+    "governance/state/CURRENT_STATE.json",
+    "governance/decisions/DECISION_LEDGER.md",
+    "governance/history/ECHO_HISTORY_MEMORY.md",
+    "governance/history/ECHO_HISTORY_INDEX.json",
+    "governance/history/PRE_ACTION_REFERENCE_DIRECTIVE.md",
+    "affected contracts, latest relevant tests/session evidence"
+  ],
+  "allowed": [
+    "database diligence and source-to-database reconciliation analysis",
+    "PostgreSQL schemas/migrations required to preserve Planar historical entities/events/evidence/relationships",
+    "continuous ingestion adapters/checkpoints from existing TAGRO_AWS_OS_WAREHOUSE and Dropbox/AWS source pipelines",
+    "authenticated runtime read/write endpoints backed by PostgreSQL",
+    "business and intelligence projections over historical plus ECHO-generated Operational Twin events",
+    "actual user-facing Home, Sell/Billing, Service, Stock, Purchase, Closing Cash, Business, Intelligence and Owner/Attention pages",
+    "responsive/mobile and desktop brand treatment using approved source logos",
+    "static/PWA frontend deployment and NonProd/runtime deployment where credentials/workflows already exist",
+    "replace current candidate shell/index when acceptance checks pass",
+    "CI/test/deployment workflow changes needed for this lane",
+    "session/state/history updates reflecting evidence actually proven"
+  ],
+  "constraints": [
+    "do not flatten existing Planar warehouse semantics into a generic undifferentiated import bucket",
+    "preserve provenance between imported TAGRO history and ECHO-generated events",
+    "database is primary shared working material; browser local state is draft/offline support only",
+    "BUSY booked state requires actual BUSY readback; queued handoff is not booked",
+    "COUNT != MOVEMENT != STOCK POSITION != HISTORICAL INFERENCE",
+    "Observer/BIS may derive and recommend but not silently rewrite operational truth",
+    "no claim of successful deployment, database ingestion or live BUSY write without direct evidence"
+  ],
+  "success": [
+    "historical warehouse/source topology and Planar transformations are documented and reconciled",
+    "ECHO PostgreSQL holds/querys the intended historical Planar working material with provenance",
+    "continuous source refresh has an idempotent checkpointed path into PostgreSQL",
+    "authenticated readback proves frontend can retrieve current and historical business information",
+    "an ECHO write is persisted and read back from PostgreSQL",
+    "actual business pages consume the database-backed runtime instead of a parallel local prototype world",
+    "Business and Intelligence pages can derive cross-domain information for finance/accounting/logistics/store/service/customer/BIS uses",
+    "responsive brand assets are used appropriately for mobile and larger screens",
+    "candidate site is deployed to the authorised TAGRO ECHO web surface or deployment workflow, with exact limitations stated"
+  ]
+}
