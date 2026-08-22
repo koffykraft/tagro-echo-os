@@ -1,6 +1,6 @@
 {
   "schema": "tagro.echo-os.current-state/1",
-  "recorded_at": "2026-08-22T10:31:00+05:30",
+  "recorded_at": "2026-08-22T11:20:00+05:30",
   "stage": "wo_0014_database_primary_pages_deploy_ci_green",
   "status": "active_deployment_build",
   "repository": {
@@ -9,7 +9,7 @@
     "default_branch": "main",
     "active_branch": "wo-0014-database-primary-pages-deploy",
     "active_pr": 14,
-    "active_head_at_record": "d188b81d5794e61999685ee6a74f6cfb21eda54e"
+    "active_head_at_record": "c341497c9ecba22ec405760403bfdf46b60e0bfc"
   },
   "runtime": {
     "runtime_skeleton_created": true,
@@ -65,10 +65,10 @@
     "service_runtime_created": true
   },
   "verification": {
-    "last_proven_governance_gate": {"run_number": 509, "conclusion": "success"},
-    "last_proven_runtime_gate": {"run_number": 490, "conclusion": "success", "tests": 322},
+    "last_proven_governance_gate": {"run_number": 532, "conclusion": "success"},
+    "last_proven_runtime_gate": {"run_number": 513, "conclusion": "success", "tests": 322},
     "wo_0014_ci": "success",
-    "wo_0014_status": "active; database-primary runtime/pages, Planar source and Planar PostgreSQL projection code, current enterprise capability gates, TAGRO STIHL branding and revised governance are CI-green; AWS v0.3 migration/runtime deployment and historical Planar population are not yet claimed",
+    "wo_0014_status": "active; database-primary runtime/pages, Planar source and Planar PostgreSQL projection code, current enterprise capability gates, canonical TAGRO STIHL shell/PWA branding and revised governance are CI-green through Governance #532 and Runtime #513; AWS v0.3 migration/runtime deployment and historical Planar population are not yet claimed",
     "nonprod_cognito_verification": "user pool exists; admin-create-only true; username attribute email; PWA app client has no client secret; confirmed test staff identity authenticated successfully",
     "nonprod_http_health": "GET /health previously returned status ok with database_configured true",
     "nonprod_auth_boundary": "unauthenticated GET /whoami previously returned HTTP 401; authenticated JWT GET /whoami returned the Cognito subject and email",
@@ -106,7 +106,7 @@
     "evidence_truth_rule": "captured evidence and inference proposals remain separate; proposals require the authority specified by the owning component before consequential use",
     "sync_truth_rule": "offline mutations carry idempotency keys and payload hashes; replays with changed payload are rejected",
     "busy_role": "docked multi-node accounting_finance_mis engine; production BUSY read/write connectivity not yet admitted",
-    "tagro_vertical_identity": "current TAGRO operating dealership vertical is STIHL; ECHO is a separate vertical/platform; current TAGRO staff pages use Owner-supplied TAGRO STIHL artwork",
+    "tagro_vertical_identity": "current TAGRO operating dealership vertical is STIHL; ECHO is a separate vertical/platform; all canonical TAGRO staff pages and installed PWA identity use Owner-supplied TAGRO STIHL artwork, with ECHO retained only as platform/runtime context",
     "canonical_web_paths": [
       "web/index.html", "web/billing.html", "web/service.html", "web/stock-count.html", "web/po.html",
       "web/closing-cash.html", "web/business.html", "web/intelligence.html", "web/on-call.html", "web/login.html"
