@@ -9,7 +9,7 @@ from src.aws_runtime.config import RuntimeConfig
 from src.aws_runtime.database import connect
 
 ROOT = Path(__file__).resolve().parents[1]
-MANIFEST = ROOT / "schemas" / "migrations" / "nonprod_v0_2_manifest.json"
+MANIFEST = ROOT / "schemas" / "migrations" / "nonprod_v0_3_manifest.json"
 
 
 def _git_blob_sha(content: bytes) -> str:
