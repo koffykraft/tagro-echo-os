@@ -3,7 +3,7 @@ const CORE=[
   './','./index.html','./login.html','./runtime-config.js','./runtime-client.js','./echo-home-v1.css','./echo-home-v1.js',
   './operation.css','./business-intelligence.css','./business.js','./intelligence.js',
   './billing.html','./service.html','./stock-count.html','./po.html','./closing-cash.html','./business.html','./intelligence.html','./on-call.html',
-  './manifest.webmanifest','./icon.svg','./assets/brand/tagro-echo-mobile.png','./assets/brand/tagro-echo-desktop.png'
+  './manifest.webmanifest','./icon.svg'
 ];
 const STATIC_URLS=new Set(CORE.map(path=>new URL(path,self.registration.scope).href));
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting()))});
