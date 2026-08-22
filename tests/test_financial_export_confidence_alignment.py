@@ -62,8 +62,9 @@ class FinancialExportConfidenceAlignmentTests(unittest.TestCase):
 
     def test_exact_is_reserved_not_inferred_by_historical_export(self):
         text = EXPORTER.read_text(encoding="utf-8")
+        normalized = " ".join(text.split())
         self.assertIn('cost_counts = {"exact": 0, "strong": 0, "weak": 0, "unknown": 0}', text)
-        self.assertIn("Exact is reserved for deterministic sale-linked acquisition cost", text)
+        self.assertIn("Exact is reserved for deterministic sale-linked acquisition cost", normalized)
         self.assertNotIn('return "exact"', text)
 
 
