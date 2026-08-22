@@ -5,11 +5,11 @@ from typing import Any, Mapping
 
 from .config import RuntimeConfig
 from .database import tenant_context
-from .twin_read_runtime import history_search, source_status
+from .twin_read_runtime import TwinReadError, history_search, source_status
 
 
 def _response(status_code: int, payload: Mapping[str, Any]) -> dict[str, Any]:
-    return {"statusCode": status_code, "headers": {"content-type": "application/json"}, "body": json.dumps(payload, separators=(",", ":"), sort_keys=True)}
+    return {"statusCode": status_code, "headers": {"content-type": "application/json"}, "body": json.dumps(payload, separators=(",", ":"), sort_keys=True, default=str)}
 
 
 def _claims(event: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -64,9 +64,16 @@ def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
                 domain=str(query.get("domain") or "") or None,
                 branch_code=str(query.get("branch") or "") or None,
                 record_type=str(query.get("record_type") or "") or None,
+                event_type=str(query.get("event_type") or "") or None,
+                start=str(query.get("start") or "") or None,
+                end=str(query.get("end") or "") or None,
                 query=str(query.get("q") or "") or None,
                 limit=int(query.get("limit") or 100),
+                cursor=int(query.get("cursor") or 0),
+                mode=str(query.get("mode") or "planar"),
             ))
+    except TwinReadError as exc:
+        return _response(400, {"error": "invalid_twin_history_query", "detail": str(exc)})
     except Exception as exc:
         return _response(503, {"error": "operational_twin_read_unavailable", "error_type": type(exc).__name__})
 
