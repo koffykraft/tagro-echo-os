@@ -8,6 +8,9 @@ endef
 build-EchoRuntimeFunction:
 	$(build_echo_python_function)
 
+build-EchoTwinReadFunction:
+	$(build_echo_python_function)
+
 build-EchoSchemaMigrationFunction:
 	$(build_echo_python_function)
 
