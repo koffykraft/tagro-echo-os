@@ -44,16 +44,17 @@ class OperationalRuntimeRouteTests(unittest.TestCase):
 
     @patch("src.aws_runtime.handler.create_purchase_order")
     @patch("src.aws_runtime.handler.tenant_context")
-    def test_purchase_order_uses_purchase_order_capability(self, context_mock, operation_mock):
-        context_mock.return_value=self.context("PURCHASE_ORDER")
+    def test_purchase_order_uses_purchase_capability(self, context_mock, operation_mock):
+        context_mock.return_value=self.context("PURCHASE")
         operation_mock.return_value={"po_id":"po-1","status":"draft"}
         response=lambda_handler(self.event("/purchase-orders", {"enterprise_id":"ent-tagro"}),None)
         self.assertEqual(201,response["statusCode"])
+        self.assertEqual("tagro.echo.purchase-order.v1",json.loads(response["body"])["schema"])
 
     @patch("src.aws_runtime.handler.record_stock_count")
     @patch("src.aws_runtime.handler.tenant_context")
-    def test_stock_count_does_not_claim_stock_mutation(self, context_mock, operation_mock):
-        context_mock.return_value=self.context("STOCK_COUNT")
+    def test_stock_count_uses_stock_capability_and_does_not_claim_mutation(self, context_mock, operation_mock):
+        context_mock.return_value=self.context("STOCK")
         operation_mock.return_value={"count_id":"count-1","stock_mutated":False,"variance":"2"}
         response=lambda_handler(self.event("/stock-count/record", {"enterprise_id":"ent-tagro"}),None)
         body=json.loads(response["body"])
