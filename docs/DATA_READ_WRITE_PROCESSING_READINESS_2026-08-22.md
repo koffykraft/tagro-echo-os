@@ -1,7 +1,7 @@
 # TAGRO × ECHO — Data Read/Write/Processing Readiness
 
 Date: 2026-08-22
-Status: verified repository/runtime review; not a production-readiness claim
+Status: verified repository/runtime review for the isolated ECHO Operational Twin; not a production-readiness claim
 
 ## Executive conclusion
 
@@ -9,14 +9,16 @@ ECHO can already perform authenticated, server-side, transactional writes into t
 
 ECHO also has authenticated readback paths for tenant context, governed reference data, Owner ON CALL, Closing Cash day readback and import reconciliation. These demonstrate that written/shared operational information can be retrieved and processed into higher-level projections.
 
+The ECHO validation environment is now explicitly an Operational Twin. Imported TAGRO historical and multi-branch data from inception is a realistic baseline for running ECHO as though it were a live business. ECHO-generated validation writes have zero writeback authority into TAGRO actual operations. Imported baseline records and ECHO-generated events remain distinguishable by provenance so comparison remains meaningful.
+
 The repository already contains domain structures for sales, customers, products, stock, stock counts, transfers, purchases/PO, service, cash, payments, bank evidence, reports, documents, enterprise/authority, events and evidence. This is sufficient structural ground for business and intelligence projections.
 
-However, two important limits remain:
+Two important technical gaps remain, but they are now test objectives rather than reasons to artificially constrain the twin:
 
-1. BUSY live write is NOT yet proven. BUSY Dock v1 is deliberately read-oriented. It can resolve BUSY nodes/bindings, use stored snapshots, prepare idempotent handoff envelopes and record returned results, but it does not itself open or mutate a BUSY database. A queued BUSY handoff is not a booked BUSY transaction.
-2. The warehouse/Observer production intelligence runtime is not yet active. Current intelligence surfaces therefore must consume governed runtime readbacks and clearly label unavailable or unproved domains rather than inventing a unified historical intelligence store.
+1. BUSY live write/readback is not yet implemented in the ECHO runtime. BUSY Dock v1 is deliberately read-oriented. It can resolve BUSY nodes/bindings, use stored snapshots, prepare idempotent handoff envelopes and record returned results, but it does not itself open or mutate a BUSY database.
+2. The long-horizon warehouse/Observer runtime is not yet active as a unified analytical service. Existing TAGRO historical data may nevertheless be used as the Operational Twin baseline while governed historical-query/warehouse services are built.
 
-## 1. ECHO write path — VERIFIED IN CODE / NONPROD RUNTIME CANDIDATE
+## 1. ECHO write path — PRESENT
 
 The current billing runtime performs atomic PostgreSQL writes for:
 
@@ -41,6 +43,8 @@ Other admitted POST routes exist for:
 
 These routes pass through the authenticated Lambda/runtime boundary and server-side capability checks.
 
+Operational Twin consequence: these paths should be exercised with realistic branch/customer/product/history context, not merely synthetic happy-path records.
+
 ## 2. ECHO readback — PRESENT AND USABLE
 
 Current authenticated GET/readback routes include:
@@ -58,13 +62,23 @@ Closing Cash readback proves historical day retrieval over date/branch filters.
 
 Reference data proves shared master retrieval for products/branches and other admitted kinds.
 
-## 3. Historical information
+## 3. Historical information and Operational Twin comparison
 
 ECHO's event and domain-table architecture is suitable for historical reads because meaningful events retain event time, recorded time, actor, location, subject, authority/provenance and payload. Domain tables retain business records such as sales and cash days.
 
-Current runtime readback is not yet a universal historical-query API. Therefore the business/intelligence UI may expose existing readbacks now, while future historical services should add governed query endpoints rather than direct browser SQL.
+The imported TAGRO history provides the realistic long-run comparison field now. The objective is not merely to display old records. ECHO should be able to:
 
-The future warehouse remains the correct long-horizon analytical receiver. It should continuously ingest admitted operational events and external evidence without modifying operational truth.
+- retrieve historical customer/product/branch/service/stock/financial context;
+- compare periods and branches;
+- replay realistic operating questions against the data;
+- generate ECHO recommendations and forecasts;
+- run new ECHO Operational Twin events beside the historical baseline;
+- compare ECHO outputs with historical/actual TAGRO outcomes;
+- identify where ECHO improves speed, visibility, accuracy, follow-up or control.
+
+Current runtime readback is not yet a universal historical-query API. The next data layer should therefore expose governed historical/query endpoints rather than browser-direct database queries.
+
+The future warehouse remains the correct scalable long-horizon analytical receiver, but the absence of that service does not prevent realistic Operational Twin development using the imported history already available.
 
 ## 4. BUSY accounting/finance/MIS
 
@@ -85,13 +99,15 @@ Current BUSY Dock v1 supports:
 
 Current BUSY Dock v1 explicitly does NOT mutate BUSY itself.
 
-Therefore ECHO UI state vocabulary must remain:
+The correct next proof is a fully isolated ECHO BUSY twin/company/database path. Because it has zero impact on TAGRO actual books, we should exercise it like a real accounting environment:
 
-ECHO accepted → BUSY handoff prepared/queued → BUSY result returned → BUSY booked/confirmed
+ECHO transaction → BUSY write → BUSY voucher/result → BUSY readback → ECHO reconciliation → report/MIS consumption.
 
-Only the last confirmed state may be shown as BUSY booked.
+State vocabulary remains truthful during development:
 
-A live BUSY bridge must be implemented and proven against a copied/test company first, with write, readback, reconciliation, idempotency and failure/retry evidence, before production BUSY write is admitted.
+ECHO accepted → BUSY handoff prepared/queued → BUSY result returned → BUSY booked/confirmed.
+
+Once the isolated BUSY twin write/readback is proven, realistic volume and workflow testing should continue rather than stopping at a single smoke test.
 
 ## 5. Business processing receivers
 
@@ -123,7 +139,7 @@ Completed work can project to customer confirmation, after-work inspection, foll
 
 ## 6. Intelligence / BIS direction
 
-The intelligence layer should read governed operational events and projections and produce:
+The intelligence layer should read governed operational events, imported historical context and projections and produce:
 
 - current situation
 - exceptions / needs attention
@@ -136,6 +152,7 @@ The intelligence layer should read governed operational events and projections a
 - stock anomalies
 - logistics exceptions
 - branch comparisons
+- historical-vs-ECHO Operational Twin comparisons
 - evidence-quality/freshness warnings
 - AI prepared recommendations with provenance
 
@@ -143,7 +160,7 @@ The Observer/BIS layer remains read-only to operational truth. It may prepare or
 
 ## 7. UI consequence
 
-Two new structural surfaces are justified:
+Two structural surfaces are justified and have now been created as candidates:
 
 ### BUSINESS
 A governed current-business workspace: Today, Sales, Cash/Finance, Stock, Service, Purchase, Logistics, Customers and downstream/BUSY state.
@@ -151,8 +168,10 @@ A governed current-business workspace: Today, Sales, Cash/Finance, Stock, Servic
 ### INTELLIGENCE
 A read-only Observer/BIS workspace: Needs Attention, Trends, Opportunities, Risks, Forecasts, Recommendations, Data Health and Evidence/Confidence.
 
-These are projections over the same operational truth, not new stores of truth.
+These are projections over the same operational truth and Operational Twin history, not new stores of truth.
 
-## 8. Admission rule for the pages
+## 8. Development rule for the pages
 
-A tile/card may show real numbers only when an admitted readback currently supports them. Otherwise it must show `Not connected`, `Awaiting readback`, `No current evidence` or equivalent. UI structure may precede a data adapter; invented figures may not.
+Use real Operational Twin data wherever a governed read path exists or can be safely added. Do not cripple the simulation because the baseline came from TAGRO actual history.
+
+When a read adapter is not yet available, the page may show the intended receiver/state but must not invent a number. The correct development response is to add the missing governed read/query path and then exercise it against the Operational Twin dataset.
