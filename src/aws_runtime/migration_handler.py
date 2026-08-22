@@ -4,16 +4,11 @@ from typing import Any, Mapping
 
 from scripts.apply_schema_migrations import apply
 
-CONFIRMATION = "APPLY_NONPROD_V0_2"
+CONFIRMATION = "APPLY_NONPROD_V0_3"
 
 
 def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
-    """Explicit one-time schema migration entry point.
-
-    This function has no API/event source. It can only be invoked explicitly and
-    refuses to mutate schema unless the caller supplies the exact confirmation
-    token for the admitted NonProd v0.2 migration set.
-    """
+    """Explicit schema migration entry point for the Operational Twin runtime."""
     if event.get("confirm") != CONFIRMATION:
         return {
             "status": "refused",
@@ -24,5 +19,5 @@ def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
     apply()
     return {
         "status": "migration_complete",
-        "migration_set": "nonprod_v0_2",
+        "migration_set": "nonprod_v0_3",
     }
