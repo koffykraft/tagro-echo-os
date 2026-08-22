@@ -88,7 +88,8 @@ def create_service_intake(config: RuntimeConfig, *, principal_id: str, membershi
 
 
 def create_purchase_order(config: RuntimeConfig, *, principal_id: str, membership: Mapping[str, Any], payload: Mapping[str, Any]) -> dict[str, Any]:
-    _capability(membership, "PURCHASE_ORDER")
+    # PURCHASE is the enterprise capability. Purchase Order is the operation within it.
+    _capability(membership, "PURCHASE")
     enterprise_id = str(membership.get("enterprise_id") or "")
     branch_code = str(payload.get("branch_code") or "").strip().upper()
     supplier_id = str(payload.get("supplier_id") or "").strip()
@@ -124,7 +125,8 @@ def create_purchase_order(config: RuntimeConfig, *, principal_id: str, membershi
 
 
 def record_stock_count(config: RuntimeConfig, *, principal_id: str, membership: Mapping[str, Any], payload: Mapping[str, Any]) -> dict[str, Any]:
-    _capability(membership, "STOCK_COUNT")
+    # STOCK is the enterprise capability. Stock Count is one governed observation operation.
+    _capability(membership, "STOCK")
     enterprise_id = str(membership.get("enterprise_id") or "")
     branch_code = str(payload.get("branch_code") or "").strip().upper()
     product_id = str(payload.get("product_id") or "").strip()
@@ -203,8 +205,6 @@ def record_stock_count(config: RuntimeConfig, *, principal_id: str, membership: 
                 (observation_id, enterprise_id, branch_id, count_id, product_id, raw_item_ref, counted_qty, system_qty, variance, now, user_id, key, location_note, provenance),
             )
 
-            # Legacy summary is retained only when canonical movement quantity actually exists.
-            # Absence from stock_position is UNKNOWN and must never be encoded as numeric zero.
             if system_qty is not None:
                 conn.execute(
                     "insert into stock_count_lines(count_id,product_id,system_qty,counted_qty,variance,evidence_ids) values(%s,%s,%s,%s,%s,%s) on conflict(count_id,product_id) do update set system_qty=excluded.system_qty,counted_qty=excluded.counted_qty,variance=excluded.variance,evidence_ids=excluded.evidence_ids",
