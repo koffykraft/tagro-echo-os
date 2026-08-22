@@ -35,6 +35,8 @@ class Wo0012SchemaMigrationTests(unittest.TestCase):
                 "0009-payment-receipt-evidence-v0.4",
                 "0010-cash-entry-evidence-v0.4",
                 "0011-cash-saved-document-v0.4",
+                "0012-operational-twin-source-v0.5",
+                "0013-operational-twin-planar-v0.6",
             ],
         )
 
@@ -102,6 +104,15 @@ class Wo0012SchemaMigrationTests(unittest.TestCase):
         self.assertIn("authority_basis", sql)
         self.assertIn("provenance_ref", sql)
 
+    def test_operational_twin_source_and_planar_layers_preserve_provenance(self) -> None:
+        source_sql = (ROOT / "schemas/business/operational_twin_source_v0_5.sql").read_text(encoding="utf-8").lower()
+        planar_sql = (ROOT / "schemas/business/operational_twin_planar_v0_6.sql").read_text(encoding="utf-8").lower()
+        self.assertIn("create table if not exists twin_source_records", source_sql)
+        for table in ("twin_planar_entities", "twin_planar_events", "twin_planar_event_entities", "twin_planar_evidence", "twin_planar_relationships"):
+            self.assertIn(f"create table if not exists {table}", planar_sql)
+        self.assertIn("source_sync_run_id", planar_sql)
+        self.assertIn("provenance", source_sql)
+
     def test_stock_count_plane_preserves_unknown_separately_from_canonical_stock(self) -> None:
         sql = (ROOT / "schemas/business/stock_observation_planes_v0_4.sql").read_text(encoding="utf-8").lower()
         self.assertIn("create table stock_count_observations", sql)
@@ -152,6 +163,8 @@ class Wo0012SchemaMigrationTests(unittest.TestCase):
             "schemas/business/payment_receipt_evidence_v0_4.sql",
             "schemas/business/cash_entry_evidence_v0_4.sql",
             "schemas/business/cash_saved_document_v0_4.sql",
+            "schemas/business/operational_twin_source_v0_5.sql",
+            "schemas/business/operational_twin_planar_v0_6.sql",
         ):
             sql = (ROOT / path).read_text(encoding="utf-8").lower()
             self.assertIn("enterprise_id", sql, path)
