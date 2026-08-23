@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping
 
-from src.aws_runtime.canonical_master_runtime import CanonicalMasterError, sync_canonical_master
+from src.aws_runtime.canonical_master_runtime_v2 import CanonicalMasterError, sync_canonical_master
 from src.aws_runtime.config import RuntimeConfig
 from src.aws_runtime.twin_ingest_runtime import TwinIngestError, sync_source_records
 from src.aws_runtime.twin_planar_runtime import TwinPlanarError, sync_planar_records
