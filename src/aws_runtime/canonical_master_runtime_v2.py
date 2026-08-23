@@ -26,45 +26,13 @@ def sync_canonical_master(
 ) -> dict[str, Any]:
     """Admit canonical master records while preserving unknown HSN/GST as unknown.
 
-    Rules:
-    - blank HSN is accepted and never erases an already-known HSN;
-    - blank GST is accepted and never erases an already-known GST;
-    - a genuinely supplied 0 GST remains a known 0% rate;
-    - products whose GST is still unknown are stored but marked inactive for
-      billing/reference until GST is populated.
+    The prepared payload is derived only from the incoming package, so idempotency
+    hashing remains stable. Existing stronger HSN/GST values are captured before
+    admission and restored afterwards when an incoming field is blank.
     """
     if not records:
         raise CanonicalMasterError("records required")
 
-    # A completed source batch is immutable. Return it before deriving any values
-    # from today's database state, so later enrichment cannot change replay hashes.
-    with connect(config) as conn:
-        completed = conn.execute(
-            """
-            select record_count,inserted_count,updated_count,unchanged_count
-            from twin_source_sync_runs
-            where sync_run_id=%s and enterprise_id=%s and status='complete'
-            """,
-            (sync_run_id, enterprise_id),
-        ).fetchone()
-    if completed:
-        return {
-            "sync_run_id": sync_run_id,
-            "record_count": int(completed[0]),
-            "inserted": 0,
-            "updated": 0,
-            "unchanged": int(completed[0]),
-            "aliases_upserted": 0,
-            "prices_upserted": 0,
-            "idempotent_replay": True,
-            "tax_completeness_enforced": True,
-        }
-
-    prepared: list[dict[str, Any]] = []
-    tax_state: dict[str, bool] = {}
-
-    # Read any existing canonical tax/HSN values first so an incomplete later
-    # source cannot erase stronger existing information.
     existing: dict[str, dict[str, Any]] = {}
     with connect(config) as conn:
         for raw in records:
@@ -81,8 +49,14 @@ def sync_canonical_master(
                 (enterprise_id, sku),
             ).fetchone()
             if row:
-                existing[sku] = {"gst_rate": row[0], "gst_known": bool(row[1]), "hsn_code": str(row[2] or "")}
+                existing[sku] = {
+                    "gst_rate": row[0],
+                    "gst_known": bool(row[1]),
+                    "hsn_code": str(row[2] or ""),
+                }
 
+    prepared: list[dict[str, Any]] = []
+    source_state: dict[str, dict[str, Any]] = {}
     for raw in records:
         if not isinstance(raw, Mapping):
             raise CanonicalMasterError("canonical master record must be an object")
@@ -92,22 +66,18 @@ def sync_canonical_master(
             prepared.append(item)
             continue
 
-        prior = existing.get(sku) or {}
-        gst_text = _clean(item.get("gst_rate"))
-        gst_known = gst_text != ""
-        if not gst_known and prior.get("gst_known"):
-            item["gst_rate"] = str(prior.get("gst_rate"))
-            gst_known = True
-        elif not gst_known:
-            # v1 needs a decimal during normalization; post-processing below
-            # restores SQL NULL and marks the item not billable.
+        incoming_gst = _clean(item.get("gst_rate"))
+        incoming_hsn = _clean(item.get("hsn_code"))
+        source_state[sku] = {
+            "gst_known": incoming_gst != "",
+            "hsn_known": incoming_hsn != "",
+        }
+
+        # v1 normalization requires a decimal. Zero here is only a deterministic
+        # transport sentinel; it is converted to SQL NULL after the v1 transaction
+        # whenever GST was actually absent in the source.
+        if incoming_gst == "":
             item["gst_rate"] = "0"
-
-        hsn = _clean(item.get("hsn_code"))
-        if not hsn and prior.get("hsn_code"):
-            item["hsn_code"] = prior["hsn_code"]
-
-        tax_state[sku] = gst_known
         prepared.append(item)
 
     result = _sync_v1(
@@ -124,7 +94,7 @@ def sync_canonical_master(
 
     with connect(config) as conn:
         with conn.transaction():
-            for sku, gst_known in tax_state.items():
+            for sku, state in source_state.items():
                 product = conn.execute(
                     "select product_id from products where enterprise_id=%s and sku=%s",
                     (enterprise_id, sku),
@@ -132,16 +102,33 @@ def sync_canonical_master(
                 if not product:
                     continue
                 product_id = str(product[0])
-                if gst_known:
+                prior = existing.get(sku) or {}
+
+                if state["gst_known"]:
+                    gst_known = True
                     conn.execute(
                         "update products set active=true where enterprise_id=%s and product_id=%s",
                         (enterprise_id, product_id),
                     )
+                elif prior.get("gst_known"):
+                    gst_known = True
+                    conn.execute(
+                        "update products set gst_rate=%s,active=true where enterprise_id=%s and product_id=%s",
+                        (prior.get("gst_rate"), enterprise_id, product_id),
+                    )
                 else:
+                    gst_known = False
                     conn.execute(
                         "update products set gst_rate=null,active=false where enterprise_id=%s and product_id=%s",
                         (enterprise_id, product_id),
                     )
+
+                if not state["hsn_known"] and prior.get("hsn_code"):
+                    conn.execute(
+                        "update product_commercial_attributes set hsn_code=%s where enterprise_id=%s and product_id=%s",
+                        (prior["hsn_code"], enterprise_id, product_id),
+                    )
+
                 conn.execute(
                     "update product_commercial_attributes set gst_known=%s where enterprise_id=%s and product_id=%s",
                     (gst_known, enterprise_id, product_id),
