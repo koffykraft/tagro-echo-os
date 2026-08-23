@@ -33,8 +33,8 @@ function Resolve-Exe([string]$Name,[string[]]$Fallbacks){
   foreach($f in $Fallbacks){ if($f -and (Test-Path -LiteralPath $f -PathType Leaf)){ return $f } }
   throw "Required tool not found: $Name"
 }
-function Run-External([string]$Exe,[string[]]$Args,[string]$OutFile){
-  $out=& $Exe @Args 2>&1 | Out-String
+function Run-External([string]$Exe,[string[]]$ArgumentList,[string]$OutFile){
+  $out=& $Exe @ArgumentList 2>&1 | Out-String
   $code=$LASTEXITCODE
   Save-Text $OutFile $out | Out-Null
   if($code -ne 0){ throw "$Exe failed with exit code $code. See $OutFile" }
