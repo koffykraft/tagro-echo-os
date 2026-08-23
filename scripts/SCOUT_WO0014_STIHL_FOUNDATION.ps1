@@ -12,7 +12,8 @@ $DropboxRoot = 'C:\Users\HP\Dropbox\TAGRO_AUTOMATION'
 $ReportRoot = Join-Path $DropboxRoot 'TAGRO_AWS_RUNTIME\reports\wo0014-stihl-scout'
 $RunId = Get-Date -Format 'yyyyMMdd-HHmmss'
 $ReportDir = Join-Path $ReportRoot $RunId
-New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+$IdentityDir = Join-Path $ReportDir 'identity-reconciliation'
+New-Item -ItemType Directory -Path $IdentityDir -Force | Out-Null
 
 function Save-Text([string]$Name,[string]$Value){
   $path=Join-Path $ReportDir $Name
@@ -20,7 +21,7 @@ function Save-Text([string]$Name,[string]$Value){
   return $path
 }
 function Save-Json([string]$Name,$Value){
-  return Save-Text $Name ($Value|ConvertTo-Json -Depth 20)
+  return Save-Text $Name ($Value|ConvertTo-Json -Depth 30)
 }
 function Require-File([string]$Path){ if(!(Test-Path -LiteralPath $Path -PathType Leaf)){ throw "Missing required file: $Path" } }
 function Resolve-Exe([string]$Name,[string[]]$Fallbacks){
@@ -54,11 +55,15 @@ try {
   $Python='C:\Program Files\Amazon\AWSSAMCLI\runtime\python.exe'
   Require-File $Python
 
-  $Official=Join-Path $DropboxRoot 'safe_base\master_data\latest\stihl_prices_june_2026.json'
-  $Aliases=Join-Path $DropboxRoot 'price_update_2026_27\outputs\TAGRO_STIHL_BUSY_Update_One_Row_Per_Item.csv'
+  # Identity sources. Prices/catalogues are deliberately not admission prerequisites.
+  $TdMatch=Join-Path $DropboxRoot 'td\data\busy_stihl_price_match.csv'
+  $TdMatcher=Join-Path $DropboxRoot 'td\engine\build_price_match.py'
   $BusyMaster=Join-Path $DropboxRoot 'outputs\stihl_kvr_part_match\TAGRO_BUSY_ITEM_MASTER_ALL_BRANCHES_2026-07-10.csv'
-  $Importer=Join-Path $Repo 'scripts\sync_stihl_catalog_to_echo_v2.py'
-  $BaseImporter=Join-Path $Repo 'scripts\sync_stihl_catalog_to_echo.py'
+  $ExistingAdmission=Join-Path $DropboxRoot 'price_update_2026_27\outputs\TAGRO_STIHL_BUSY_Update_One_Row_Per_Item.csv'
+  $WarehouseOverview=Join-Path $DropboxRoot 'projects\tagro-data-import\warehouse_builder\reports\warehouse_overview_for_architect.json'
+  $WarehouseReadme=Join-Path $DropboxRoot 'projects\tagro-data-import\warehouse_builder\README.txt'
+  $Reconciler=Join-Path $Repo 'scripts\reconcile_stihl_busy_identity.py'
+
   $Manifest=Join-Path $Repo 'schemas\migrations\nonprod_v0_3_manifest.json'
   $Migration0014=Join-Path $Repo 'schemas\business\catalog_parts_lookup_v0_7.sql'
   $Migration0015=Join-Path $Repo 'schemas\business\product_tax_completeness_v0_8.sql'
@@ -69,29 +74,54 @@ try {
   $head=(Run-External $Git @('rev-parse','HEAD') '02-git-head.txt').Trim()
 
   $proof=[ordered]@{
-    schema='tagro.echo.wo0014-stihl-scout/1';run_id=$RunId;report_dir=$ReportDir;git_head=$head
+    schema='tagro.echo.wo0014-stihl-scout/2';run_id=$RunId;report_dir=$ReportDir;git_head=$head
+    policy=[ordered]@{
+      foundation='BUSY identity first; normalization and commercial enrichment later'
+      prices_required_for_identity=$false
+      busy_writeback=$false
+      deploy_enabled=$false
+    }
     tools=[ordered]@{
       git=[ordered]@{path=$Git;version=(& $Git --version|Out-String).Trim()}
       aws=[ordered]@{path=$Aws;version=(& $Aws --version 2>&1|Out-String).Trim()}
       python=[ordered]@{path=$Python;version=(& $Python --version 2>&1|Out-String).Trim()}
       powershell=[ordered]@{path=(Get-Command powershell).Source;version=$PSVersionTable.PSVersion.ToString()}
     }
-    files=[ordered]@{
-      official=File-Proof $Official;busy_admission=File-Proof $Aliases;busy_master=File-Proof $BusyMaster
-      importer=File-Proof $Importer;base_importer=File-Proof $BaseImporter;manifest=File-Proof $Manifest
-      migration_0014=File-Proof $Migration0014;migration_0015=File-Proof $Migration0015;migration_0016=File-Proof $Migration0016;template=File-Proof $Template
+    identity_sources=[ordered]@{
+      td_match=File-Proof $TdMatch
+      td_match_builder=File-Proof $TdMatcher
+      busy_master=File-Proof $BusyMaster
+      existing_admission=File-Proof $ExistingAdmission
+      data_import_warehouse_overview=File-Proof $WarehouseOverview
+      data_import_warehouse_readme=File-Proof $WarehouseReadme
+      reconciler=File-Proof $Reconciler
+    }
+    runtime_files=[ordered]@{
+      manifest=File-Proof $Manifest
+      migration_0014=File-Proof $Migration0014
+      migration_0015=File-Proof $Migration0015
+      migration_0016=File-Proof $Migration0016
+      template=File-Proof $Template
     }
   }
   Save-Json '00-preflight.json' $proof|Out-Null
   Write-Host 'PREFLIGHT PASS'
 
-  $dryArgs=@($Importer,'--official-json',$Official,'--tagro-alias-csv',$Aliases,'--busy-item-master',$BusyMaster,'--effective-from','2026-06-01','--enterprise-id','ae9dea8e-6021-5833-9d59-7b0613357fbe','--profile',$AwsProfile,'--region',$Region,'--dry-run')
-  $dryRaw=Run-External $Python $dryArgs '03-dry-run.txt'
-  $dry=$dryRaw|ConvertFrom-Json
-  Save-Json '03-dry-run.json' $dry|Out-Null
-  if([bool]$dry.stats.new_non_busy_products_allowed){throw 'Policy failure: new non-BUSY products allowed'}
-  if([bool]$dry.stats.busy_writeback){throw 'Policy failure: BUSY writeback enabled'}
-  Write-Host "DRY RUN PASS admitted=$($dry.stats.admitted_existing_busy_products)"
+  $reconArgs=@(
+    $Reconciler,
+    '--td-match-csv',$TdMatch,
+    '--busy-master-csv',$BusyMaster,
+    '--existing-admission-csv',$ExistingAdmission,
+    '--out-dir',$IdentityDir
+  )
+  Run-External $Python $reconArgs '03-identity-reconciliation.txt'|Out-Null
+  $reconSummaryPath=Join-Path $IdentityDir '00-summary.json'
+  Require-File $reconSummaryPath
+  $recon=Get-Content -LiteralPath $reconSummaryPath -Raw|ConvertFrom-Json
+  if([bool]$recon.policy.prices_required_for_identity){throw 'Policy failure: prices became an identity prerequisite'}
+  if([bool]$recon.policy.busy_writeback){throw 'Policy failure: BUSY writeback enabled'}
+  if([bool]$recon.policy.aws_write){throw 'Policy failure: reconciliation attempted AWS write'}
+  Write-Host "IDENTITY RECON PASS exact_rows=$($recon.counts.exact_part_accepted_rows) exact_parts=$($recon.counts.exact_part_accepted_unique_parts)"
 
   $identityRaw=Run-External $Aws @('sts','get-caller-identity','--profile',$AwsProfile,'--region',$Region,'--output','json') '04-aws-identity.json'
   $identity=$identityRaw|ConvertFrom-Json
@@ -111,23 +141,41 @@ try {
 
   $manifestObj=Get-Content -LiteralPath $Manifest -Raw|ConvertFrom-Json
   $ids=@($manifestObj.migrations.id)
-  foreach($needed in @('0014-catalog-parts-lookup-v0.7','0015-product-tax-completeness-v0.8','0016-product-unit-conversions-v0.9')){if($ids -notcontains $needed){throw "Migration missing from manifest: $needed"}}
+  foreach($needed in @('0014-catalog-parts-lookup-v0.7','0015-product-tax-completeness-v0.8','0016-product-unit-conversions-v0.9')){
+    if($ids -notcontains $needed){throw "Migration missing from manifest: $needed"}
+  }
 
   $summary=[ordered]@{
-    schema='tagro.echo.wo0014-stihl-scout/1';status='scout_complete';run_id=$RunId;report_dir=$ReportDir;git_head=$head
-    admitted_existing_busy_products=$dry.stats.admitted_existing_busy_products
-    busy_matches_missing_official_stihl_row=$dry.stats.busy_matches_missing_official_stihl_row
-    unknown_hsn=$dry.stats.unknown_hsn;unknown_gst=$dry.stats.unknown_gst;prices=$dry.stats.prices
-    unit_conversion_candidates=$dry.stats.unit_conversion_candidates
-    aws_account=[string]$identity.Account;snapshot_status=[string]$snap.DBSnapshots[0].Status
+    schema='tagro.echo.wo0014-stihl-scout/2';status='scout_complete';run_id=$RunId;report_dir=$ReportDir;git_head=$head
+    identity=[ordered]@{
+      td_rows=$recon.counts.td_rows
+      busy_master_rows=$recon.counts.busy_master_rows
+      stihl_looking_rows=$recon.counts.stihl_looking_rows
+      exact_part_accepted_rows=$recon.counts.exact_part_accepted_rows
+      exact_part_accepted_unique_parts=$recon.counts.exact_part_accepted_unique_parts
+      exact_part_additional_branch_alias_rows=$recon.counts.exact_part_additional_branch_alias_rows
+      provisional_existing_or_td_corrected_rows=$recon.counts.provisional_existing_or_td_corrected_rows
+      name_candidates_need_part_evidence=$recon.counts.name_candidates_need_part_evidence
+      name_candidates_part_revalidated=$recon.counts.name_candidates_part_revalidated
+      name_candidate_part_conflicts=$recon.counts.name_candidate_part_conflicts
+      unmatched_stihl_looking_rows=$recon.counts.unmatched_stihl_looking_rows
+      canonical_parts_with_branch_name_variants=$recon.counts.canonical_parts_with_branch_name_variants
+      by_branch=$recon.by_branch
+    }
+    aws_account=[string]$identity.Account
+    snapshot_status=[string]$snap.DBSnapshots[0].Status
     current_stack_status=[string]$stack.Stacks[0].StackStatus
-    codebuild_project='echo-nonprod-runtime-build';deploy_executed=$false;migration_executed=$false;live_import_executed=$false
+    codebuild_project='echo-nonprod-runtime-build'
+    prices_used_as_identity_gate=$false
+    deploy_executed=$false
+    migration_executed=$false
+    live_import_executed=$false
   }
   Save-Json '99-scout-summary.json' $summary|Out-Null
   Write-Host "SCOUT COMPLETE REPORT=$ReportDir"
 }
 catch{
-  Save-Json '99-scout-failure.json' ([ordered]@{schema='tagro.echo.wo0014-stihl-scout/1';status='failed';run_id=$RunId;error=$_.Exception.Message;report_dir=$ReportDir})|Out-Null
+  Save-Json '99-scout-failure.json' ([ordered]@{schema='tagro.echo.wo0014-stihl-scout/2';status='failed';run_id=$RunId;error=$_.Exception.Message;report_dir=$ReportDir})|Out-Null
   Write-Host "SCOUT FAILED REPORT=$ReportDir"
   exit 1
 }
