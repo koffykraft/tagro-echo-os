@@ -73,6 +73,7 @@ def sync_canonical_master(
         name = _clean(raw.get("name"))
         model = _clean(raw.get("model")) or name
         category = _clean(raw.get("category")) or "UNCLASSIFIED"
+        hsn_code = _clean(raw.get("hsn_code"))
         gst_rate = _decimal(raw.get("gst_rate", 0), "gst_rate")
         unit = _clean(raw.get("unit")) or "nos"
         if not manufacturer or not sku or not name:
@@ -128,6 +129,7 @@ def sync_canonical_master(
             "model": model,
             "name": name,
             "category": category,
+            "hsn_code": hsn_code,
             "gst_rate": gst_rate,
             "unit": unit,
             "serial_tracked": bool(raw.get("serial_tracked", False)),
@@ -221,6 +223,25 @@ def sync_canonical_master(
                             (*desired[:-1], enterprise_id, product_id),
                         )
                         product_updated += 1
+
+                commercial_provenance = json.dumps(
+                    {"source_system": source_system, "source_locator": source_locator, "source_as_of": source_as_of},
+                    sort_keys=True, separators=(",", ":"), default=str,
+                )
+                conn.execute(
+                    """
+                    insert into product_commercial_attributes(
+                      product_id,enterprise_id,manufacturer_id,manufacturer_part_no,hsn_code,source_ref,provenance_json
+                    ) values(%s,%s,%s,%s,%s,%s,%s)
+                    on conflict(product_id) do update set
+                      manufacturer_id=excluded.manufacturer_id,
+                      manufacturer_part_no=excluded.manufacturer_part_no,
+                      hsn_code=excluded.hsn_code,
+                      source_ref=excluded.source_ref,
+                      provenance_json=excluded.provenance_json
+                    """,
+                    (product_id, enterprise_id, manufacturer_id, record["sku"], record["hsn_code"], source_locator, commercial_provenance),
+                )
 
                 official_aliases = [
                     {"type": "manufacturer_part_no", "value": record["sku"], "branch_code": ""},
