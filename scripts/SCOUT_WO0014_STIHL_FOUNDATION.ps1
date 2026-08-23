@@ -92,11 +92,14 @@ try {
   $Migration0016=Join-Path $Repo 'schemas\business\product_unit_conversions_v0_9.sql'
   $Template=Join-Path $Repo 'architecture\aws\nonprod-runtime-template.yaml'
 
-  # Path/branch gate before any pull or data processing.
+  # Immutable checkout gate: this scout never changes code while it is running.
   $repoTop=(Run-External $Git @('rev-parse','--show-toplevel') '01-git-root.txt').Trim()
   if((Normalized-Path $repoTop) -ne (Normalized-Path $Repo)){ throw "Wrong repository root. Expected $Repo but git reports $repoTop" }
   $branch=(Run-External $Git @('rev-parse','--abbrev-ref','HEAD') '02-git-branch.txt').Trim()
   if($branch -ne $ExpectedBranch){ throw "Wrong git branch. Expected $ExpectedBranch but found $branch" }
+  $dirty=Run-External $Git @('status','--porcelain') '03-git-status.txt'
+  if(-not [string]::IsNullOrWhiteSpace($dirty)){ throw 'Git worktree is not clean; scout refuses to mix local edits with evidence generation' }
+  $head=(Run-External $Git @('rev-parse','HEAD') '04-git-head.txt').Trim()
 
   foreach($required in @(
     $TdMatch,$TdMatcher,$BusyMaster,$ExistingAdmission,$WarehouseOverview,$WarehouseReadme,
@@ -105,13 +108,8 @@ try {
   )){ Require-File $required }
 
   # Verify the exact Python dependency chain before running real data.
-  Run-External $Python @('-m','py_compile',$ReconcilerBase,$Reconciler,$ReconcilerTest) '03-python-compile.txt'|Out-Null
-  Run-External $Python @('-m','unittest','discover','-s','tests','-p','test_stihl_identity_reconciliation_v3.py') '04-v3-regression-test.txt'|Out-Null
-
-  Run-External $Git @('pull','--ff-only') '05-git-pull.txt'|Out-Null
-  $head=(Run-External $Git @('rev-parse','HEAD') '06-git-head.txt').Trim()
-  $branchAfter=(Run-External $Git @('rev-parse','--abbrev-ref','HEAD') '07-git-branch-after-pull.txt').Trim()
-  if($branchAfter -ne $ExpectedBranch){ throw "Branch changed unexpectedly after pull: $branchAfter" }
+  Run-External $Python @('-m','py_compile',$ReconcilerBase,$Reconciler,$ReconcilerTest) '05-python-compile.txt'|Out-Null
+  Run-External $Python @('-m','unittest','discover','-s','tests','-p','test_stihl_identity_reconciliation_v3.py') '06-v3-regression-test.txt'|Out-Null
 
   $sourceProof=[ordered]@{
     td_match=File-Proof $TdMatch
@@ -134,8 +132,9 @@ try {
     report_dir=$ReportDir
     repo_root=$Repo
     expected_branch=$ExpectedBranch
-    actual_branch=$branchAfter
+    actual_branch=$branch
     git_head=$head
+    checkout_mutated_by_scout=$false
     policy=[ordered]@{
       foundation='prove STIHL part identity; expand exact BUSY aliases across all branches; normalize labels without erasing source evidence; commercially enrich later'
       exact_identity_only=$true
@@ -202,7 +201,7 @@ try {
     '--existing-admission-csv',$ExistingAdmission,
     '--out-dir',$IdentityDir
   )
-  Run-External $Python $reconArgs '08-identity-reconciliation-v3.txt'|Out-Null
+  Run-External $Python $reconArgs '07-identity-reconciliation-v3.txt'|Out-Null
   $reconSummaryPath=Join-Path $IdentityDir '00-summary.json'
   Require-File $reconSummaryPath
   $recon=Get-Content -LiteralPath $reconSummaryPath -Raw|ConvertFrom-Json
@@ -218,19 +217,19 @@ try {
   if([bool]$recon.validation.name_candidates_auto_admitted){throw 'Policy failure: name candidates were auto-admitted'}
   Write-Host "IDENTITY RECON PASS accepted_rows=$($recon.counts.exact_part_accepted_rows) parts=$($recon.counts.exact_part_accepted_unique_parts) branches=$($recon.counts.exact_part_accepted_branches) cross_branch=$($recon.counts.exact_part_cross_branch_expansion_rows)"
 
-  $identityRaw=Run-External $Aws @('sts','get-caller-identity','--profile',$AwsProfile,'--region',$Region,'--output','json') '09-aws-identity.json'
+  $identityRaw=Run-External $Aws @('sts','get-caller-identity','--profile',$AwsProfile,'--region',$Region,'--output','json') '08-aws-identity.json'
   $identity=$identityRaw|ConvertFrom-Json
   if([string]$identity.Account -ne '272037674623'){throw "Wrong AWS account $($identity.Account)"}
 
-  $snapRaw=Run-External $Aws @('rds','describe-db-snapshots','--db-snapshot-identifier',$SnapshotId,'--profile',$AwsProfile,'--region',$Region,'--output','json') '10-snapshot.json'
+  $snapRaw=Run-External $Aws @('rds','describe-db-snapshots','--db-snapshot-identifier',$SnapshotId,'--profile',$AwsProfile,'--region',$Region,'--output','json') '09-snapshot.json'
   $snap=$snapRaw|ConvertFrom-Json
   if([string]$snap.DBSnapshots[0].Status -ne 'available'){throw "Snapshot not available: $($snap.DBSnapshots[0].Status)"}
 
-  $projectRaw=Run-External $Aws @('codebuild','batch-get-projects','--names','echo-nonprod-runtime-build','--profile',$AwsProfile,'--region',$Region,'--output','json') '11-codebuild-project.json'
+  $projectRaw=Run-External $Aws @('codebuild','batch-get-projects','--names','echo-nonprod-runtime-build','--profile',$AwsProfile,'--region',$Region,'--output','json') '10-codebuild-project.json'
   $project=$projectRaw|ConvertFrom-Json
   if(!$project.projects -or !$project.projects[0]){throw 'CodeBuild project missing'}
 
-  $stackRaw=Run-External $Aws @('cloudformation','describe-stacks','--stack-name','echo-nonprod-runtime','--profile',$AwsProfile,'--region',$Region,'--output','json') '12-current-stack.json'
+  $stackRaw=Run-External $Aws @('cloudformation','describe-stacks','--stack-name','echo-nonprod-runtime','--profile',$AwsProfile,'--region',$Region,'--output','json') '11-current-stack.json'
   $stack=$stackRaw|ConvertFrom-Json
   if([string]$stack.Stacks[0].StackStatus -notmatch '_COMPLETE$'){throw "Current stack not stable: $($stack.Stacks[0].StackStatus)"}
 
@@ -246,8 +245,9 @@ try {
     run_id=$RunId
     report_dir=$ReportDir
     repo_root=$Repo
-    branch=$branchAfter
+    branch=$branch
     git_head=$head
+    checkout_mutated_by_scout=$false
     freshness=$freshness
     identity=[ordered]@{
       td_rows=$recon.counts.td_rows
