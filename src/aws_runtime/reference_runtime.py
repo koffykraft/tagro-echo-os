@@ -41,9 +41,8 @@ def reference_search(
 ) -> dict[str, Any]:
     """Read enterprise-scoped operational reference data.
 
-    This endpoint is intentionally read-only and bounded. Membership resolution is
-    performed by the HTTP boundary before this function is called; no client value
-    may broaden enterprise scope.
+    Product lookup resolves canonical identity plus manufacturer/TAGRO/BUSY aliases.
+    Missing HSN/GST remains visible as incomplete rather than being fabricated.
     """
     kind = str(kind or "").strip().lower()
     if kind not in KINDS:
@@ -68,15 +67,34 @@ def reference_search(
         elif kind == "products":
             rows = conn.execute(
                 """
-                select product_id,sku,model,name,category,gst_rate,unit,serial_tracked
-                from products
-                where enterprise_id=%s and active=true
-                  and (%s='' or lower(sku) like %s or lower(model) like %s or lower(name) like %s or lower(category) like %s)
-                order by model,name limit %s
+                select p.product_id,p.sku,p.model,p.name,p.category,p.gst_rate,p.unit,p.serial_tracked,
+                       coalesce(pca.hsn_code,''),coalesce(pca.manufacturer_part_no,''),
+                       coalesce(pca.gst_known,false)
+                from products p
+                left join product_commercial_attributes pca on pca.product_id=p.product_id
+                where p.enterprise_id=%s and p.active=true
+                  and (
+                    %s=''
+                    or lower(p.sku) like %s
+                    or lower(p.model) like %s
+                    or lower(p.name) like %s
+                    or lower(p.category) like %s
+                    or lower(coalesce(pca.hsn_code,'')) like %s
+                    or lower(coalesce(pca.manufacturer_part_no,'')) like %s
+                    or exists (
+                      select 1 from product_aliases pa
+                      where pa.enterprise_id=p.enterprise_id and pa.product_id=p.product_id and pa.active=true
+                        and lower(pa.alias_value) like %s
+                    )
+                  )
+                order by p.model,p.name limit %s
                 """,
-                (enterprise_id, q, pattern, pattern, pattern, pattern, n),
+                (enterprise_id, q, pattern, pattern, pattern, pattern, pattern, pattern, pattern, n),
             ).fetchall()
-            columns = ("product_id", "sku", "model", "name", "category", "gst_rate", "unit", "serial_tracked")
+            columns = (
+                "product_id", "sku", "model", "name", "category", "gst_rate", "unit", "serial_tracked",
+                "hsn_code", "manufacturer_part_no", "gst_known",
+            )
         elif kind == "customers":
             rows = conn.execute(
                 """
