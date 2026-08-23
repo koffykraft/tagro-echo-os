@@ -59,7 +59,7 @@ class StihlCatalogSyncTests(unittest.TestCase):
         self.assertEqual("84678100", ms382["hsn_code"])
         self.assertEqual("18", ms382["gst_rate"])
         self.assertEqual("Nos", ms382["unit"])
-        self.assertEqual(4, len(ms382["aliases"]))
+        self.assertEqual(5, len(ms382["aliases"]))
         incomplete = next(r for r in records if r["sku"] == "00001234567")
         self.assertEqual("", incomplete["hsn_code"])
         self.assertEqual("", incomplete["gst_rate"])
