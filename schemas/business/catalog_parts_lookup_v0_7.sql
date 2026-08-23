@@ -12,6 +12,21 @@ create table if not exists catalog_manufacturers (
   unique(enterprise_id, code)
 );
 
+create table if not exists product_commercial_attributes (
+  product_id text primary key references products(product_id),
+  enterprise_id text not null references enterprises(enterprise_id),
+  manufacturer_id text references catalog_manufacturers(manufacturer_id),
+  manufacturer_part_no text not null default '',
+  hsn_code text not null default '',
+  source_ref text not null default '',
+  provenance_json text not null default '{}'
+);
+
+create index if not exists idx_product_commercial_part
+  on product_commercial_attributes(enterprise_id, manufacturer_part_no);
+create index if not exists idx_product_commercial_hsn
+  on product_commercial_attributes(enterprise_id, hsn_code);
+
 create table if not exists catalog_models (
   model_id text primary key,
   enterprise_id text not null references enterprises(enterprise_id),
