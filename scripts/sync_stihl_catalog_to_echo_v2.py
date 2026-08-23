@@ -11,6 +11,7 @@ if _SPEC is None or _SPEC.loader is None:
     raise RuntimeError(f"Unable to load base importer: {_BASE_PATH}")
 base = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(base)
+_BASE_BUILD_RECORDS = base.build_records
 
 
 def _load_official_safe(path: Path) -> tuple[dict[str, dict[str, Any]], int]:
@@ -41,6 +42,8 @@ def _load_official_safe(path: Path) -> tuple[dict[str, dict[str, Any]], int]:
             official[part_no] = incoming
             continue
         duplicates += 1
+        # Descriptions/categories may vary for the same official part number.
+        # Commercial/tax values may not conflict.
         for field in ("hsn", "gst", "price", "mrp"):
             left, right = prior[field], incoming[field]
             if left not in (None, "") and right not in (None, "") and left != right:
@@ -51,13 +54,17 @@ def _load_official_safe(path: Path) -> tuple[dict[str, dict[str, Any]], int]:
 
 
 def build_records(*args: Any, **kwargs: Any):
-    original = base._load_official
+    original_loader = base._load_official
     base._load_official = _load_official_safe
     try:
-        records, stats = base.build_records(*args, **kwargs)
+        # IMPORTANT: call the captured base implementation, not base.build_records,
+        # because sync() temporarily points base.build_records at this wrapper.
+        records, stats = _BASE_BUILD_RECORDS(*args, **kwargs)
     finally:
-        base._load_official = original
+        base._load_official = original_loader
 
+    # Existing BUSY identity remains the operational display identity.
+    # STIHL wording is enrichment/reference only.
     for record in records:
         official_name = record.get("name", "")
         busy_names = [
@@ -78,12 +85,12 @@ def build_records(*args: Any, **kwargs: Any):
 
 
 def sync(args):
-    original = base.build_records
+    original_build = base.build_records
     base.build_records = build_records
     try:
         return base.sync(args)
     finally:
-        base.build_records = original
+        base.build_records = original_build
 
 
 if __name__ == "__main__":
