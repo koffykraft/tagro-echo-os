@@ -36,19 +36,34 @@ def _load_official_safe(path: Path) -> tuple[dict[str, dict[str, Any]], int]:
             "gst": base._decimal(row.get("gst")),
             "price": base._decimal(row.get("price")),
             "mrp": base._decimal(row.get("mrp")),
+            "_conflicts": set(),
         }
         prior = official.get(part_no)
         if prior is None:
             official[part_no] = incoming
             continue
         duplicates += 1
-        # Descriptions/categories may vary for the same official part number.
-        # Commercial/tax values may not conflict.
-        for field in ("hsn", "gst", "price", "mrp"):
+
+        # Description/category wording may vary for the same official part number.
+        # HSN/GST conflicts are unsafe and still stop admission.
+        for field in ("hsn", "gst"):
             left, right = prior[field], incoming[field]
             if left not in (None, "") and right not in (None, "") and left != right:
                 raise RuntimeError(f"conflicting official {field} for STIHL part {part_no}: {left!r} vs {right!r}")
             if left in (None, "") and right not in (None, ""):
+                prior[field] = right
+
+        # Price/MRP conflicts are source ambiguity, not identity ambiguity.
+        # Quarantine the conflicted commercial field instead of guessing or
+        # blocking the BUSY-existing product from the foundation load.
+        for field in ("price", "mrp"):
+            if field in prior["_conflicts"]:
+                continue
+            left, right = prior[field], incoming[field]
+            if left not in (None, "") and right not in (None, "") and left != right:
+                prior[field] = None
+                prior["_conflicts"].add(field)
+            elif left in (None, "") and right not in (None, ""):
                 prior[field] = right
     return official, duplicates
 
@@ -57,11 +72,18 @@ def build_records(*args: Any, **kwargs: Any):
     original_loader = base._load_official
     base._load_official = _load_official_safe
     try:
-        # IMPORTANT: call the captured base implementation, not base.build_records,
-        # because sync() temporarily points base.build_records at this wrapper.
         records, stats = _BASE_BUILD_RECORDS(*args, **kwargs)
     finally:
         base._load_official = original_loader
+
+    official_path = Path(args[0]) if args else Path(kwargs["official_json"])
+    safe_official, _ = _load_official_safe(official_path)
+    price_conflicts = sorted(
+        part_no for part_no, row in safe_official.items() if "price" in row.get("_conflicts", set())
+    )
+    mrp_conflicts = sorted(
+        part_no for part_no, row in safe_official.items() if "mrp" in row.get("_conflicts", set())
+    )
 
     # Existing BUSY identity remains the operational display identity.
     # STIHL wording is enrichment/reference only.
@@ -79,8 +101,15 @@ def build_records(*args: Any, **kwargs: Any):
             key = ("stihl_official_name", official_name, "")
             if key not in existing:
                 record.setdefault("aliases", []).append({"type": key[0], "value": key[1], "branch_code": ""})
+
+    admitted_skus = {r.get("sku") for r in records}
     stats["operational_name_source"] = "BUSY original item name"
     stats["official_stihl_name_role"] = "reference_alias"
+    stats["official_price_conflicts"] = len(price_conflicts)
+    stats["official_price_conflict_sample"] = [p for p in price_conflicts if p in admitted_skus][:20]
+    stats["official_mrp_conflicts"] = len(mrp_conflicts)
+    stats["official_mrp_conflict_sample"] = [p for p in mrp_conflicts if p in admitted_skus][:20]
+    stats["price_conflict_policy"] = "leave ambiguous commercial field unresolved; do not guess; do not block BUSY identity"
     return records, stats
 
 
