@@ -3,7 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any, Mapping
 
-from .canonical_master_runtime import CanonicalMasterError, _stable_id, sync_canonical_master as _sync_v1
+from .canonical_master_runtime import CanonicalMasterError, sync_canonical_master as _sync_v1
 from .config import RuntimeConfig
 from .database import connect
 
@@ -26,11 +26,6 @@ def sync_canonical_master(
 ) -> dict[str, Any]:
     """Admit canonical master records while preserving unknown HSN/GST as unknown.
 
-    The v0.2 product table originally required a numeric GST value. Migration 0015
-    makes GST nullable, but the v1 master runtime still expects a decimal. This
-    adapter preserves compatibility with that proven runtime while preventing a
-    blank source value from being interpreted as a genuine 0% tax rate.
-
     Rules:
     - blank HSN is accepted and never erases an already-known HSN;
     - blank GST is accepted and never erases an already-known GST;
@@ -40,6 +35,30 @@ def sync_canonical_master(
     """
     if not records:
         raise CanonicalMasterError("records required")
+
+    # A completed source batch is immutable. Return it before deriving any values
+    # from today's database state, so later enrichment cannot change replay hashes.
+    with connect(config) as conn:
+        completed = conn.execute(
+            """
+            select record_count,inserted_count,updated_count,unchanged_count
+            from twin_source_sync_runs
+            where sync_run_id=%s and enterprise_id=%s and status='complete'
+            """,
+            (sync_run_id, enterprise_id),
+        ).fetchone()
+    if completed:
+        return {
+            "sync_run_id": sync_run_id,
+            "record_count": int(completed[0]),
+            "inserted": 0,
+            "updated": 0,
+            "unchanged": int(completed[0]),
+            "aliases_upserted": 0,
+            "prices_upserted": 0,
+            "idempotent_replay": True,
+            "tax_completeness_enforced": True,
+        }
 
     prepared: list[dict[str, Any]] = []
     tax_state: dict[str, bool] = {}
