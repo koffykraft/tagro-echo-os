@@ -29,6 +29,10 @@ def sync_canonical_master(
     The prepared payload is derived only from the incoming package, so idempotency
     hashing remains stable. Existing stronger HSN/GST values are captured before
     admission and restored afterwards when an incoming field is blank.
+
+    Catalogue visibility and billability are deliberately separate. A product with
+    unknown GST remains active/visible for lookup, service, stock and purchase work;
+    Billing performs its own tax-completeness gate and refuses only that sale line.
     """
     if not records:
         raise CanonicalMasterError("records required")
@@ -74,8 +78,8 @@ def sync_canonical_master(
         }
 
         # v1 normalization requires a decimal. Zero here is only a deterministic
-        # transport sentinel; it is converted to SQL NULL after the v1 transaction
-        # whenever GST was actually absent in the source.
+        # transport sentinel; it is restored to SQL NULL after the v1 transaction
+        # whenever GST was actually absent in the source and no prior known value exists.
         if incoming_gst == "":
             item["gst_rate"] = "0"
         prepared.append(item)
@@ -119,7 +123,7 @@ def sync_canonical_master(
                 else:
                     gst_known = False
                     conn.execute(
-                        "update products set gst_rate=null,active=false where enterprise_id=%s and product_id=%s",
+                        "update products set gst_rate=null,active=true where enterprise_id=%s and product_id=%s",
                         (enterprise_id, product_id),
                     )
 
