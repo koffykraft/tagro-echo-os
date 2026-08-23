@@ -127,23 +127,65 @@ def add_raw_branch_to_master_output(path: Path, queues: dict[tuple[str, str, str
     write_csv(path, out_fields, out)
 
 
-def add_source_branch_to_review_output(path: Path, field_name: str = "branch") -> None:
+def review_raw_branch_queues(
+    td_rows: list[dict[str, str]],
+    admission_rows: list[dict[str, str]],
+) -> dict[tuple[str, str, str, str, str], deque[str]]:
+    """Reconstruct review-output source branches from untouched TD/admission evidence."""
+    queues: dict[tuple[str, str, str, str, str], deque[str]] = defaultdict(deque)
+    for row in td_rows:
+        source_branch = raw(row.get("branch"))
+        branch = canonical_branch(source_branch)
+        busy_part = base.stihl_part_key(row.get("busy_alias") or row.get("busy_part_key"))
+        official_part = base.stihl_part_key(row.get("stihl_part_no"))
+        tagro_part = base.stihl_part_key(row.get("tagro_part_no"))
+        item_code = text(row.get("item_code"))
+        if official_part and busy_part and official_part != busy_part:
+            queues[(branch, item_code, busy_part, official_part, "TD_STIHL_LOOKUP")].append(source_branch)
+        elif tagro_part and busy_part and tagro_part != busy_part:
+            queues[(branch, item_code, busy_part, tagro_part, "TAGRO_MASTER_ONLY")].append(source_branch)
+    for row in admission_rows:
+        source_branch = raw(row.get("Branch"))
+        branch = canonical_branch(source_branch)
+        busy_part = base.stihl_part_key(row.get("BUSY alias"))
+        official_part = base.stihl_part_key(row.get("STIHL part number"))
+        item_code = text(row.get("BUSY item codes"))
+        if official_part and busy_part and official_part != busy_part:
+            queues[(branch, item_code, busy_part, official_part, "EXISTING_ADMISSION")].append(source_branch)
+    return queues
+
+
+def add_source_branch_to_review_output(
+    path: Path,
+    queues: dict[tuple[str, str, str, str, str], deque[str]],
+) -> None:
     rows, fields = read_csv(path)
     out_fields = list(fields)
     if "source_branch_raw" not in out_fields:
         out_fields.insert(1, "source_branch_raw")
     out: list[dict[str, Any]] = []
     for row in rows:
+        branch = canonical_branch(row.get("branch"))
+        key = (
+            branch,
+            text(row.get("item_code")),
+            base.stihl_part_key(row.get("busy_part_key")),
+            base.stihl_part_key(row.get("candidate_stihl_part_key")),
+            text(row.get("evidence_source")),
+        )
+        queue = queues.get(key)
         rec = dict(row)
-        rec["source_branch_raw"] = raw(row.get(field_name))
-        rec[field_name] = canonical_branch(row.get(field_name))
+        rec["branch"] = branch
+        rec["source_branch_raw"] = queue.popleft() if queue else raw(row.get("branch"))
         out.append(rec)
     write_csv(path, out_fields, out)
 
 
 def reconcile(td_match_csv: Path, busy_master_csv: Path, existing_admission_csv: Path, out_dir: Path) -> dict[str, Any]:
     out_dir.mkdir(parents=True, exist_ok=True)
+    original_td_rows, _ = read_csv(td_match_csv)
     original_master_rows, _ = read_csv(busy_master_csv)
+    original_admission_rows, _ = read_csv(existing_admission_csv)
 
     with tempfile.TemporaryDirectory(prefix="tagro-stihl-recon-v3-") as tmp_name:
         tmp = Path(tmp_name)
@@ -171,13 +213,12 @@ def reconcile(td_match_csv: Path, busy_master_csv: Path, existing_admission_csv:
     ):
         add_raw_branch_to_master_output(out_dir / filename, queues)
 
-    # Review outputs originate from TD/admission rather than the all-branch master.
-    # Their raw branch label is already the source branch in those files; canonicalize only operationally.
+    review_queues = review_raw_branch_queues(original_td_rows, original_admission_rows)
     for filename in (
         "04-official-part-corrections-review.csv",
         "05-tagro-master-part-candidates-review.csv",
     ):
-        add_source_branch_to_review_output(out_dir / filename)
+        add_source_branch_to_review_output(out_dir / filename, review_queues)
 
     summary["schema"] = SCHEMA
     summary["policy"]["branch_logic"] = (
