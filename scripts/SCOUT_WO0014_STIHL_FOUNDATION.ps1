@@ -180,7 +180,8 @@ try {
   if([bool]$recon.policy.prices_required_for_identity){throw 'Policy failure: prices became an identity prerequisite'}
   if([bool]$recon.policy.busy_writeback){throw 'Policy failure: BUSY writeback enabled'}
   if([bool]$recon.policy.aws_write){throw 'Policy failure: reconciliation attempted AWS write'}
-  if([bool]$recon.policy.name_logic -match 'auto-admit'){throw 'Policy failure: name logic auto-admitted identities'}
+  if([string]$recon.policy.name_logic -ne 'candidate generation only; no fuzzy/name match is auto-admitted'){throw 'Policy failure: unexpected name-admission policy'}
+  if([string]$recon.policy.unit_logic -ne 'preserve branch units; report conflicts; infer no conversion multiplier'){throw 'Policy failure: unexpected unit-conversion policy'}
   Write-Host "IDENTITY RECON PASS accepted_rows=$($recon.counts.exact_part_accepted_rows) parts=$($recon.counts.exact_part_accepted_unique_parts) cross_branch=$($recon.counts.exact_part_cross_branch_expansion_rows)"
 
   $identityRaw=Run-External $Aws @('sts','get-caller-identity','--profile',$AwsProfile,'--region',$Region,'--output','json') '04-aws-identity.json'
