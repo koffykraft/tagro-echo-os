@@ -211,7 +211,8 @@ def sync_canonical_master(
                     product_inserted += 1
                 else:
                     product_id = str(existing[0])
-                    current = (existing[1], existing[2], existing[3], Decimal(str(existing[4])), existing[5], existing[6], existing[7])
+                    current_gst = None if existing[4] is None else Decimal(str(existing[4]))
+                    current = (existing[1], existing[2], existing[3], current_gst, existing[5], existing[6], existing[7])
                     if current == desired:
                         product_unchanged += 1
                     else:
@@ -243,11 +244,24 @@ def sync_canonical_master(
                     (product_id, enterprise_id, manufacturer_id, record["sku"], record["hsn_code"], source_locator, commercial_provenance),
                 )
 
+                # The official manufacturer part number is a valid product alias.
+                # The manufacturer name itself is NOT a product alias because one
+                # manufacturer naturally owns many products.
                 official_aliases = [
                     {"type": "manufacturer_part_no", "value": record["sku"], "branch_code": ""},
-                    {"type": "manufacturer", "value": record["manufacturer"], "branch_code": ""},
                 ]
                 for alias in official_aliases + record["aliases"]:
+                    existing_alias = conn.execute(
+                        """
+                        select product_id from product_aliases
+                        where enterprise_id=%s and alias_type=%s and alias_value=%s and branch_code=%s
+                        """,
+                        (enterprise_id, alias["type"], alias["value"], alias["branch_code"]),
+                    ).fetchone()
+                    if existing_alias and str(existing_alias[0]) != product_id:
+                        raise CanonicalMasterError(
+                            f"alias collision: {alias['type']}={alias['value']} branch={alias['branch_code'] or 'GLOBAL'} already belongs to another product"
+                        )
                     alias_identity = f"{alias['type']}|{alias['value']}|{alias['branch_code']}"
                     alias_id = _stable_id("alias", enterprise_id, alias_identity)
                     conn.execute(
@@ -255,7 +269,7 @@ def sync_canonical_master(
                         insert into product_aliases(alias_id,enterprise_id,product_id,alias_type,alias_value,branch_code,source_ref,active)
                         values(%s,%s,%s,%s,%s,%s,%s,true)
                         on conflict(enterprise_id,alias_type,alias_value,branch_code)
-                        do update set product_id=excluded.product_id,source_ref=excluded.source_ref,active=true
+                        do update set source_ref=excluded.source_ref,active=true
                         """,
                         (alias_id, enterprise_id, product_id, alias["type"], alias["value"], alias["branch_code"], source_locator),
                     )
