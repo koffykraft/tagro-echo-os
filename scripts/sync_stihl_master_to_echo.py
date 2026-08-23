@@ -101,27 +101,34 @@ def build_records(csv_path: Path, effective_from: str) -> tuple[list[dict[str, A
             if branch:
                 branches[branch] += 1
 
+            row_hsn = _text(row, "HSN")
+            row_gst = _text(row, "GST %")
             record = by_part.setdefault(part_no, {
                 "manufacturer": "STIHL",
                 "sku": part_no,
                 "model": official_name,
                 "name": official_name,
                 "category": _text(row, "Official type") or "UNCLASSIFIED",
-                "hsn_code": _text(row, "HSN"),
-                "gst_rate": _text(row, "GST %") or "0",
+                "hsn_code": row_hsn,
+                "gst_rate": row_gst,
                 "unit": "nos",
                 "serial_tracked": (_text(row, "Official type").upper() == "MACHINES"),
                 "aliases": [],
                 "prices": [],
             })
 
-            # Refuse inconsistent official identity instead of silently choosing one branch row.
-            if (
-                record["name"] != official_name
-                or str(record["gst_rate"]) != (_text(row, "GST %") or "0")
-                or str(record["hsn_code"]) != _text(row, "HSN")
-            ):
+            # Blank tax fields are admissible and may be filled by another branch row.
+            # Only two conflicting non-blank official values are rejected.
+            if record["name"] != official_name:
                 raise RuntimeError(f"conflicting official identity for STIHL part {part_no}")
+            if not record["hsn_code"] and row_hsn:
+                record["hsn_code"] = row_hsn
+            elif record["hsn_code"] and row_hsn and str(record["hsn_code"]) != row_hsn:
+                raise RuntimeError(f"conflicting HSN for STIHL part {part_no}: {record['hsn_code']} vs {row_hsn}")
+            if not record["gst_rate"] and row_gst:
+                record["gst_rate"] = row_gst
+            elif record["gst_rate"] and row_gst and str(record["gst_rate"]) != row_gst:
+                raise RuntimeError(f"conflicting GST for STIHL part {part_no}: {record['gst_rate']} vs {row_gst}")
 
             candidates = (
                 ("tagro_original_name", _text(row, "Original TAGRO item name")),
@@ -164,6 +171,8 @@ def build_records(csv_path: Path, effective_from: str) -> tuple[list[dict[str, A
         "ready_rows": ready_rows,
         "skipped_rows": skipped_rows,
         "unique_products": len(records),
+        "unknown_hsn": sum(1 for item in records if not str(item.get("hsn_code") or "").strip()),
+        "unknown_gst": sum(1 for item in records if not str(item.get("gst_rate") or "").strip()),
         "branch_ready_rows": dict(sorted(branches.items())),
         "aliases": sum(len(item["aliases"]) for item in records),
         "prices": sum(len(item["prices"]) for item in records),
