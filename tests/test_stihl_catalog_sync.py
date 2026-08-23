@@ -7,6 +7,7 @@ import unittest
 from pathlib import Path
 
 from scripts.sync_stihl_catalog_to_echo import build_records
+from scripts.sync_stihl_catalog_to_echo_v2 import build_records as build_records_v2
 
 
 class StihlCatalogSyncTests(unittest.TestCase):
@@ -63,6 +64,25 @@ class StihlCatalogSyncTests(unittest.TestCase):
         self.assertIn("A2", alias_values)
         self.assertFalse(stats["busy_writeback"])
         self.assertFalse(stats["new_non_busy_products_allowed"])
+
+    def test_v2_duplicate_official_description_does_not_recurse_and_busy_name_wins(self):
+        root = self._root()
+        official = self._official(root, [
+            {"type": "ACCESSORIES", "part_no": "48504400505", "name": "Adapter AP", "hsn": "1", "gst": 18, "price": 100, "mrp": 118},
+            {"type": "ACCESSORIES", "part_no": "48504400505", "name": "Adapter", "hsn": "1", "gst": 18.0, "price": 100.00, "mrp": 118.0},
+        ])
+        aliases = self._aliases(root, [
+            {"Branch": "KVR", "Original TAGRO item name": "OLD BUSY ADAPTER NAME", "TAGRO display name": "Adapter", "BUSY item codes": "A1", "BUSY alias": "48504400505", "STIHL part number": "48504400505"},
+        ])
+        busy = self._busy(root, [
+            {"Branch": "KVR", "Item Name": "OLD BUSY ADAPTER NAME", "Part No Normalized": "48504400505", "Alias / Part No": "48504400505", "Parent Group": "Accessories", "Unit": "Nos"},
+        ])
+        records, stats = build_records_v2(official, tagro_alias_csv=aliases, busy_item_master=busy)
+        self.assertEqual(1, len(records))
+        self.assertEqual("OLD BUSY ADAPTER NAME", records[0]["name"])
+        self.assertEqual(1, stats["duplicate_official_rows"])
+        official_aliases = [a["value"] for a in records[0]["aliases"] if a["type"] == "stihl_official_name"]
+        self.assertIn("Adapter AP", official_aliases)
 
     def test_numeric_duplicate_normalization_is_safe(self):
         root = self._root()
