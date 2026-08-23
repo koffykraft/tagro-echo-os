@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any, Mapping
 
-from src.aws_runtime.billing_runtime import RuntimeBillingError, issue_bill
+from src.aws_runtime.billing_runtime_v2 import RuntimeBillingError, issue_bill
 from src.aws_runtime.cash_document_runtime import CashDocumentRuntimeError, save_cash_document
 from src.aws_runtime.cash_runtime import CashRuntimeError, cash_day_readback, open_cash_day, record_cash_entry, submit_cash_day
 from src.aws_runtime.config import RuntimeConfig
