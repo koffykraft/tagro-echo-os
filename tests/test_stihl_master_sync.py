@@ -60,21 +60,44 @@ class StihlMasterSyncTests(unittest.TestCase):
         self.assertEqual(3, len(product["prices"]))
         self.assertEqual(2, stats["ready_rows"])
         self.assertEqual(1, stats["unique_products"])
+        self.assertEqual(0, stats["unknown_hsn"])
+        self.assertEqual(0, stats["unknown_gst"])
         alias_branches = {a["branch_code"] for a in product["aliases"]}
         self.assertEqual({"KVR", "PKM"}, alias_branches)
+
+    def test_blank_hsn_and_gst_are_allowed(self):
+        row = self._row("KVR", "KVR-382", "MS 382")
+        row["HSN"] = ""
+        row["GST %"] = ""
+        records, stats = build_records(self._write([row]), "2026-06-01")
+        self.assertEqual("", records[0]["hsn_code"])
+        self.assertEqual("", records[0]["gst_rate"])
+        self.assertEqual(1, stats["unknown_hsn"])
+        self.assertEqual(1, stats["unknown_gst"])
+
+    def test_blank_tax_fields_can_be_filled_by_another_branch(self):
+        first = self._row("KVR", "KVR-382", "MS 382")
+        first["HSN"] = ""
+        first["GST %"] = ""
+        second = self._row("PKM", "PKM-382", "MS 382")
+        records, stats = build_records(self._write([first, second]), "2026-06-01")
+        self.assertEqual("84678100", records[0]["hsn_code"])
+        self.assertEqual("18", records[0]["gst_rate"])
+        self.assertEqual(0, stats["unknown_hsn"])
+        self.assertEqual(0, stats["unknown_gst"])
 
     def test_conflicting_hsn_is_refused(self):
         first = self._row("KVR", "KVR-382", "MS 382")
         second = self._row("PKM", "PKM-382", "MS 382")
         second["HSN"] = "99999999"
-        with self.assertRaisesRegex(RuntimeError, "conflicting official identity"):
+        with self.assertRaisesRegex(RuntimeError, "conflicting HSN"):
             build_records(self._write([first, second]), "2026-06-01")
 
     def test_conflicting_gst_is_refused(self):
         first = self._row("KVR", "KVR-382", "MS 382")
         second = self._row("PKM", "PKM-382", "MS 382")
         second["GST %"] = "12"
-        with self.assertRaisesRegex(RuntimeError, "conflicting official identity"):
+        with self.assertRaisesRegex(RuntimeError, "conflicting GST"):
             build_records(self._write([first, second]), "2026-06-01")
 
 
