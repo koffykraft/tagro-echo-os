@@ -34,8 +34,15 @@ function Resolve-Exe([string]$Name,[string[]]$Fallbacks){
   throw "Required tool not found: $Name"
 }
 function Run-External([string]$Exe,[string[]]$ArgumentList,[string]$OutFile){
-  $out=& $Exe @ArgumentList 2>&1 | Out-String
-  $code=$LASTEXITCODE
+  $oldPref=$ErrorActionPreference
+  try {
+    $ErrorActionPreference='Continue'
+    $out=& $Exe @ArgumentList 2>&1 | Out-String
+    $code=$LASTEXITCODE
+  }
+  finally {
+    $ErrorActionPreference=$oldPref
+  }
   Save-Text $OutFile $out | Out-Null
   if($code -ne 0){ throw "$Exe failed with exit code $code. See $OutFile" }
   return $out
@@ -99,8 +106,7 @@ try {
   $buildId=($buildRaw|ConvertFrom-Json).build.id
   do {
     Start-Sleep -Seconds 10
-    $bRaw=& $Aws codebuild batch-get-builds --ids $buildId --profile $AwsProfile --region $Region --output json 2>&1 | Out-String
-    if($LASTEXITCODE -ne 0){ throw 'CodeBuild status query failed' }
+    $bRaw=Run-External $Aws @('codebuild','batch-get-builds','--ids',$buildId,'--profile',$AwsProfile,'--region',$Region,'--output','json') '07-build-poll.json'
     $b=$bRaw|ConvertFrom-Json
     $status=[string]$b.builds[0].buildStatus
     Write-Host "CODEBUILD $status $($b.builds[0].currentPhase)"
