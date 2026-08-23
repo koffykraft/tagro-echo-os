@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping
 
+from src.aws_runtime.canonical_master_runtime import CanonicalMasterError, sync_canonical_master
 from src.aws_runtime.config import RuntimeConfig
 from src.aws_runtime.twin_ingest_runtime import TwinIngestError, sync_source_records
 from src.aws_runtime.twin_planar_runtime import TwinPlanarError, sync_planar_records
@@ -14,9 +15,9 @@ def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
     """Private ingestion boundary for the isolated ECHO Operational Twin.
 
     Scheduled Dropbox/AWS source pipelines invoke this Lambda. Generic source
-    packages remain available for audit/intake. A Planar package additionally
-    projects the existing TAGRO warehouse entities/events/evidence/relationships
-    into explicit PostgreSQL working planes.
+    packages remain available for audit/intake. Explicit canonical-master packages
+    admit reviewed reference data into operational products/prices/catalogue tables.
+    Planar packages remain a separate higher projection plane.
     """
     if event.get("confirm") != CONFIRMATION:
         return {
@@ -52,10 +53,9 @@ def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
         provenance=package.get("provenance") if isinstance(package.get("provenance"), Mapping) else {},
     )
 
+    schema = str(package.get("schema") or "").lower()
     try:
-        if str(package.get("schema") or "").lower() in {
-            "tagro.planar-export/1", "tagro.echo.planar-export/1"
-        }:
+        if schema in {"tagro.planar-export/1", "tagro.echo.planar-export/1"}:
             result = sync_planar_records(**kwargs)
             return {
                 **result,
@@ -63,7 +63,17 @@ def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
                 "database_primary": True,
                 "planar_preserved": True,
             }
+        if schema == "tagro.echo.canonical-master/1":
+            result = sync_canonical_master(**kwargs)
+            return {
+                **result,
+                "status": "canonical_master_sync_complete",
+                "database_primary": True,
+                "planar_projection": False,
+            }
         result = sync_source_records(**kwargs)
+    except CanonicalMasterError as exc:
+        return {"status": "refused", "reason": "invalid_canonical_master_package", "detail": str(exc)}
     except (TwinIngestError, TwinPlanarError) as exc:
         return {"status": "refused", "reason": "invalid_operational_twin_package", "detail": str(exc)}
 
