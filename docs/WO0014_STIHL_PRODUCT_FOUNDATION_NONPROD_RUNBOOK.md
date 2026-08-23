@@ -1,20 +1,26 @@
-# WO-0014 — STIHL Product Foundation NonProd Runbook
+# WO-0014 — STIHL BUSY-Existing Product Foundation NonProd Runbook
 
-Purpose: admit the complete STIHL catalogue into the existing ECHO PostgreSQL operational foundation, enrich it with TAGRO/BUSY aliases, preserve HSN/GST unknowns honestly, and verify normal authenticated lookup before Billing proof. Planar is not involved in this runbook.
+Purpose: admit only STIHL items that already exist in TAGRO/BUSY, preserve every BUSY item name/code/unit unchanged at source, enrich safe matches with STIHL part/name/HSN/GST and the Owner-authorised June 2026 STIHL price base, and verify normal authenticated lookup/Billing. No new STIHL catalogue item is introduced by this path. Planar is not involved.
 
 ## Invariants
 
-- Source of canonical STIHL identity: `TAGRO_AUTOMATION/safe_base/master_data/latest/stihl_prices_june_2026.json`.
-- TAGRO/BUSY alias enrichment: `TAGRO_AUTOMATION/price_update_2026_27/outputs/TAGRO_STIHL_BUSY_Update_One_Row_Per_Item.csv`.
-- BUSY unit enrichment: `TAGRO_AUTOMATION/outputs/stihl_kvr_part_match/TAGRO_BUSY_ITEM_MASTER_ALL_BRANCHES_2026-07-10.csv`.
+- Admission boundary: `TAGRO_AUTOMATION/price_update_2026_27/outputs/TAGRO_STIHL_BUSY_Update_One_Row_Per_Item.csv`.
+- Full STIHL reference/pricing source: `TAGRO_AUTOMATION/safe_base/master_data/latest/stihl_prices_june_2026.json`.
+- Existing BUSY item/unit evidence: `TAGRO_AUTOMATION/outputs/stihl_kvr_part_match/TAGRO_BUSY_ITEM_MASTER_ALL_BRANCHES_2026-07-10.csv`.
+- An official STIHL item absent from the BUSY-existing admission file is NOT admitted.
+- Existing BUSY names/codes/aliases are preserved as aliases and are never written back, renamed or replaced.
+- Safe part-number match is required for STIHL enrichment. Missing/unsafe match is skipped or refused; never guessed.
+- BUSY unit is the operational unit. Equivalent labels such as `Nos`/`Pcs` may normalize to one arithmetic unit inside ECHO, while the original BUSY identity remains preserved.
+- Non-equivalent unit conflicts stop admission.
+- Pack/reel conversions require an explicit multiplier. ECHO never infers a conversion from words such as `reel`, `roll` or `links`.
+- Chain items already stored by BUSY in `Links` remain `Links`; no reel conversion is invented.
 - Missing HSN/GST is allowed and remains unknown.
-- Unknown GST does not hide a product from reference lookup; Billing rejects only that line until GST is populated.
+- Unknown GST does not hide a product from lookup; Billing rejects only that sale line until GST is populated.
 - Aliases may never silently move from one product to another.
-- Prices are not written unless an independently defensible `effective_from` date is supplied.
-- The current June-named source has no authoritative effective-date field; identity admission therefore runs first with no prices.
+- Owner has authorised the STIHL June 2026 list as the current price base where a safe official match exists. ECHO records this as `stihl_june_*` price types with base date `2026-06-01` and provenance identifying the June 2026 source.
 - The raw BUSY foundation already loaded into AWS is not rewritten by this path.
 
-## 0. PowerShell session setup
+## 0. PowerShell setup
 
 ```powershell
 cd "C:\Users\HP\Dropbox\TAGRO_AUTOMATION\projects\tagro-echo-os-git"
@@ -29,7 +35,7 @@ $ALIASES="C:\Users\HP\Dropbox\TAGRO_AUTOMATION\price_update_2026_27\outputs\TAGR
 $BUSYMASTER="C:\Users\HP\Dropbox\TAGRO_AUTOMATION\outputs\stihl_kvr_part_match\TAGRO_BUSY_ITEM_MASTER_ALL_BRANCHES_2026-07-10.csv"
 ```
 
-## 1. Pull exact branch and prove source files
+## 1. Pull and prove sources
 
 ```powershell
 git pull
@@ -43,51 +49,58 @@ git --no-pager log -1 --oneline
 
 STOP if any source is missing.
 
-## 2. Run the complete local test suite
+## 2. Full test gate
 
 ```powershell
 & $PY -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-STOP unless all tests pass. GitHub Runtime Gate and Governance Gate must also be green for the same head commit.
+STOP unless all tests pass. GitHub Runtime Gate and Governance Gate must also be green for the same head.
 
-## 3. Dry-run the full catalogue — no prices
+## 3. BUSY-existing-only dry run
 
-Do not supply `--effective-from` here.
+This does not call AWS.
 
 ```powershell
 & $PY ".\scripts\sync_stihl_catalog_to_echo.py" `
   --official-json "$OFFICIAL" `
   --tagro-alias-csv "$ALIASES" `
   --busy-item-master "$BUSYMASTER" `
+  --effective-from "2026-06-01" `
   --enterprise-id "$ENTERPRISE" `
   --profile "$PROFILE" `
   --region "$REGION" `
   --dry-run
 ```
 
-Review `stats` only. Required conditions:
+Review only the final `stats`. Required truths:
 
-- `unique_products > 0`
-- `prices_included = false`
-- `prices = 0`
-- no alias-collision exception
-- review `unknown_hsn` and `unknown_gst` as honest incompleteness, not errors
-- `unit_conflicts` must be reviewed before live admission; do not silently accept conflicting BUSY units
+- `admitted_existing_busy_products > 0`
+- `new_non_busy_products_allowed = false`
+- `busy_writeback = false`
+- `not_introduced_from_full_stihl_catalogue` is expected to be greater than zero
+- `price_base = STIHL June 2026`
+- `price_effective_from = 2026-06-01`
+- no unsafe alias-collision exception
+- no non-equivalent BUSY unit conflict
+- `unknown_hsn`/`unknown_gst` are allowed incompleteness
+- `unit_conversion_candidates` are review items only; no multiplier is invented
 
-## 4. Authenticate AWS and prove account
+STOP on any unit conflict or alias collision.
+
+## 4. AWS authentication and account proof
 
 ```powershell
 aws sso login --profile $PROFILE
 aws sts get-caller-identity --profile $PROFILE --region $REGION
 ```
 
-Required account: `272037674623`. STOP on any other account.
+Required NonProd account: `272037674623`.
 
-## 5. Create a pre-deploy RDS snapshot
+## 5. RDS recovery snapshot
 
 ```powershell
-$SNAP="echo-nonprod-pre-catalog-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+$SNAP="echo-nonprod-pre-busy-stihl-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
 aws rds create-db-snapshot `
   --db-instance-identifier echo-nonprod-postgres `
   --db-snapshot-identifier $SNAP `
@@ -107,9 +120,9 @@ aws rds describe-db-snapshots `
   --output table
 ```
 
-STOP unless snapshot status is `available`.
+STOP unless status is `available`.
 
-## 6. Build/package in AWS CodeBuild
+## 6. CodeBuild exact branch
 
 ```powershell
 $BUILD = aws codebuild start-build `
@@ -124,7 +137,7 @@ Write-Host "BUILD: $BUILDID"
 
 do {
   Start-Sleep -Seconds 10
-  $B = (aws codebuild batch-get-builds `
+  $B=(aws codebuild batch-get-builds `
     --ids $BUILDID `
     --profile $PROFILE `
     --region $REGION `
@@ -136,34 +149,32 @@ if($B.buildStatus -ne "SUCCEEDED"){ throw "CodeBuild failed: $($B.buildStatus)" 
 $B | Select-Object id,buildStatus,resolvedSourceVersion,startTime,endTime
 ```
 
-STOP unless `SUCCEEDED` and `resolvedSourceVersion` is the intended branch head.
+STOP unless `SUCCEEDED` and resolved source is the intended head.
 
-## 7. Download the packaged SAM template
+## 7. Download packaged SAM template
 
 ```powershell
-$PROJECT = (aws codebuild batch-get-projects `
+$PROJECT=(aws codebuild batch-get-projects `
   --names echo-nonprod-runtime-build `
   --profile $PROFILE `
   --region $REGION `
   --output json | ConvertFrom-Json).projects[0]
 
-$ARTIFACT_BUCKET = ($PROJECT.environment.environmentVariables | Where-Object {$_.name -eq "ARTIFACT_BUCKET"}).value
+$ARTIFACT_BUCKET=($PROJECT.environment.environmentVariables | Where-Object {$_.name -eq "ARTIFACT_BUCKET"}).value
 if([string]::IsNullOrWhiteSpace($ARTIFACT_BUCKET)){ throw "ARTIFACT_BUCKET not found" }
 
-$PKG = Join-Path $env:TEMP "echo-packaged-nonprod-runtime.yaml"
+$PKG=Join-Path $env:TEMP "echo-packaged-nonprod-runtime.yaml"
 aws s3 cp `
   "s3://$ARTIFACT_BUCKET/echo-nonprod/runtime/packaged-nonprod-runtime.yaml" `
   "$PKG" `
   --profile $PROFILE `
   --region $REGION
-
-if(!(Test-Path $PKG)){ throw "Packaged template missing" }
 ```
 
-## 8. Create and inspect the CloudFormation change set
+## 8. Create and inspect change set
 
 ```powershell
-$CS="wo0014-catalog-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+$CS="wo0014-busy-stihl-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
 
 aws cloudformation create-change-set `
   --stack-name echo-nonprod-runtime `
@@ -200,7 +211,7 @@ aws cloudformation describe-change-set `
   --output table
 ```
 
-Expected: runtime Lambda code/template changes, no database replacement, no RDS replacement, no destructive infrastructure replacement. STOP if anything unexpected appears.
+STOP on database/RDS replacement or any unexpected destructive replacement.
 
 ## 9. Execute stack update
 
@@ -226,7 +237,9 @@ aws cloudformation describe-stacks `
 
 Required: `UPDATE_COMPLETE`.
 
-## 10. Apply migrations 0014/0015
+## 10. Apply migrations 0014/0015/0016
+
+0016 adds explicit product unit conversions. It does not alter any BUSY source record or infer conversion factors.
 
 ```powershell
 $MIGPAY=Join-Path $env:TEMP "echo-migration-payload.json"
@@ -245,23 +258,16 @@ aws lambda invoke `
 Get-Content $MIGOUT -Raw
 ```
 
-Required response includes:
+Required: `migration_complete / nonprod_v0_3`.
 
-```json
-{"status":"migration_complete","migration_set":"nonprod_v0_3"}
-```
-
-This applies only unapplied migrations. Existing 0001-0013 remain ledger-protected and are skipped when already present.
-
-## 11. Live full-catalogue admission — still no prices
-
-Do not add `--effective-from` yet.
+## 11. Live BUSY-existing STIHL admission
 
 ```powershell
 & $PY ".\scripts\sync_stihl_catalog_to_echo.py" `
   --official-json "$OFFICIAL" `
   --tagro-alias-csv "$ALIASES" `
   --busy-item-master "$BUSYMASTER" `
+  --effective-from "2026-06-01" `
   --enterprise-id "$ENTERPRISE" `
   --profile "$PROFILE" `
   --region "$REGION"
@@ -269,20 +275,21 @@ Do not add `--effective-from` yet.
 
 Required:
 
-- schema `tagro.echo.stihl-catalog-sync-summary/1`
-- `dry_run = false`
+- schema `tagro.echo.stihl-busy-existing-sync-summary/1`
+- `busy_writeback = false`
+- `new_non_busy_products_allowed = false`
 - `planar_projection = false`
 - no refused batch
-- `inserted + updated + unchanged` reconciles with `stats.unique_products`
-- `prices_upserted = 0`
+- only BUSY-existing matched products are inserted/updated
+- STIHL June prices are attached only to safe official matches where values exist
 
-## 12. Idempotent replay proof
+## 12. Idempotent replay
 
-Run the exact command in step 11 again. The same source/batches must not create duplicate products or aliases. Record the final summary.
+Run step 11 unchanged a second time. Same payload must not create duplicate products, aliases or prices.
 
-## 13. Authenticated product readback
+## 13. Authenticated lookup proof
 
-Use a fresh Cognito JWT. If `$JWT` is already valid, reuse it.
+Use a fresh `$JWT`.
 
 ```powershell
 $BASE="https://3n1lhlcush.execute-api.ap-south-1.amazonaws.com"
@@ -292,31 +299,22 @@ Invoke-RestMethod "$BASE/reference-data?kind=products&q=11192000261&limit=5" -He
   ConvertTo-Json -Depth 8
 ```
 
-Verify the MS 382 record contains canonical product identity, HSN `84678100`, GST `18`, manufacturer part number, and `gst_known=true`.
-
-Then prove TAGRO/BUSY alias lookup with an alias returned by the dry-run/source:
+Then search by an existing BUSY name/alias, not a newly invented ECHO name:
 
 ```powershell
 Invoke-RestMethod "$BASE/reference-data?kind=products&q=MS382&limit=10" -Headers $H |
   ConvertTo-Json -Depth 8
 ```
 
-The alias lookup must resolve to the same canonical product identity where that alias is admitted for the enterprise.
+Both routes must resolve to the same canonical product where the safe alias exists.
 
-## 14. Controlled Billing proof
-
-Fetch a known product first:
+## 14. Billing proof using June base
 
 ```powershell
 $P=(Invoke-RestMethod "$BASE/reference-data?kind=products&q=11192000261&limit=5" -Headers $H).items | Select-Object -First 1
-$P | ConvertTo-Json -Depth 6
-```
+if(!$P){ throw "Product not found" }
+if($P.gst_known -ne $true){ throw "GST still unknown; do not bill this item" }
 
-STOP if `gst_known` is not true.
-
-For NonProd proof only, use a unique idempotency key and the reviewed source price explicitly; this does not claim that the price table is yet authoritative:
-
-```powershell
 $IDEMP="wo0014-billing-proof-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
 $BODY=@{
   enterprise_id=$ENTERPRISE
@@ -335,63 +333,31 @@ $BODY=@{
   )
 } | ConvertTo-Json -Depth 8
 
-$BILL=Invoke-RestMethod `
-  "$BASE/billing/issue" `
-  -Method Post `
-  -Headers $H `
-  -ContentType "application/json" `
-  -Body $BODY
-
+$BILL=Invoke-RestMethod "$BASE/billing/issue" -Method Post -Headers $H -ContentType "application/json" -Body $BODY
 $BILL | ConvertTo-Json -Depth 8
 ```
 
-Replay the exact same request:
+Replay exact same body and require same `bill_id` with `idempotent_replay=true`.
 
-```powershell
-$REPLAY=Invoke-RestMethod `
-  "$BASE/billing/issue" `
-  -Method Post `
-  -Headers $H `
-  -ContentType "application/json" `
-  -Body $BODY
+Do not claim BUSY booking until BUSY dock/write/readback is separately proven.
 
-$REPLAY | ConvertTo-Json -Depth 8
-```
+## 15. Unit-conversion admission later
 
-Required: same `bill_id`, and replay reports `idempotent_replay=true`.
+BUSY operational unit remains unchanged. Where a supplier purchase unit differs from the retail/stock unit, first establish the actual manufacturer/supplier conversion factor. Then admit it explicitly to `product_unit_conversions` through a reviewed master-data package/template. Example meaning only:
 
-Do not claim BUSY booking from this proof; ECHO correctly returns `busy_status=not_booked_not_confirmed` until the BUSY dock path is separately proven.
+`1 purchase reel -> N stock Links`
 
-## 15. Price admission — later, only after date authority is resolved
+`N` must come from an actual source; never derive it from the word `reel` or a part-number suffix.
 
-When a defensible effective date is established, rerun the same canonical catalogue source with that date:
-
-```powershell
-$PRICE_EFFECTIVE="YYYY-MM-DD"
-
-& $PY ".\scripts\sync_stihl_catalog_to_echo.py" `
-  --official-json "$OFFICIAL" `
-  --tagro-alias-csv "$ALIASES" `
-  --busy-item-master "$BUSYMASTER" `
-  --effective-from "$PRICE_EFFECTIVE" `
-  --enterprise-id "$ENTERPRISE" `
-  --profile "$PROFILE" `
-  --region "$REGION"
-```
-
-This creates effective-dated price rows without redesigning or reimporting the raw BUSY foundation.
-
-## 16. After STIHL foundation proof
-
-Proceed one normal operational flow at a time:
+## 16. Normal operational sequence
 
 1. Billing
 2. Stock Count
 3. Service
-4. Purchase
+4. Purchase — including reviewed purchase-pack conversion where needed
 5. Closing Cash
-6. parts/diagram/callout admission using `data/templates/catalog_parts_import.csv`
-7. Jain canonical catalogue/price admission using the same manufacturer-neutral product/parts structures
-8. ECHO brand catalogue later using the same structures
+6. parts/diagram/callout admission
+7. Jain matched-to-existing-BUSY products using the same principle
+8. ECHO brand later using the same structures
 
-Planar/intelligence remains a separate higher plane and is not a dependency for these foundation flows.
+Planar/intelligence remains a separate higher plane and is not a dependency for foundation operations.
