@@ -38,64 +38,67 @@ class StihlCatalogSyncTests(unittest.TestCase):
             writer.writerows(rows)
         return path
 
-    def test_full_catalogue_identity_without_invented_price_date(self):
+    def test_only_existing_busy_items_are_admitted_and_june_price_is_enrichment(self):
         root = self._root()
         official = self._official(root, [
             {"type": "MACHINES", "part_no": "11192000261", "name": "MS 382", "hsn": "84678100", "gst": 18.0, "price": 52260.0, "mrp": 69067.0},
-            {"type": "PARTS", "part_no": "00001234567", "name": "Service Part", "hsn": "", "gst": None, "price": 100.0, "mrp": 118.0},
+            {"type": "PARTS", "part_no": "99999999999", "name": "Not in BUSY", "hsn": "", "gst": 18, "price": 100.0, "mrp": 118.0},
         ])
         aliases = self._aliases(root, [
-            {"Branch": "KVR", "Original TAGRO item name": "MS382", "TAGRO display name": "MS 382", "BUSY item codes": "A1 | A2", "BUSY alias": "382", "STIHL part number": "11192000261"},
+            {"Branch": "KVR", "Original TAGRO item name": "MS382 OLD BUSY NAME", "TAGRO display name": "MS 382", "BUSY item codes": "A1 | A2", "BUSY alias": "382", "STIHL part number": "11192000261"},
         ])
         busy = self._busy(root, [
-            {"Branch": "KVR", "Item Name": "MS382", "Part No Normalized": "11192000261", "Alias / Part No": "11192000261", "Parent Group": "STIHL", "Unit": "Nos"},
+            {"Branch": "KVR", "Item Name": "MS382 OLD BUSY NAME", "Part No Normalized": "11192000261", "Alias / Part No": "11192000261", "Parent Group": "STIHL", "Unit": "Nos"},
         ])
+        records, stats = build_records(official, tagro_alias_csv=aliases, busy_item_master=busy)
+        self.assertEqual(1, len(records))
+        self.assertEqual("11192000261", records[0]["sku"])
+        self.assertEqual("Pcs", records[0]["unit"])
+        self.assertEqual(3, len(records[0]["prices"]))
+        self.assertEqual("STIHL June 2026", stats["price_base"])
+        self.assertEqual(1, stats["not_introduced_from_full_stihl_catalogue"])
+        alias_values = {a["value"] for a in records[0]["aliases"]}
+        self.assertIn("MS382 OLD BUSY NAME", alias_values)
+        self.assertIn("A1", alias_values)
+        self.assertIn("A2", alias_values)
+        self.assertFalse(stats["busy_writeback"])
+        self.assertFalse(stats["new_non_busy_products_allowed"])
 
-        records, stats = build_records(official, tagro_alias_csv=aliases, busy_item_master=busy, effective_from=None)
-        self.assertEqual(2, len(records))
-        self.assertEqual(0, stats["prices"])
-        self.assertFalse(stats["prices_included"])
-        ms382 = next(r for r in records if r["sku"] == "11192000261")
-        self.assertEqual("84678100", ms382["hsn_code"])
-        self.assertEqual("18", ms382["gst_rate"])
-        self.assertEqual("Nos", ms382["unit"])
-        self.assertEqual(5, len(ms382["aliases"]))
-        incomplete = next(r for r in records if r["sku"] == "00001234567")
-        self.assertEqual("", incomplete["hsn_code"])
-        self.assertEqual("", incomplete["gst_rate"])
-
-    def test_numeric_duplicate_normalization_and_dated_prices(self):
+    def test_numeric_duplicate_normalization_is_safe(self):
         root = self._root()
         official = self._official(root, [
             {"type": "MACHINES", "part_no": "11192000261", "name": "MS 382", "hsn": "84678100", "gst": 18, "price": 52260, "mrp": 69067},
             {"type": "MACHINES", "part_no": "1119 200 0261", "name": "MS 382", "hsn": "84678100", "gst": 18.0, "price": 52260.00, "mrp": 69067.0},
         ])
-        records, stats = build_records(official, effective_from="2026-06-30")
+        aliases = self._aliases(root, [{"Branch": "KVR", "Original TAGRO item name": "MS382", "TAGRO display name": "MS 382", "BUSY item codes": "A1", "BUSY alias": "382", "STIHL part number": "11192000261"}])
+        busy = self._busy(root, [{"Branch": "KVR", "Item Name": "MS382", "Part No Normalized": "11192000261", "Alias / Part No": "11192000261", "Parent Group": "STIHL", "Unit": "Pcs"}])
+        records, stats = build_records(official, tagro_alias_csv=aliases, busy_item_master=busy)
         self.assertEqual(1, len(records))
         self.assertEqual(1, stats["duplicate_official_rows"])
-        self.assertEqual(3, len(records[0]["prices"]))
 
-    def test_alias_collision_is_refused_before_aws(self):
+    def test_reel_links_is_flagged_but_multiplier_is_not_invented(self):
         root = self._root()
-        official = self._official(root, [
-            {"type": "PARTS", "part_no": "11111111111", "name": "Part A", "hsn": "1", "gst": 18},
-            {"type": "PARTS", "part_no": "22222222222", "name": "Part B", "hsn": "2", "gst": 18},
-        ])
+        official = self._official(root, [{"type": "ACCESSORIES", "part_no": "38740001640", "name": "33RSK Chain reel", "hsn": "82024000", "gst": 18, "price": 1000, "mrp": 1200}])
+        aliases = self._aliases(root, [{"Branch": "KVR", "Original TAGRO item name": "33RSK Chain reel RAPID SUPER", "TAGRO display name": "33RSK Chain reel RAPID SUPER", "BUSY item codes": "C1", "BUSY alias": "38740001640", "STIHL part number": "38740001640"}])
+        busy = self._busy(root, [{"Branch": "KVR", "Item Name": "33RSK Chain reel RAPID SUPER", "Part No Normalized": "38740001640", "Alias / Part No": "38740001640", "Parent Group": "Accessories", "Unit": "Links"}])
+        records, stats = build_records(official, tagro_alias_csv=aliases, busy_item_master=busy)
+        self.assertEqual("Links", records[0]["unit"])
+        self.assertEqual([], records[0]["unit_conversions"])
+        self.assertEqual(1, stats["unit_conversion_candidates"])
+
+    def test_non_equivalent_busy_unit_conflict_is_refused(self):
+        root = self._root()
+        official = self._official(root, [{"type": "PARTS", "part_no": "11111111111", "name": "Part A", "hsn": "1", "gst": 18}])
         aliases = self._aliases(root, [
-            {"Branch": "KVR", "Original TAGRO item name": "Same", "TAGRO display name": "Part A", "BUSY item codes": "X", "BUSY alias": "SAME", "STIHL part number": "11111111111"},
-            {"Branch": "KVR", "Original TAGRO item name": "Same", "TAGRO display name": "Part B", "BUSY item codes": "X", "BUSY alias": "SAME", "STIHL part number": "22222222222"},
+            {"Branch": "KVR", "Original TAGRO item name": "Part A", "TAGRO display name": "Part A", "BUSY item codes": "X", "BUSY alias": "A", "STIHL part number": "11111111111"},
+            {"Branch": "PKM", "Original TAGRO item name": "Part A", "TAGRO display name": "Part A", "BUSY item codes": "Y", "BUSY alias": "A", "STIHL part number": "11111111111"},
         ])
-        with self.assertRaisesRegex(RuntimeError, "alias collisions"):
-            build_records(official, tagro_alias_csv=aliases)
-
-    def test_conflicting_known_official_gst_is_refused(self):
-        root = self._root()
-        official = self._official(root, [
-            {"type": "PARTS", "part_no": "11111111111", "name": "Part A", "hsn": "1", "gst": 18},
-            {"type": "PARTS", "part_no": "11111111111", "name": "Part A", "hsn": "1", "gst": 12},
+        busy = self._busy(root, [
+            {"Branch": "KVR", "Item Name": "Part A", "Part No Normalized": "11111111111", "Alias / Part No": "11111111111", "Parent Group": "Parts", "Unit": "Pcs"},
+            {"Branch": "PKM", "Item Name": "Part A", "Part No Normalized": "11111111111", "Alias / Part No": "11111111111", "Parent Group": "Parts", "Unit": "Links"},
         ])
-        with self.assertRaisesRegex(RuntimeError, "conflicting official gst"):
-            build_records(official)
+        with self.assertRaisesRegex(RuntimeError, "unit conflicts"):
+            build_records(official, tagro_alias_csv=aliases, busy_item_master=busy)
 
 
 if __name__ == "__main__":
