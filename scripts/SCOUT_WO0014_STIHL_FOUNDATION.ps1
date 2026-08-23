@@ -7,6 +7,7 @@ param(
 $ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
 
+$ExpectedBranch = 'wo-0014-database-primary-pages-deploy'
 $Repo = Split-Path -Parent $PSScriptRoot
 $DropboxRoot = 'C:\Users\HP\Dropbox\TAGRO_AUTOMATION'
 $ReportRoot = Join-Path $DropboxRoot 'TAGRO_AWS_RUNTIME\reports\wo0014-stihl-scout'
@@ -57,6 +58,9 @@ function Parse-IsoDate([string]$Value){
   if([datetime]::TryParse($Value,[ref]$parsed)){ return $parsed.Date }
   return $null
 }
+function Normalized-Path([string]$Path){
+  return [System.IO.Path]::GetFullPath($Path).TrimEnd('\','/').ToLowerInvariant()
+}
 
 try {
   Set-Location $Repo
@@ -73,7 +77,9 @@ try {
   $ExistingAdmission=Join-Path $DropboxRoot 'price_update_2026_27\outputs\TAGRO_STIHL_BUSY_Update_One_Row_Per_Item.csv'
   $WarehouseOverview=Join-Path $DropboxRoot 'projects\tagro-data-import\warehouse_builder\reports\warehouse_overview_for_architect.json'
   $WarehouseReadme=Join-Path $DropboxRoot 'projects\tagro-data-import\warehouse_builder\README.txt'
-  $Reconciler=Join-Path $Repo 'scripts\reconcile_stihl_busy_identity_v2.py'
+  $ReconcilerBase=Join-Path $Repo 'scripts\reconcile_stihl_busy_identity_v2.py'
+  $Reconciler=Join-Path $Repo 'scripts\reconcile_stihl_busy_identity_v3.py'
+  $ReconcilerTest=Join-Path $Repo 'tests\test_stihl_identity_reconciliation_v3.py'
 
   # Freshness evidence. These are reported, not silently treated as equivalent snapshots.
   $DataPlatformShipManifest=Join-Path $DropboxRoot 'data\products\tagro-data-platform\ship-packs\FY2023_to_current_active_v1\manifest.json'
@@ -86,8 +92,26 @@ try {
   $Migration0016=Join-Path $Repo 'schemas\business\product_unit_conversions_v0_9.sql'
   $Template=Join-Path $Repo 'architecture\aws\nonprod-runtime-template.yaml'
 
-  Run-External $Git @('pull','--ff-only') '01-git-pull.txt'|Out-Null
-  $head=(Run-External $Git @('rev-parse','HEAD') '02-git-head.txt').Trim()
+  # Path/branch gate before any pull or data processing.
+  $repoTop=(Run-External $Git @('rev-parse','--show-toplevel') '01-git-root.txt').Trim()
+  if((Normalized-Path $repoTop) -ne (Normalized-Path $Repo)){ throw "Wrong repository root. Expected $Repo but git reports $repoTop" }
+  $branch=(Run-External $Git @('rev-parse','--abbrev-ref','HEAD') '02-git-branch.txt').Trim()
+  if($branch -ne $ExpectedBranch){ throw "Wrong git branch. Expected $ExpectedBranch but found $branch" }
+
+  foreach($required in @(
+    $TdMatch,$TdMatcher,$BusyMaster,$ExistingAdmission,$WarehouseOverview,$WarehouseReadme,
+    $ReconcilerBase,$Reconciler,$ReconcilerTest,$DataPlatformShipManifest,$DataPlatformRefreshState,
+    $RawWarehouseManifest,$Manifest,$Migration0014,$Migration0015,$Migration0016,$Template
+  )){ Require-File $required }
+
+  # Verify the exact Python dependency chain before running real data.
+  Run-External $Python @('-m','py_compile',$ReconcilerBase,$Reconciler,$ReconcilerTest) '03-python-compile.txt'|Out-Null
+  Run-External $Python @('-m','unittest','discover','-s','tests','-p','test_stihl_identity_reconciliation_v3.py') '04-v3-regression-test.txt'|Out-Null
+
+  Run-External $Git @('pull','--ff-only') '05-git-pull.txt'|Out-Null
+  $head=(Run-External $Git @('rev-parse','HEAD') '06-git-head.txt').Trim()
+  $branchAfter=(Run-External $Git @('rev-parse','--abbrev-ref','HEAD') '07-git-branch-after-pull.txt').Trim()
+  if($branchAfter -ne $ExpectedBranch){ throw "Branch changed unexpectedly after pull: $branchAfter" }
 
   $sourceProof=[ordered]@{
     td_match=File-Proof $TdMatch
@@ -99,18 +123,24 @@ try {
     data_platform_ship_manifest=File-Proof $DataPlatformShipManifest
     data_platform_refresh_state=File-Proof $DataPlatformRefreshState
     raw_busy_warehouse_manifest=File-Proof $RawWarehouseManifest
-    reconciler=File-Proof $Reconciler
+    reconciler_base_v2=File-Proof $ReconcilerBase
+    reconciler_v3=File-Proof $Reconciler
+    reconciler_v3_test=File-Proof $ReconcilerTest
   }
 
   $proof=[ordered]@{
-    schema='tagro.echo.wo0014-stihl-scout/3'
+    schema='tagro.echo.wo0014-stihl-scout/4'
     run_id=$RunId
     report_dir=$ReportDir
+    repo_root=$Repo
+    expected_branch=$ExpectedBranch
+    actual_branch=$branchAfter
     git_head=$head
     policy=[ordered]@{
-      foundation='prove STIHL part identity; expand exact BUSY aliases across all branches; normalize/commercially enrich later'
+      foundation='prove STIHL part identity; expand exact BUSY aliases across all branches; normalize labels without erasing source evidence; commercially enrich later'
       exact_identity_only=$true
       name_matches_auto_admitted=$false
+      corrected_part_numbers_auto_admitted=$false
       unit_conversion_inferred=$false
       prices_required_for_identity=$false
       busy_writeback=$false
@@ -172,31 +202,35 @@ try {
     '--existing-admission-csv',$ExistingAdmission,
     '--out-dir',$IdentityDir
   )
-  Run-External $Python $reconArgs '03-identity-reconciliation.txt'|Out-Null
+  Run-External $Python $reconArgs '08-identity-reconciliation-v3.txt'|Out-Null
   $reconSummaryPath=Join-Path $IdentityDir '00-summary.json'
   Require-File $reconSummaryPath
   $recon=Get-Content -LiteralPath $reconSummaryPath -Raw|ConvertFrom-Json
-  if([string]$recon.schema -ne 'tagro.echo.stihl-identity-reconciliation/2'){throw "Unexpected reconciler schema: $($recon.schema)"}
+  if([string]$recon.schema -ne 'tagro.echo.stihl-identity-reconciliation/3'){throw "Unexpected reconciler schema: $($recon.schema)"}
   if([bool]$recon.policy.prices_required_for_identity){throw 'Policy failure: prices became an identity prerequisite'}
   if([bool]$recon.policy.busy_writeback){throw 'Policy failure: BUSY writeback enabled'}
   if([bool]$recon.policy.aws_write){throw 'Policy failure: reconciliation attempted AWS write'}
   if([string]$recon.policy.name_logic -ne 'candidate generation only; no fuzzy/name match is auto-admitted'){throw 'Policy failure: unexpected name-admission policy'}
-  if([string]$recon.policy.unit_logic -ne 'preserve branch units; report conflicts; infer no conversion multiplier'){throw 'Policy failure: unexpected unit-conversion policy'}
-  Write-Host "IDENTITY RECON PASS accepted_rows=$($recon.counts.exact_part_accepted_rows) parts=$($recon.counts.exact_part_accepted_unique_parts) cross_branch=$($recon.counts.exact_part_cross_branch_expansion_rows)"
+  if(-not [bool]$recon.validation.source_branch_preserved){throw 'Policy failure: raw source branch is not preserved'}
+  if(-not [bool]$recon.validation.operational_branch_segments_collapsed){throw 'Policy failure: source branch segments were not operationally canonicalized'}
+  if([bool]$recon.validation.unit_conversion_inferred){throw 'Policy failure: unit conversion was inferred'}
+  if([bool]$recon.validation.corrected_part_numbers_auto_admitted){throw 'Policy failure: corrected part numbers were auto-admitted'}
+  if([bool]$recon.validation.name_candidates_auto_admitted){throw 'Policy failure: name candidates were auto-admitted'}
+  Write-Host "IDENTITY RECON PASS accepted_rows=$($recon.counts.exact_part_accepted_rows) parts=$($recon.counts.exact_part_accepted_unique_parts) branches=$($recon.counts.exact_part_accepted_branches) cross_branch=$($recon.counts.exact_part_cross_branch_expansion_rows)"
 
-  $identityRaw=Run-External $Aws @('sts','get-caller-identity','--profile',$AwsProfile,'--region',$Region,'--output','json') '04-aws-identity.json'
+  $identityRaw=Run-External $Aws @('sts','get-caller-identity','--profile',$AwsProfile,'--region',$Region,'--output','json') '09-aws-identity.json'
   $identity=$identityRaw|ConvertFrom-Json
   if([string]$identity.Account -ne '272037674623'){throw "Wrong AWS account $($identity.Account)"}
 
-  $snapRaw=Run-External $Aws @('rds','describe-db-snapshots','--db-snapshot-identifier',$SnapshotId,'--profile',$AwsProfile,'--region',$Region,'--output','json') '05-snapshot.json'
+  $snapRaw=Run-External $Aws @('rds','describe-db-snapshots','--db-snapshot-identifier',$SnapshotId,'--profile',$AwsProfile,'--region',$Region,'--output','json') '10-snapshot.json'
   $snap=$snapRaw|ConvertFrom-Json
   if([string]$snap.DBSnapshots[0].Status -ne 'available'){throw "Snapshot not available: $($snap.DBSnapshots[0].Status)"}
 
-  $projectRaw=Run-External $Aws @('codebuild','batch-get-projects','--names','echo-nonprod-runtime-build','--profile',$AwsProfile,'--region',$Region,'--output','json') '06-codebuild-project.json'
+  $projectRaw=Run-External $Aws @('codebuild','batch-get-projects','--names','echo-nonprod-runtime-build','--profile',$AwsProfile,'--region',$Region,'--output','json') '11-codebuild-project.json'
   $project=$projectRaw|ConvertFrom-Json
   if(!$project.projects -or !$project.projects[0]){throw 'CodeBuild project missing'}
 
-  $stackRaw=Run-External $Aws @('cloudformation','describe-stacks','--stack-name','echo-nonprod-runtime','--profile',$AwsProfile,'--region',$Region,'--output','json') '07-current-stack.json'
+  $stackRaw=Run-External $Aws @('cloudformation','describe-stacks','--stack-name','echo-nonprod-runtime','--profile',$AwsProfile,'--region',$Region,'--output','json') '12-current-stack.json'
   $stack=$stackRaw|ConvertFrom-Json
   if([string]$stack.Stacks[0].StackStatus -notmatch '_COMPLETE$'){throw "Current stack not stable: $($stack.Stacks[0].StackStatus)"}
 
@@ -207,10 +241,12 @@ try {
   }
 
   $summary=[ordered]@{
-    schema='tagro.echo.wo0014-stihl-scout/3'
+    schema='tagro.echo.wo0014-stihl-scout/4'
     status='scout_complete'
     run_id=$RunId
     report_dir=$ReportDir
+    repo_root=$Repo
+    branch=$branchAfter
     git_head=$head
     freshness=$freshness
     identity=[ordered]@{
@@ -233,6 +269,7 @@ try {
       name_candidate_part_conflicts=$recon.counts.name_candidate_part_conflicts
       unmatched_stihl_clue_rows=$recon.counts.unmatched_stihl_clue_rows
       by_branch=$recon.by_branch
+      validation=$recon.validation
     }
     aws_account=[string]$identity.Account
     snapshot_status=[string]$snap.DBSnapshots[0].Status
@@ -248,7 +285,7 @@ try {
 }
 catch{
   Save-Json '99-scout-failure.json' ([ordered]@{
-    schema='tagro.echo.wo0014-stihl-scout/3'
+    schema='tagro.echo.wo0014-stihl-scout/4'
     status='failed'
     run_id=$RunId
     error=$_.Exception.Message
