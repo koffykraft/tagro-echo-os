@@ -84,6 +84,28 @@ class StihlCatalogSyncTests(unittest.TestCase):
         official_aliases = [a["value"] for a in records[0]["aliases"] if a["type"] == "stihl_official_name"]
         self.assertIn("Adapter AP", official_aliases)
 
+    def test_v2_conflicting_duplicate_price_is_quarantined_not_guessed(self):
+        root = self._root()
+        official = self._official(root, [
+            {"type": "ACCESSORIES", "part_no": "70318710055", "name": "Tool", "hsn": "8205", "gst": 18, "price": 4824, "mrp": 5692},
+            {"type": "ACCESSORIES", "part_no": "70318710055", "name": "Tool", "hsn": "8205", "gst": 18, "price": 4729, "mrp": 5692},
+        ])
+        aliases = self._aliases(root, [
+            {"Branch": "KVR", "Original TAGRO item name": "BUSY TOOL", "TAGRO display name": "Tool", "BUSY item codes": "T1", "BUSY alias": "70318710055", "STIHL part number": "70318710055"},
+        ])
+        busy = self._busy(root, [
+            {"Branch": "KVR", "Item Name": "BUSY TOOL", "Part No Normalized": "70318710055", "Alias / Part No": "70318710055", "Parent Group": "Accessories", "Unit": "Nos"},
+        ])
+        records, stats = build_records_v2(official, tagro_alias_csv=aliases, busy_item_master=busy)
+        self.assertEqual(1, len(records))
+        self.assertEqual("BUSY TOOL", records[0]["name"])
+        price_types = {p["type"] for p in records[0]["prices"]}
+        self.assertNotIn("stihl_june_before_gst", price_types)
+        self.assertNotIn("stihl_june_incl_gst", price_types)
+        self.assertIn("stihl_june_mrp", price_types)
+        self.assertEqual(1, stats["official_price_conflicts"])
+        self.assertIn("70318710055", stats["official_price_conflict_sample"])
+
     def test_numeric_duplicate_normalization_is_safe(self):
         root = self._root()
         official = self._official(root, [
