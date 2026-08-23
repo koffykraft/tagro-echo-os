@@ -79,7 +79,7 @@ def build_records(csv_path: Path, effective_from: str) -> tuple[list[dict[str, A
         reader = csv.DictReader(handle)
         required = {
             "Branch", "Original TAGRO item name", "TAGRO display name", "BUSY item codes",
-            "BUSY alias", "STIHL part number", "Official STIHL name", "Official type",
+            "BUSY alias", "STIHL part number", "Official STIHL name", "Official type", "HSN",
             "GST %", "STIHL price before GST", "STIHL price incl GST", "STIHL MRP", "Ready for BUSY",
         }
         missing = sorted(required - set(reader.fieldnames or []))
@@ -107,6 +107,7 @@ def build_records(csv_path: Path, effective_from: str) -> tuple[list[dict[str, A
                 "model": official_name,
                 "name": official_name,
                 "category": _text(row, "Official type") or "UNCLASSIFIED",
+                "hsn_code": _text(row, "HSN"),
                 "gst_rate": _text(row, "GST %") or "0",
                 "unit": "nos",
                 "serial_tracked": (_text(row, "Official type").upper() == "MACHINES"),
@@ -115,7 +116,11 @@ def build_records(csv_path: Path, effective_from: str) -> tuple[list[dict[str, A
             })
 
             # Refuse inconsistent official identity instead of silently choosing one branch row.
-            if record["name"] != official_name or str(record["gst_rate"]) != (_text(row, "GST %") or "0"):
+            if (
+                record["name"] != official_name
+                or str(record["gst_rate"]) != (_text(row, "GST %") or "0")
+                or str(record["hsn_code"]) != _text(row, "HSN")
+            ):
                 raise RuntimeError(f"conflicting official identity for STIHL part {part_no}")
 
             candidates = (
