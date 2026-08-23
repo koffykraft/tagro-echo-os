@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 from pathlib import Path
 from typing import Any, Mapping
 
-import sync_stihl_catalog_to_echo as base
+_BASE_PATH = Path(__file__).with_name("sync_stihl_catalog_to_echo.py")
+_SPEC = importlib.util.spec_from_file_location("sync_stihl_catalog_to_echo_base", _BASE_PATH)
+if _SPEC is None or _SPEC.loader is None:
+    raise RuntimeError(f"Unable to load base importer: {_BASE_PATH}")
+base = importlib.util.module_from_spec(_SPEC)
+_SPEC.loader.exec_module(base)
 
 
 def _load_official_safe(path: Path) -> tuple[dict[str, dict[str, Any]], int]:
@@ -35,8 +41,6 @@ def _load_official_safe(path: Path) -> tuple[dict[str, dict[str, Any]], int]:
             official[part_no] = incoming
             continue
         duplicates += 1
-        # Description/category wording may legitimately vary for the same STIHL part.
-        # Keep the first official wording as reference; never use it to overwrite BUSY identity.
         for field in ("hsn", "gst", "price", "mrp"):
             left, right = prior[field], incoming[field]
             if left not in (None, "") and right not in (None, "") and left != right:
@@ -54,8 +58,6 @@ def build_records(*args: Any, **kwargs: Any):
     finally:
         base._load_official = original
 
-    # Existing BUSY identity is the operational display identity.
-    # STIHL wording remains an official reference alias only.
     for record in records:
         official_name = record.get("name", "")
         busy_names = [
