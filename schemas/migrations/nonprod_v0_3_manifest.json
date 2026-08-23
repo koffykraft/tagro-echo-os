@@ -17,6 +17,7 @@
     {"id":"0010-cash-entry-evidence-v0.4","path":"schemas/business/cash_entry_evidence_v0_4.sql","git_blob_sha":"52ddf67fd3a257954a08ad64ea13fd21c506bb58","depends_on":["0001-platform-foundation-v0.2","0004-operational-extensions-v0.3"]},
     {"id":"0011-cash-saved-document-v0.4","path":"schemas/business/cash_saved_document_v0_4.sql","git_blob_sha":"3b3ae5e81780a31142312a37f6eedabc462fd2ae","depends_on":["0010-cash-entry-evidence-v0.4"]},
     {"id":"0012-operational-twin-source-v0.5","path":"schemas/business/operational_twin_source_v0_5.sql","git_blob_sha":"a45fe25cb5ff377d223978a88401afc2ff58599c","depends_on":["0001-platform-foundation-v0.2"]},
-    {"id":"0013-operational-twin-planar-v0.6","path":"schemas/business/operational_twin_planar_v0_6.sql","git_blob_sha":"4c3b2d1e81b146fe4a9c1cbf4cdf2f6a6593f9c8","depends_on":["0012-operational-twin-source-v0.5"]}
+    {"id":"0013-operational-twin-planar-v0.6","path":"schemas/business/operational_twin_planar_v0_6.sql","git_blob_sha":"4c3b2d1e81b146fe4a9c1cbf4cdf2f6a6593f9c8","depends_on":["0012-operational-twin-source-v0.5"]},
+    {"id":"0014-catalog-parts-lookup-v0.7","path":"schemas/business/catalog_parts_lookup_v0_7.sql","git_blob_sha":"f3c9530d98a0a6c2ca1636242580f5c315eb735d","depends_on":["0002-canonical-business-v0.2"]}
   ]
 }
