@@ -60,22 +60,24 @@ class MobileReadinessTests(unittest.TestCase):
         self.assertIn('href="on-call.html"', index)
         self.assertNotIn('href="intelligence.html"', index)
 
-    def test_current_tagro_vertical_uses_local_stihl_brand_assets(self):
-        for asset in ("assets/brand/tagro-stihl-mobile.png", "assets/brand/tagro-stihl-desktop.png"):
+    def test_current_tagro_vertical_uses_owner_approved_stihl_brand_assets(self):
+        compact = "assets/brand/tagro-stihl-900x240.png"
+        wide = "assets/brand/tagro-stihl-1600x400.png"
+        for asset in (compact, wide):
             self.assertTrue((WEB / asset).is_file(), asset)
         for name in self.pages:
             text = (WEB / name).read_text(encoding="utf-8")
             self.assertIn("TAGRO STIHL", text, name)
-            self.assertIn("tagro-stihl-mobile.png", text, name)
-            self.assertIn("tagro-stihl-desktop.png", text, name)
-            self.assertNotIn("tagro-echo-mobile.png", text, name)
-            self.assertNotIn("tagro-echo-desktop.png", text, name)
+            self.assertIn(compact, text, name)
+            self.assertIn(wide, text, name)
+            self.assertNotIn("tagro-stihl-mobile.png", text, name)
+            self.assertNotIn("tagro-stihl-desktop.png", text, name)
         manifest = json.loads((WEB / "manifest.webmanifest").read_text(encoding="utf-8"))
         self.assertEqual(manifest["name"], "TAGRO STIHL")
         self.assertEqual(manifest["short_name"], "TAGRO STIHL")
         sw = (WEB / "sw.js").read_text(encoding="utf-8")
-        self.assertIn("tagro-stihl-mobile.png", sw)
-        self.assertIn("tagro-stihl-desktop.png", sw)
+        self.assertIn(compact, sw)
+        self.assertIn(wide, sw)
         self.assertIn("tagro-stihl-os", sw)
 
     def test_runtime_client_uses_bearer_jwt_and_scoped_offline_queue(self):
