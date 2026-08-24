@@ -10,6 +10,7 @@ echo-home-v1.js
 operation.css
 billing.html
 service.html
+customers.html
 stock-count.html
 po.html
 closing-cash.html
