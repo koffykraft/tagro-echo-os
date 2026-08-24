@@ -8,8 +8,8 @@ WEB = ROOT / "web"
 
 class MobileReadinessTests(unittest.TestCase):
     pages = [
-        "index.html", "login.html", "on-call.html", "billing.html", "service.html", "po.html", "stock-count.html",
-        "closing-cash.html", "business.html", "intelligence.html",
+        "index.html", "login.html", "on-call.html", "billing.html", "service.html", "customers.html", "po.html",
+        "stock-count.html", "closing-cash.html", "business.html",
     ]
     retained_utilities = ["reports.html", "page-builder.html", "counter.html", "cash.html", "bank.html", "payments.html", "documents.html"]
 
@@ -44,6 +44,7 @@ class MobileReadinessTests(unittest.TestCase):
         self.assertIn("url.origin!==self.location.origin", sw)
         self.assertIn("STATIC_URLS.has(request.url)", sw)
         self.assertNotIn("caches.put(event.request", sw)
+        self.assertNotIn("./intelligence.html", sw)
         # Retained builder/admin utilities are not forced into every counter's offline shell.
         self.assertNotIn("'./page-builder.html'", sw)
 
@@ -57,6 +58,7 @@ class MobileReadinessTests(unittest.TestCase):
         self.assertIn("'Online':'Offline'", home_js)
         self.assertIn("Waiting to send", index)
         self.assertIn('href="on-call.html"', index)
+        self.assertNotIn('href="intelligence.html"', index)
 
     def test_current_tagro_vertical_uses_local_stihl_brand_assets(self):
         for asset in ("assets/brand/tagro-stihl-mobile.png", "assets/brand/tagro-stihl-desktop.png"):
