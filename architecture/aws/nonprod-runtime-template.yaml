@@ -81,6 +81,7 @@ Resources:
         DatabaseHealth: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /db-health, Method: GET}}
         TenantContext: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /tenant-context, Method: GET}}
         ReferenceData: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /reference-data, Method: GET}}
+        CustomerCreate: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /customers, Method: POST}}
         OwnerOnCall: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /owner-on-call, Method: GET}}
         CashDayReadback: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /cash-days, Method: GET}}
         CashDayOpen: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /cash-days/open, Method: POST}}
