@@ -48,8 +48,18 @@ New-Item -ItemType Directory -Force -Path $DeployWork | Out-Null
 
 function Invoke-Checked {
   param([string]$Exe, [string[]]$Arguments, [switch]$Show)
-  $output = & $Exe @Arguments 2>&1
-  $code = $LASTEXITCODE
+  $priorErrorAction = $ErrorActionPreference
+  try {
+    # Windows PowerShell 5.1 surfaces ordinary native stderr (for example
+    # `git fetch` progress) as NativeCommandError when preference is Stop.
+    # Native success/failure is governed by the process exit code instead.
+    $ErrorActionPreference = 'Continue'
+    $output = @(& $Exe @Arguments 2>&1)
+    $code = $LASTEXITCODE
+  }
+  finally {
+    $ErrorActionPreference = $priorErrorAction
+  }
   if ($Show -and $output) { $output | ForEach-Object { Write-Host $_ } }
   if ($code -ne 0) {
     throw "Command failed ($code): $Exe $($Arguments -join ' ')`n$($output -join "`n")"
