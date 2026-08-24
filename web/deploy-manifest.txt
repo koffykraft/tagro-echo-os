@@ -1,4 +1,4 @@
-# TAGRO ECHO non-production admitted web release
+# TAGRO STIHL non-production admitted web release
 # One relative path per line. The builder refuses unlisted web files.
 404.html
 index.html
@@ -21,5 +21,6 @@ on-call.html
 manifest.webmanifest
 icon.svg
 sw.js
-assets/brand/tagro-stihl-desktop.png
-assets/brand/tagro-stihl-mobile.png
+# Owner-provided approved TAGRO–STIHL lockups; natural proportions must be preserved
+assets/brand/tagro-stihl-900x240.png
+assets/brand/tagro-stihl-1600x400.png

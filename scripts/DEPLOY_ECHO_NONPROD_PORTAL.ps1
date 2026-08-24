@@ -236,8 +236,10 @@ try {
 
   Write-Host "=== SMOKE READBACK ==="
   Test-UrlStatus $webUrl @(200) | Out-Null
-  Test-UrlStatus "$webUrl/login.html" @(200) | Out-Null
-  Test-UrlStatus "$webUrl/billing.html" @(200) | Out-Null
+  $admittedHtml = @(Get-Content -LiteralPath 'web/deploy-manifest.txt' | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith('#') -and $_.EndsWith('.html') })
+  foreach ($relativePath in $admittedHtml) {
+    Test-UrlStatus "$webUrl/$relativePath" @(200) | Out-Null
+  }
   Test-UrlStatus "$apiUrl/health" @(200) | Out-Null
   Test-CorsOrigin $apiUrl $webUrl
   Test-CorsOrigin $apiUrl $StableWebOrigin

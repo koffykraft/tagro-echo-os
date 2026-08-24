@@ -12,9 +12,9 @@
 <body>
   <div class="shell">
     <div class="topbar">
-      <button class="iconbtn" id="quick" aria-label="Quick sale" title="Quick sale">＋</button>
-      <picture class="brand-picture"><source media="(max-width:560px)" srcset="assets/brand/tagro-stihl-mobile.png"><img src="assets/brand/tagro-stihl-desktop.png" alt="TAGRO STIHL"></picture>
-      <button class="iconbtn" id="menu" aria-label="More tools" title="More tools">•••</button>
+      <button class="iconbtn" id="quick" type="button" aria-label="Quick sale" title="Quick sale">＋</button>
+      <picture class="brand-picture"><source media="(min-width:700px)" srcset="assets/brand/tagro-stihl-1600x400.png"><img src="assets/brand/tagro-stihl-900x240.png" alt="TAGRO STIHL"></picture>
+      <button class="signout" id="signOut" type="button">Sign out</button>
     </div>
     <main>
       <section class="context" aria-label="Current ECHO workspace">
@@ -37,17 +37,16 @@
         </section>
 
         <section>
-          <div class="section-title">CONTINUE</div>
+          <div class="section-title">SAVED WORK</div>
           <div class="continuity">
-            <a class="status-card hidden" href="#" id="continueCard"><span class="mark">↻</span><span><strong>Continue</strong><small id="continueText">Work in progress</small></span><span class="chev">›</span></a>
-            <a class="status-card" href="#" id="pendingCard"><span class="mark">↑</span><span><strong>Waiting to send</strong><small id="pendingText">Checking saved work…</small></span><span class="chev">›</span></a>
+            <button class="status-card" type="button" id="pendingCard"><span class="mark">↑</span><span><strong>Waiting to send</strong><small id="pendingText">Checking saved work…</small></span><span class="chev">›</span></button>
             <a class="status-card" href="on-call.html" id="reviewCard"><span class="mark">!</span><span><strong>Needs attention</strong><small id="reviewText">Checking…</small></span><span class="chev">›</span></a>
           </div>
           <p class="quiet" id="truthLine">Checking saved work and connection.</p>
           <div class="data-strip"><span>Business data</span><b id="dataState">Checking shared database…</b></div>
         </section>
       </div>
-      <div class="environment">ECHO OPERATIONAL TWIN · DATABASE PRIMARY</div>
+      <div class="environment">TAGRO STIHL OPERATIONS · ECHO PLATFORM · NON-PRODUCTION</div>
     </main>
   </div>
 

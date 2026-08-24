@@ -68,6 +68,11 @@ class NonprodPortalRunnerTests(unittest.TestCase):
         self.assertIn("@(401,403)", self.runner)
         self.assertIn('Test-ProtectedPostRoute "$apiUrl/customers"', self.runner)
 
+    def test_runner_smokes_every_admitted_html_page(self):
+        self.assertIn("web/deploy-manifest.txt", self.runner)
+        self.assertIn("EndsWith('.html')", self.runner)
+        self.assertIn('Test-UrlStatus "$webUrl/$relativePath" @(200)', self.runner)
+
     def test_runner_writes_dropbox_report_without_claiming_dns_cutover(self):
         self.assertIn("wo0014-portal-deploy", self.runner)
         self.assertIn("tagro.echo.nonprod-portal-deploy/1", self.runner)
