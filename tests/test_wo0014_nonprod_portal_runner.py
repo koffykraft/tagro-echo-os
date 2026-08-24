@@ -30,6 +30,13 @@ class NonprodPortalRunnerTests(unittest.TestCase):
         self.assertIn("$code = $LASTEXITCODE", self.runner)
         self.assertIn("if ($code -ne 0)", self.runner)
 
+    def test_windows_json_files_are_utf8_without_bom(self):
+        self.assertIn("function Write-Utf8NoBom", self.runner)
+        self.assertIn("[System.Text.UTF8Encoding]::new($false)", self.runner)
+        self.assertIn("Write-Utf8NoBom $paramsFile", self.runner)
+        self.assertIn("Write-Utf8NoBom $reportPath", self.runner)
+        self.assertNotIn("Set-Content -LiteralPath $paramsFile -Encoding UTF8", self.runner)
+
     def test_runner_refuses_runtime_removal_or_replacement(self):
         self.assertIn("$_.Action -eq 'Remove'", self.runner)
         self.assertIn("$_.Replacement -eq 'True'", self.runner)
