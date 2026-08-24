@@ -7,9 +7,13 @@ Parameters:
     Type: String
   UserPoolClientId:
     Type: String
+  StableWebAllowedOrigin:
+    Type: String
+    Default: https://os.tagro.in
+    Description: Stable TAGRO browser origin retained during non-production smoke deployment.
   WebAllowedOrigin:
     Type: String
-    Description: Exact HTTPS origin hosting the ECHO web/PWA shell; required for authenticated browser CORS.
+    Description: Exact HTTPS smoke/test origin hosting the ECHO web/PWA shell; required for authenticated browser CORS.
   LambdaExecutionRoleArn:
     Type: String
   DbSecretArn:
@@ -33,6 +37,7 @@ Resources:
       StageName: '$default'
       CorsConfiguration:
         AllowOrigins:
+          - !Ref StableWebAllowedOrigin
           - !Ref WebAllowedOrigin
         AllowHeaders:
           - Authorization
