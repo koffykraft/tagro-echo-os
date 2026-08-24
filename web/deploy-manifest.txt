@@ -1,0 +1,26 @@
+# TAGRO ECHO non-production admitted web release
+# One relative path per line. The builder refuses unlisted web files.
+404.html
+index.html
+login.html
+runtime-config.js
+runtime-client.js
+echo-home-v1.css
+echo-home-v1.js
+operation.css
+billing.html
+service.html
+stock-count.html
+po.html
+closing-cash.html
+business.html
+business.js
+business-intelligence.css
+on-call.html
+manifest.webmanifest
+icon.svg
+sw.js
+assets/brand/tagro-echo-desktop.png
+assets/brand/tagro-echo-mobile.png
+assets/brand/tagro-stihl-desktop.png
+assets/brand/tagro-stihl-mobile.png
