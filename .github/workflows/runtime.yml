@@ -21,3 +21,14 @@ jobs:
           python-version: '3.12'
       - name: Run all runtime and business tests
         run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Check admitted web JavaScript
+        run: python scripts/check_web_javascript.py
+      - name: Build admitted web release
+        run: python scripts/build_web_release.py --output build/web-release
+      - name: Upload admitted web release
+        uses: actions/upload-artifact@v4
+        with:
+          name: echo-nonprod-web-release
+          path: build/web-release
+          if-no-files-found: error
+          retention-days: 7
