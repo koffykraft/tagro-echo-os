@@ -23,6 +23,13 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_*.py' -v
       - name: Check admitted web JavaScript
         run: python scripts/check_web_javascript.py
+      - name: Install CloudFormation linter
+        run: python -m pip install --disable-pip-version-check cfn-lint
+      - name: Lint admitted AWS templates
+        run: |
+          cfn-lint architecture/aws/nonprod-runtime-template.yaml
+          cfn-lint architecture/aws/nonprod-web-template.yaml
+          cfn-lint architecture/aws/nonprod-data-foundation-template.yaml
       - name: Build admitted web release
         run: python scripts/build_web_release.py --output build/web-release
       - name: Upload admitted web release
