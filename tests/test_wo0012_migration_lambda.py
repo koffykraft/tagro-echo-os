@@ -20,6 +20,16 @@ class Wo0012MigrationLambdaTests(unittest.TestCase):
         self.assertIn('event.get("confirm") != CONFIRMATION', handler)
         self.assertIn('"migration_set": "nonprod_v0_3"', handler)
 
+    def test_wo0014_lambda_starts_at_catalog_extension(self) -> None:
+        handler = (ROOT / "src/aws_runtime/migration_handler.py").read_text(encoding="utf-8")
+        runner = (ROOT / "scripts/apply_schema_migrations.py").read_text(encoding="utf-8")
+        self.assertIn('START_AT = "0014-catalog-parts-lookup-v0.7"', handler)
+        self.assertIn("apply(start_at=START_AT)", handler)
+        self.assertIn("migration baseline incomplete", runner)
+        self.assertIn("migration baseline drift", runner)
+        self.assertIn("migrations[:start_index]", runner)
+        self.assertIn("migrations[start_index:]", runner)
+
     def test_build_packages_scripts_and_schemas(self) -> None:
         makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
         self.assertIn("cp -r scripts $(ARTIFACTS_DIR)/scripts", makefile)
