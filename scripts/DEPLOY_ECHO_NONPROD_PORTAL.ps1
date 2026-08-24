@@ -78,6 +78,12 @@ function Get-StackOutput {
   return (Aws @('cloudformation','describe-stacks','--stack-name',$StackName,'--query',"Stacks[0].Outputs[?OutputKey=='$OutputKey'].OutputValue | [0]",'--output','text')).Trim()
 }
 
+function Write-Utf8NoBom {
+  param([string]$Path,[string]$Text)
+  $encoding = [System.Text.UTF8Encoding]::new($false)
+  [System.IO.File]::WriteAllText($Path,$Text,$encoding)
+}
+
 function Wait-CodeBuild {
   param([string]$BuildId)
   $terminal = @('SUCCEEDED','FAILED','FAULT','STOPPED','TIMED_OUT')
@@ -193,7 +199,7 @@ try {
   }
   if (-not $webOriginSeen) { $params += [ordered]@{ParameterKey='WebAllowedOrigin';ParameterValue=$webUrl} }
   $paramsFile = Join-Path $DeployWork 'runtime-params.json'
-  $params | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $paramsFile -Encoding UTF8
+  Write-Utf8NoBom $paramsFile ($params | ConvertTo-Json -Depth 5)
 
   $changeSet = "portal-$($head.Substring(0,7))-$(Get-Date -Format yyyyMMddHHmmss)"
   Aws @('cloudformation','create-change-set','--stack-name',$RuntimeStack,'--change-set-name',$changeSet,'--change-set-type','UPDATE','--template-body','file://build/portal-deploy/packaged-nonprod-runtime.yaml','--parameters','file://build/portal-deploy/runtime-params.json','--description',"ECHO nonprod portal runtime $head",'--output','json') | Out-Null
@@ -258,7 +264,7 @@ try {
     result='PASS'
   }
   $reportPath = Join-Path $reportDir 'deploy-result.json'
-  $report | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $reportPath -Encoding UTF8
+  Write-Utf8NoBom $reportPath ($report | ConvertTo-Json -Depth 6)
 
   Write-Host "`n=== ECHO NONPROD PORTAL DEPLOYED ==="
   Write-Host "Web:    $webUrl"
