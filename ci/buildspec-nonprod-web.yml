@@ -1,0 +1,26 @@
+version: 0.2
+
+env:
+  shell: bash
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.12
+    commands:
+      - python --version
+  pre_build:
+    commands:
+      - python -m unittest discover -s tests -p 'test_*.py'
+      - python scripts/build_web_release.py
+  build:
+    commands:
+      - test -n "$WEB_BUCKET"
+      - test -n "$WEB_DISTRIBUTION_ID"
+      - aws s3 sync build/web-release/ "s3://$WEB_BUCKET/" --delete --cache-control "no-cache, no-store, must-revalidate"
+      - aws cloudfront create-invalidation --distribution-id "$WEB_DISTRIBUTION_ID" --paths '/*'
+
+artifacts:
+  files:
+    - '**/*'
+  base-directory: build/web-release
