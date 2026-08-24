@@ -19,6 +19,7 @@ class NonprodWebReleaseTests(unittest.TestCase):
             "login.html",
             "billing.html",
             "service.html",
+            "customers.html",
             "stock-count.html",
             "po.html",
             "closing-cash.html",
