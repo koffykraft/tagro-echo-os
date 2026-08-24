@@ -9,7 +9,7 @@ import tempfile
 from html.parser import HTMLParser
 from pathlib import Path
 
-from scripts.build_web_release import read_manifest
+from build_web_release import read_manifest
 
 
 class InlineScriptParser(HTMLParser):
