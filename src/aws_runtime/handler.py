@@ -7,6 +7,7 @@ from src.aws_runtime.billing_runtime_v2 import RuntimeBillingError, issue_bill
 from src.aws_runtime.cash_document_runtime import CashDocumentRuntimeError, save_cash_document
 from src.aws_runtime.cash_runtime import CashRuntimeError, cash_day_readback, open_cash_day, record_cash_entry, submit_cash_day
 from src.aws_runtime.config import RuntimeConfig
+from src.aws_runtime.customer_runtime import CustomerRuntimeError, create_customer
 from src.aws_runtime.database import probe, tenant_context
 from src.aws_runtime.import_reconciliation import reconciliation_readback
 from src.aws_runtime.on_call_runtime import OnCallRuntimeError, owner_on_call_readback
@@ -147,6 +148,32 @@ def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
         except Exception as exc:
             return _response(503, {"error": "reference_data_unavailable", "error_type": type(exc).__name__})
         return _response(200, result)
+
+    if raw_path == "/customers" and method == "POST":
+        subject = str(claims.get("sub") or "")
+        payload = _json_body(event)
+        if not subject:
+            return _response(401, {"error": "authenticated_subject_missing"})
+        if payload is None:
+            return _response(400, {"error": "invalid_json_body"})
+        try:
+            context_result, membership, error = _runtime_identity(config, subject, payload)
+        except Exception as exc:
+            return _response(503, {"error": "tenant_context_unavailable", "error_type": type(exc).__name__})
+        if error:
+            return error
+        capabilities = {str(x).upper() for x in membership.get("capabilities") or []}
+        if not capabilities.intersection({"SELL", "SERVICE"}):
+            return _response(403, {"error": "customer_create_capability_required"})
+        try:
+            result = create_customer(config, principal_id=str(context_result["principal_id"]), membership=membership, payload=payload)
+        except PermissionError:
+            return _response(403, {"error": "customer_create_capability_required"})
+        except CustomerRuntimeError as exc:
+            return _response(409, {"error": "customer_create_rejected", "detail": str(exc)})
+        except Exception as exc:
+            return _response(503, {"error": "customer_runtime_unavailable", "error_type": type(exc).__name__})
+        return _response(201, {"schema": "tagro.echo.customer-created.v1", "data": result})
 
     if raw_path == "/owner-on-call" and method == "GET":
         subject = str(claims.get("sub") or "")
