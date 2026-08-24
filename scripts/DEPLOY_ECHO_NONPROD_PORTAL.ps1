@@ -44,7 +44,6 @@ $Git = Resolve-Executable 'git' $gitCandidates
 
 $Repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $DeployWork = Join-Path $Repo 'build\portal-deploy'
-$ReleaseDir = Join-Path $Repo 'build\web-release'
 New-Item -ItemType Directory -Force -Path $DeployWork | Out-Null
 
 function Invoke-Checked {
@@ -97,6 +96,22 @@ function Test-UrlStatus {
   if ($Allowed -notcontains $status) { throw "HTTP smoke failed for $Url : status $status" }
   Write-Host "HTTP $status $Url"
   return $status
+}
+
+function Test-ProtectedPostRoute {
+  param([string]$Url)
+  try {
+    $r = Invoke-WebRequest $Url -Method Post -ContentType 'application/json' -Body '{}' -UseBasicParsing -TimeoutSec 30
+    $status = [int]$r.StatusCode
+  } catch {
+    $status = $null
+    if ($_.Exception.Response -and $_.Exception.Response.StatusCode) { $status = [int]$_.Exception.Response.StatusCode }
+    if ($null -eq $status) { throw "Protected-route smoke failed for $Url : $($_.Exception.Message)" }
+  }
+  if (@(401,403) -notcontains $status) {
+    throw "Protected-route smoke failed for $Url : expected JWT rejection 401/403, got $status"
+  }
+  Write-Host "PROTECTED $status $Url"
 }
 
 function Test-CorsOrigin {
@@ -210,9 +225,7 @@ try {
   Test-UrlStatus "$apiUrl/health" @(200) | Out-Null
   Test-CorsOrigin $apiUrl $webUrl
   Test-CorsOrigin $apiUrl $StableWebOrigin
-
-  $customerRouteStatus = Test-UrlStatus "$apiUrl/customers" @(401,403,404,405)
-  if ($customerRouteStatus -eq 404) { throw '/customers is still absent after runtime update' }
+  Test-ProtectedPostRoute "$apiUrl/customers"
 
   $reportRoot = Join-Path $Repo 'build\deploy-reports'
   $dropboxRoot = Join-Path $env:USERPROFILE 'Dropbox\TAGRO_AUTOMATION\TAGRO_AWS_RUNTIME\reports\wo0014-portal-deploy'
