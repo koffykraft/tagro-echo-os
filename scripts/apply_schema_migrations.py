@@ -35,11 +35,47 @@ def _ensure_ledger(conn: Any) -> None:
     conn.commit()
 
 
-def apply() -> None:
+def _start_index(migrations: list[dict[str, Any]], start_at: str | None) -> int:
+    if start_at is None:
+        return 0
+    for index, migration in enumerate(migrations):
+        if migration.get("id") == start_at:
+            return index
+    raise RuntimeError(f"migration start id is not present in manifest: {start_at}")
+
+
+def _verify_recorded_baseline(
+    migrations: list[dict[str, Any]],
+    recorded: dict[str, str],
+    start_index: int,
+    start_at: str | None,
+) -> set[str]:
+    completed: set[str] = set()
+    if start_index == 0:
+        return completed
+
+    for migration in migrations[:start_index]:
+        migration_id = migration["id"]
+        admitted_sha = migration["git_blob_sha"]
+        recorded_sha = recorded.get(migration_id)
+        if recorded_sha is None:
+            raise RuntimeError(
+                f"migration baseline incomplete before {start_at}: missing {migration_id}"
+            )
+        if recorded_sha != admitted_sha:
+            raise RuntimeError(
+                f"migration baseline drift for {migration_id}: recorded {recorded_sha}, admitted {admitted_sha}"
+            )
+        completed.add(migration_id)
+
+    return completed
+
+
+def apply(*, start_at: str | None = None) -> None:
     config = RuntimeConfig.from_env()
     manifest = _load_manifest()
     migrations = manifest.get("migrations", [])
-    completed: set[str] = set()
+    start_index = _start_index(migrations, start_at)
 
     with connect(config) as conn:
         _ensure_ledger(conn)
@@ -48,14 +84,19 @@ def apply() -> None:
             "select migration_id, git_blob_sha from echo_schema_migrations"
         ).fetchall()
         recorded = {row[0]: row[1] for row in rows}
+        completed = _verify_recorded_baseline(
+            migrations, recorded, start_index, start_at
+        )
 
-        for migration in migrations:
+        for migration in migrations[start_index:]:
             migration_id = migration["id"]
             source_path = migration["path"]
             admitted_sha = migration["git_blob_sha"]
             dependencies = migration.get("depends_on", [])
 
-            missing_dependencies = [dep for dep in dependencies if dep not in completed and dep not in recorded]
+            missing_dependencies = [
+                dep for dep in dependencies if dep not in completed and dep not in recorded
+            ]
             if missing_dependencies:
                 raise RuntimeError(
                     f"migration {migration_id} has unapplied dependencies: {missing_dependencies}"
