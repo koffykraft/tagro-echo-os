@@ -23,6 +23,13 @@ class NonprodPortalRunnerTests(unittest.TestCase):
         self.assertIn("DEPLOY_ECHO_NONPROD_PORTAL", self.runner)
         self.assertIn("Wrong AWS account", self.runner)
 
+    def test_native_stderr_is_not_mistaken_for_native_failure(self):
+        self.assertIn("$priorErrorAction = $ErrorActionPreference", self.runner)
+        self.assertIn("$ErrorActionPreference = 'Continue'", self.runner)
+        self.assertIn("$ErrorActionPreference = $priorErrorAction", self.runner)
+        self.assertIn("$code = $LASTEXITCODE", self.runner)
+        self.assertIn("if ($code -ne 0)", self.runner)
+
     def test_runner_refuses_runtime_removal_or_replacement(self):
         self.assertIn("$_.Action -eq 'Remove'", self.runner)
         self.assertIn("$_.Replacement -eq 'True'", self.runner)
