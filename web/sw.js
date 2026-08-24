@@ -1,8 +1,8 @@
-const CACHE='tagro-stihl-os-v11';
+const CACHE='tagro-stihl-os-v12';
 const CORE=[
   './','./404.html','./index.html','./login.html','./runtime-config.js','./runtime-client.js','./echo-home-v1.css','./echo-home-v1.js',
   './operation.css','./business-intelligence.css','./business.js',
-  './billing.html','./service.html','./stock-count.html','./po.html','./closing-cash.html','./business.html','./on-call.html',
+  './billing.html','./service.html','./customers.html','./stock-count.html','./po.html','./closing-cash.html','./business.html','./on-call.html',
   './assets/brand/tagro-stihl-mobile.png','./assets/brand/tagro-stihl-desktop.png',
   './manifest.webmanifest','./icon.svg'
 ];
