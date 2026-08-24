@@ -66,6 +66,7 @@ def build(web_root: Path, manifest: Path, output: Path) -> None:
         "runtime-client.js",
         "billing.html",
         "service.html",
+        "customers.html",
         "stock-count.html",
         "po.html",
         "closing-cash.html",
@@ -90,6 +91,8 @@ def build(web_root: Path, manifest: Path, output: Path) -> None:
     service_worker = (web_root / "sw.js").read_text(encoding="utf-8")
     if "intelligence.html" in service_worker or "intelligence.js" in service_worker:
         raise SystemExit("service worker still admits frozen Intelligence assets")
+    if "./customers.html" not in service_worker:
+        raise SystemExit("service worker does not cache the admitted customer page")
 
     if output.exists():
         shutil.rmtree(output)
