@@ -144,6 +144,20 @@ function Test-CorsOrigin {
   Write-Host "CORS OK $Origin"
 }
 
+function Test-BrowserCognitoIdentity {
+  param([string]$RuntimeConfig,[string]$PoolId,[string]$ClientId)
+  $poolMatches = [regex]::Matches($RuntimeConfig,"(?m)^\s*userPoolId\s*:\s*'([^']+)'")
+  $clientMatches = [regex]::Matches($RuntimeConfig,"(?m)^\s*userPoolClientId\s*:\s*'([^']+)'")
+  if ($poolMatches.Count -ne 1 -or $clientMatches.Count -ne 1) {
+    throw 'The admitted browser configuration does not expose exactly one Cognito pool and client'
+  }
+  $browserPoolId = [string]$poolMatches[0].Groups[1].Value
+  $browserClientId = [string]$clientMatches[0].Groups[1].Value
+  if ($browserPoolId -cne $PoolId -or $browserClientId -cne $ClientId) {
+    throw "The admitted browser identity does not match the existing runtime stack (browser pool=$browserPoolId, stack pool=$PoolId, browser client=$browserClientId, stack client=$ClientId)"
+  }
+}
+
 function Test-CognitoBrowserAuthentication {
   param([string]$StackName)
   $runtimeClient = Get-Content -LiteralPath (Join-Path $Repo 'web\runtime-client.js') -Raw
@@ -159,10 +173,7 @@ function Test-CognitoBrowserAuthentication {
   }
   $poolId = [string]$poolParameters[0].ParameterValue
   $clientId = [string]$clientParameters[0].ParameterValue
-  if ($runtimeConfig -notmatch ("userPoolId\s*:\s*'" + [regex]::Escape($poolId) + "'") -or
-      $runtimeConfig -notmatch ("userPoolClientId\s*:\s*'" + [regex]::Escape($clientId) + "'")) {
-    throw 'Browser Cognito identity does not match the existing runtime stack; deployment refused.'
-  }
+  Test-BrowserCognitoIdentity -RuntimeConfig $runtimeConfig -PoolId $poolId -ClientId $clientId
   $client = Aws @('cognito-idp','describe-user-pool-client','--user-pool-id',$poolId,'--client-id',$clientId,'--query','UserPoolClient','--output','json') | ConvertFrom-Json
   $flows = @($client.ExplicitAuthFlows)
   if ($flows -notcontains 'ALLOW_USER_PASSWORD_AUTH') {

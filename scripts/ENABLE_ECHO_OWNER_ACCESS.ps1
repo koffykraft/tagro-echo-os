@@ -49,6 +49,20 @@ function Get-StackParameter {
   return [string]$matches[0].ParameterValue
 }
 
+function Test-BrowserCognitoIdentity {
+  param([string]$RuntimeConfig,[string]$PoolId,[string]$ClientId)
+  $poolMatches = [regex]::Matches($RuntimeConfig,"(?m)^\s*userPoolId\s*:\s*'([^']+)'")
+  $clientMatches = [regex]::Matches($RuntimeConfig,"(?m)^\s*userPoolClientId\s*:\s*'([^']+)'")
+  if ($poolMatches.Count -ne 1 -or $clientMatches.Count -ne 1) {
+    throw 'The admitted browser configuration does not expose exactly one Cognito pool and client'
+  }
+  $browserPoolId = [string]$poolMatches[0].Groups[1].Value
+  $browserClientId = [string]$clientMatches[0].Groups[1].Value
+  if ($browserPoolId -cne $PoolId -or $browserClientId -cne $ClientId) {
+    throw "The admitted browser identity does not match the existing runtime stack (browser pool=$browserPoolId, stack pool=$PoolId, browser client=$browserClientId, stack client=$ClientId)"
+  }
+}
+
 Write-Host '=== ECHO OWNER ACCESS PREFLIGHT (READ ONLY) ==='
 $identity = Invoke-Aws @('sts','get-caller-identity','--output','json') | ConvertFrom-Json
 if ([string]$identity.Account -ne $ExpectedAccount) {
@@ -66,10 +80,7 @@ if ($runtimeClient -notmatch "AuthFlow\s*:\s*'USER_PASSWORD_AUTH'") {
 $parameters = @(Invoke-Aws @('cloudformation','describe-stacks','--stack-name',$RuntimeStack,'--query','Stacks[0].Parameters','--output','json') | ConvertFrom-Json)
 $poolId = Get-StackParameter $parameters 'UserPoolId'
 $clientId = Get-StackParameter $parameters 'UserPoolClientId'
-if ($runtimeConfig -notmatch ("userPoolId\s*:\s*'" + [regex]::Escape($poolId) + "'") -or
-    $runtimeConfig -notmatch ("userPoolClientId\s*:\s*'" + [regex]::Escape($clientId) + "'")) {
-  throw 'The admitted browser identity does not match the existing runtime stack'
-}
+Test-BrowserCognitoIdentity -RuntimeConfig $runtimeConfig -PoolId $poolId -ClientId $clientId
 
 $client = Invoke-Aws @('cognito-idp','describe-user-pool-client','--user-pool-id',$poolId,'--client-id',$clientId,'--query','UserPoolClient','--output','json') | ConvertFrom-Json
 $usersResult = Invoke-Aws @('cognito-idp','list-users','--user-pool-id',$poolId,'--output','json') | ConvertFrom-Json
