@@ -73,6 +73,13 @@ class NonprodPortalRunnerTests(unittest.TestCase):
         self.assertIn("EndsWith('.html')", self.runner)
         self.assertIn('Test-UrlStatus "$webUrl/$relativePath" @(200)', self.runner)
 
+    def test_runner_builds_each_release_outside_dropbox(self):
+        self.assertIn("[System.IO.Path]::GetTempPath()", self.runner)
+        self.assertIn("[guid]::NewGuid()", self.runner)
+        self.assertIn("'--output' $webRelease", self.runner)
+        self.assertIn("'s3','sync',$webRelease", self.runner)
+        self.assertNotIn("'--output' 'build/web-release'", self.runner)
+
     def test_runner_writes_dropbox_report_without_claiming_dns_cutover(self):
         self.assertIn("wo0014-portal-deploy", self.runner)
         self.assertIn("tagro.echo.nonprod-portal-deploy/1", self.runner)

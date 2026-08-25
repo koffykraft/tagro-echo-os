@@ -227,9 +227,11 @@ try {
   if (-not $apiUrl) { throw 'Runtime API output missing after update' }
 
   Write-Host "=== BUILD & PUBLISH ADMITTED WEB RELEASE (AWS WRITE) ==="
-  & $Python 'scripts/build_web_release.py' '--web-root' 'web' '--manifest' 'web/deploy-manifest.txt' '--output' 'build/web-release'
+  $webRelease = Join-Path ([System.IO.Path]::GetTempPath()) ("echo-web-release-" + $head.Substring(0,12) + "-" + [guid]::NewGuid().ToString('N'))
+  Write-Host "Release workspace: $webRelease"
+  & $Python 'scripts/build_web_release.py' '--web-root' 'web' '--manifest' 'web/deploy-manifest.txt' '--output' $webRelease
   if ($LASTEXITCODE -ne 0) { throw 'Admitted web release build failed' }
-  Aws @('s3','sync','build/web-release/',"s3://$webBucket/",'--delete','--cache-control','no-cache, no-store, must-revalidate') -Show | Out-Null
+  Aws @('s3','sync',$webRelease,"s3://$webBucket/",'--delete','--cache-control','no-cache, no-store, must-revalidate') -Show | Out-Null
   $invalidationId = (Aws @('cloudfront','create-invalidation','--distribution-id',$distributionId,'--paths','/*','--query','Invalidation.Id','--output','text')).Trim()
   & $Aws cloudfront wait invalidation-completed --distribution-id $distributionId --id $invalidationId --profile $Profile
   if ($LASTEXITCODE -ne 0) { throw 'CloudFront invalidation did not complete' }
