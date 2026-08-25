@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import shutil
+import subprocess
 import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNNER = ROOT / "scripts" / "DEPLOY_ECHO_NONPROD_PORTAL.ps1"
+OWNER_ACCESS = ROOT / "scripts" / "ENABLE_ECHO_OWNER_ACCESS.ps1"
 RUNTIME = ROOT / "architecture" / "aws" / "nonprod-runtime-template.yaml"
 WEB = ROOT / "architecture" / "aws" / "nonprod-web-template.yaml"
 
@@ -14,6 +17,7 @@ class NonprodPortalRunnerTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.runner = RUNNER.read_text(encoding="utf-8")
+        cls.owner_access = OWNER_ACCESS.read_text(encoding="utf-8")
         cls.runtime = RUNTIME.read_text(encoding="utf-8")
         cls.web = WEB.read_text(encoding="utf-8")
 
@@ -84,6 +88,73 @@ class NonprodPortalRunnerTests(unittest.TestCase):
         self.assertIn("wo0014-portal-deploy", self.runner)
         self.assertIn("tagro.echo.nonprod-portal-deploy/1", self.runner)
         self.assertIn("live_dns_changed=$false", self.runner)
+
+    def test_runner_checks_cognito_compatibility_before_aws_writes(self):
+        self.assertIn("function Test-CognitoBrowserAuthentication", self.runner)
+        self.assertIn("ALLOW_USER_PASSWORD_AUTH", self.runner)
+        self.assertIn("ALLOW_REFRESH_TOKEN_AUTH", self.runner)
+        self.assertIn("ENABLE_ECHO_OWNER_ACCESS.ps1", self.runner)
+        self.assertLess(
+            self.runner.index("Test-CognitoBrowserAuthentication $RuntimeStack"),
+            self.runner.index("=== CREATE/UPDATE DATA FOUNDATION (AWS WRITE) ==="),
+        )
+
+    def test_owner_access_requires_confirmation_and_correct_account(self):
+        self.assertIn("ENABLE_ECHO_OWNER_ACCESS", self.owner_access)
+        self.assertIn("tagro-echo-nonprod", self.owner_access)
+        self.assertIn("272037674623", self.owner_access)
+        self.assertIn("Wrong AWS account", self.owner_access)
+        self.assertIn("$Confirm -ne $RequiredConfirmation", self.owner_access)
+
+    def test_owner_access_preserves_the_existing_client_configuration(self):
+        self.assertIn("'cognito-idp','describe-user-pool-client'", self.owner_access)
+        self.assertIn("'cognito-idp','update-user-pool-client'", self.owner_access)
+        self.assertIn("'--cli-input-json'", self.owner_access)
+        self.assertIn("$client.PSObject.Properties[$field]", self.owner_access)
+        self.assertIn("$originalFlows + 'ALLOW_USER_PASSWORD_AUTH'", self.owner_access)
+        self.assertIn("'PreventUserExistenceErrors'", self.owner_access)
+        self.assertIn("'EnableTokenRevocation'", self.owner_access)
+        self.assertIn("'RefreshTokenRotation'", self.owner_access)
+        self.assertIn("Existing authentication flow was not preserved", self.owner_access)
+
+    def test_owner_access_uses_existing_confirmed_owner_without_password(self):
+        self.assertIn("info@tagro.in", self.owner_access)
+        self.assertIn("'cognito-idp','list-users'", self.owner_access)
+        self.assertIn("$owners[0].UserStatus -ne 'CONFIRMED'", self.owner_access)
+        self.assertNotIn("admin-create-user", self.owner_access)
+        self.assertNotIn("admin-set-user-password", self.owner_access)
+
+    def test_owner_access_writes_temporary_json_outside_dropbox_without_bom(self):
+        self.assertIn("[System.IO.Path]::GetTempPath()", self.owner_access)
+        self.assertIn("[guid]::NewGuid().ToString('N')", self.owner_access)
+        self.assertIn("[System.Text.UTF8Encoding]::new($false)", self.owner_access)
+        self.assertIn("Remove-Item -LiteralPath $requestPath -Force", self.owner_access)
+
+    def test_owner_access_does_not_rebuild_or_change_dns(self):
+        lowered = self.owner_access.lower()
+        self.assertNotIn("'codebuild','start-build'", lowered)
+        self.assertNotIn("'cloudformation','deploy'", lowered)
+        self.assertNotIn("change-resource-record-sets", lowered)
+        self.assertNotIn("create-user-pool", lowered)
+        self.assertNotIn("delete-user-pool", lowered)
+
+    def test_owner_access_has_valid_powershell_syntax_when_available(self):
+        powershell = shutil.which("pwsh")
+        if powershell is None:
+            self.skipTest("PowerShell is unavailable in this environment")
+        command = (
+            "$ErrorActionPreference='Stop'; "
+            "[scriptblock]::Create((Get-Content "
+            "-LiteralPath 'scripts/ENABLE_ECHO_OWNER_ACCESS.ps1' -Raw)) | Out-Null"
+        )
+        result = subprocess.run(
+            [powershell, "-NoProfile", "-Command", command],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
 
 
 if __name__ == "__main__":

@@ -144,6 +144,36 @@ function Test-CorsOrigin {
   Write-Host "CORS OK $Origin"
 }
 
+function Test-CognitoBrowserAuthentication {
+  param([string]$StackName)
+  $runtimeClient = Get-Content -LiteralPath (Join-Path $Repo 'web\runtime-client.js') -Raw
+  $runtimeConfig = Get-Content -LiteralPath (Join-Path $Repo 'web\runtime-config.js') -Raw
+  if ($runtimeClient -notmatch "AuthFlow\s*:\s*'USER_PASSWORD_AUTH'") {
+    throw 'Unsupported frontend Cognito authentication contract; deployment refused.'
+  }
+  $parameters = @(Aws @('cloudformation','describe-stacks','--stack-name',$StackName,'--query','Stacks[0].Parameters','--output','json') | ConvertFrom-Json)
+  $poolParameters = @($parameters | Where-Object { $_.ParameterKey -eq 'UserPoolId' })
+  $clientParameters = @($parameters | Where-Object { $_.ParameterKey -eq 'UserPoolClientId' })
+  if ($poolParameters.Count -ne 1 -or $clientParameters.Count -ne 1) {
+    throw 'Existing runtime stack does not expose exactly one Cognito pool and browser client.'
+  }
+  $poolId = [string]$poolParameters[0].ParameterValue
+  $clientId = [string]$clientParameters[0].ParameterValue
+  if ($runtimeConfig -notmatch ("userPoolId\s*:\s*'" + [regex]::Escape($poolId) + "'") -or
+      $runtimeConfig -notmatch ("userPoolClientId\s*:\s*'" + [regex]::Escape($clientId) + "'")) {
+    throw 'Browser Cognito identity does not match the existing runtime stack; deployment refused.'
+  }
+  $client = Aws @('cognito-idp','describe-user-pool-client','--user-pool-id',$poolId,'--client-id',$clientId,'--query','UserPoolClient','--output','json') | ConvertFrom-Json
+  $flows = @($client.ExplicitAuthFlows)
+  if ($flows -notcontains 'ALLOW_USER_PASSWORD_AUTH') {
+    throw 'Browser USER_PASSWORD_AUTH is not enabled. Run scripts\ENABLE_ECHO_OWNER_ACCESS.ps1 first.'
+  }
+  if ($flows -notcontains 'ALLOW_REFRESH_TOKEN_AUTH') {
+    throw 'Cognito refresh-token authentication is not enabled; deployment refused.'
+  }
+  Write-Host "COGNITO LOGIN OK $clientId"
+}
+
 Push-Location $Repo
 try {
   Write-Host "=== ECHO NONPROD PORTAL PREFLIGHT ==="
@@ -158,6 +188,9 @@ try {
   $identity = Aws @('sts','get-caller-identity','--output','json') | ConvertFrom-Json
   if ([string]$identity.Account -ne $ExpectedAccount) { throw "Wrong AWS account: $($identity.Account), expected $ExpectedAccount" }
   Write-Host "AWS account: $($identity.Account)"
+
+  Write-Host '=== COGNITO / FRONTEND AUTHENTICATION CONTRACT (READ ONLY) ==='
+  Test-CognitoBrowserAuthentication $RuntimeStack
 
   Write-Host "=== AWS TEMPLATE VALIDATION (READ ONLY) ==="
   Aws @('cloudformation','validate-template','--template-body','file://architecture/aws/nonprod-web-template.yaml','--output','json') | Out-Null
