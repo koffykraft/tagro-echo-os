@@ -136,13 +136,15 @@ def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
         if len(memberships) != 1:
             return _response(409, {"error": "enterprise_selection_required"})
         try:
-            result = reference_search(
-                config,
-                enterprise_id=str(memberships[0]["enterprise_id"]),
-                kind=str(query.get("kind") or ""),
-                query=str(query.get("q") or ""),
-                limit=query.get("limit") or 40,
-            )
+            reference_options = {
+                "enterprise_id": str(memberships[0]["enterprise_id"]),
+                "kind": str(query.get("kind") or ""),
+                "query": str(query.get("q") or ""),
+                "limit": query.get("limit") or 40,
+            }
+            if str(query.get("branch") or "").strip():
+                reference_options["branch_code"] = str(query["branch"])
+            result = reference_search(config, **reference_options)
         except ReferenceRuntimeError as exc:
             return _response(400, {"error": "invalid_reference_query", "detail": str(exc)})
         except Exception as exc:

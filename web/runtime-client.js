@@ -205,7 +205,7 @@
   function localKey(name){return scopedKey(`local.${String(name||'data')}`)}
   function sessionInfo(){const s=loadSession(),p=jwtPayload(s?.idToken);return{signedIn:Boolean(s&&tokenValid(s.idToken,0)),subject:p?.sub||'',email:p?.email||'',enterpriseId:s?.enterpriseId||'',expiresAt:p?.exp?new Date(Number(p.exp)*1000).toISOString():null,deviceId:deviceId()}}
   function signOut(){clearSession();window.dispatchEvent(new CustomEvent('echo:signed-out'))}
-  async function reference(kind,q='',limit=40){const s=await ensureSession();const enterpriseId=s.enterpriseId;if(!enterpriseId)throw new EchoRuntimeError('Choose an enterprise first.',{code:'enterprise_required'});const p=new URLSearchParams({kind,enterprise_id:enterpriseId,limit:String(limit)});if(q)p.set('q',q);return request('/reference-data?'+p.toString())}
+  async function reference(kind,q='',limit=40,{branchCode=''}={}){const s=await ensureSession();const enterpriseId=s.enterpriseId;if(!enterpriseId)throw new EchoRuntimeError('Choose an enterprise first.',{code:'enterprise_required'});const p=new URLSearchParams({kind,enterprise_id:enterpriseId,limit:String(limit)});if(q)p.set('q',q);if(branchCode)p.set('branch',String(branchCode).trim().toUpperCase());return request('/reference-data?'+p.toString())}
 
   window.addEventListener('online',()=>{if(loadSession())flushQueue().catch(()=>{})});
 
