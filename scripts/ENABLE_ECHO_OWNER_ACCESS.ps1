@@ -41,12 +41,13 @@ function Invoke-Aws {
 }
 
 function Get-StackParameter {
-  param([object[]]$Parameters,[string]$Name)
-  $matches = @($Parameters | Where-Object { $_.ParameterKey -eq $Name })
-  if ($matches.Count -ne 1 -or -not $matches[0].ParameterValue) {
-    throw "Existing runtime stack does not expose exactly one $Name parameter"
+  param([string]$StackName,[string]$Name)
+  $query = "Stacks[0].Parameters[?ParameterKey=='$Name'].ParameterValue | [0]"
+  $value = (Invoke-Aws @('cloudformation','describe-stacks','--stack-name',$StackName,'--query',$query,'--output','text')).Trim()
+  if (-not $value -or $value -eq 'None' -or $value -match '\s') {
+    throw "Existing runtime stack does not expose a single usable $Name parameter"
   }
-  return [string]$matches[0].ParameterValue
+  return $value
 }
 
 function Test-BrowserCognitoIdentity {
@@ -77,9 +78,8 @@ if ($runtimeClient -notmatch "AuthFlow\s*:\s*'USER_PASSWORD_AUTH'") {
   throw 'The admitted browser does not declare the expected USER_PASSWORD_AUTH contract'
 }
 
-$parameters = @(Invoke-Aws @('cloudformation','describe-stacks','--stack-name',$RuntimeStack,'--query','Stacks[0].Parameters','--output','json') | ConvertFrom-Json)
-$poolId = Get-StackParameter $parameters 'UserPoolId'
-$clientId = Get-StackParameter $parameters 'UserPoolClientId'
+$poolId = Get-StackParameter -StackName $RuntimeStack -Name 'UserPoolId'
+$clientId = Get-StackParameter -StackName $RuntimeStack -Name 'UserPoolClientId'
 Test-BrowserCognitoIdentity -RuntimeConfig $runtimeConfig -PoolId $poolId -ClientId $clientId
 
 $client = Invoke-Aws @('cognito-idp','describe-user-pool-client','--user-pool-id',$poolId,'--client-id',$clientId,'--query','UserPoolClient','--output','json') | ConvertFrom-Json

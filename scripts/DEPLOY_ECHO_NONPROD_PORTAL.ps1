@@ -165,14 +165,12 @@ function Test-CognitoBrowserAuthentication {
   if ($runtimeClient -notmatch "AuthFlow\s*:\s*'USER_PASSWORD_AUTH'") {
     throw 'Unsupported frontend Cognito authentication contract; deployment refused.'
   }
-  $parameters = @(Aws @('cloudformation','describe-stacks','--stack-name',$StackName,'--query','Stacks[0].Parameters','--output','json') | ConvertFrom-Json)
-  $poolParameters = @($parameters | Where-Object { $_.ParameterKey -eq 'UserPoolId' })
-  $clientParameters = @($parameters | Where-Object { $_.ParameterKey -eq 'UserPoolClientId' })
-  if ($poolParameters.Count -ne 1 -or $clientParameters.Count -ne 1) {
-    throw 'Existing runtime stack does not expose exactly one Cognito pool and browser client.'
+  $poolId = (Aws @('cloudformation','describe-stacks','--stack-name',$StackName,'--query',"Stacks[0].Parameters[?ParameterKey=='UserPoolId'].ParameterValue | [0]",'--output','text')).Trim()
+  $clientId = (Aws @('cloudformation','describe-stacks','--stack-name',$StackName,'--query',"Stacks[0].Parameters[?ParameterKey=='UserPoolClientId'].ParameterValue | [0]",'--output','text')).Trim()
+  if (-not $poolId -or $poolId -eq 'None' -or $poolId -match '\s' -or
+      -not $clientId -or $clientId -eq 'None' -or $clientId -match '\s') {
+    throw 'Existing runtime stack does not expose a single usable Cognito pool and browser client.'
   }
-  $poolId = [string]$poolParameters[0].ParameterValue
-  $clientId = [string]$clientParameters[0].ParameterValue
   Test-BrowserCognitoIdentity -RuntimeConfig $runtimeConfig -PoolId $poolId -ClientId $clientId
   $client = Aws @('cognito-idp','describe-user-pool-client','--user-pool-id',$poolId,'--client-id',$clientId,'--query','UserPoolClient','--output','json') | ConvertFrom-Json
   $flows = @($client.ExplicitAuthFlows)
