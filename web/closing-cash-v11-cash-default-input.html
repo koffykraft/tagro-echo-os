@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=yes">
+<title>TAGRO ECHO · Closing Cash Ver11</title>
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fff}#frame{width:100%;height:100%;border:0;display:block}</style>
+</head>
+<body>
+<iframe id="frame" title="TAGRO ECHO Closing Cash Ver11"></iframe>
+<script>
+(()=>{
+'use strict';
+const frame=document.getElementById('frame');
+frame.src='closing-cash-v10-mobile-calm.html?v=11-cash-default-20260821';
+frame.addEventListener('load',()=>{
+  const outer=frame.contentWindow, d1=frame.contentDocument;
+  const inner=d1?.getElementById('frame');
+  if(!inner)return;
+  inner.addEventListener('load',()=>{
+    const d=inner.contentDocument;if(!d)return;
+    d.title='TAGRO ECHO · Closing Cash Ver11';
+    function normalize(){
+      d.querySelectorAll('.grid input').forEach(el=>{
+        el.type='text';
+        el.setAttribute('inputmode','text');
+        el.setAttribute('enterkeyhint','enter');
+        el.setAttribute('autocomplete','off');
+      });
+      d.querySelectorAll('.denom input[data-denom]').forEach(el=>{
+        el.removeAttribute('type');
+        el.removeAttribute('inputmode');
+        el.removeAttribute('enterkeyhint');
+        el.setAttribute('autocomplete','off');
+      });
+    }
+    normalize();
+    new MutationObserver(normalize).observe(d.body,{subtree:true,childList:true});
+  });
+});
+})();
+</script>
+</body>
+</html>

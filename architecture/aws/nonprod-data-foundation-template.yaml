@@ -1,0 +1,192 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: TAGRO ECHO OS non-production evidence, ingestion and analytical data foundation.
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: nonprod
+    AllowedValues:
+      - nonprod
+
+Resources:
+  EvidenceBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub 'echo-${EnvironmentName}-evidence-${AWS::AccountId}-${AWS::Region}'
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: AbortIncompleteMultipartUploads
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
+
+  WarehouseBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub 'echo-${EnvironmentName}-warehouse-${AWS::AccountId}-${AWS::Region}'
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: AbortIncompleteMultipartUploads
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
+
+  EvidenceBucketTlsPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref EvidenceBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              - !GetAtt EvidenceBucket.Arn
+              - !Sub '${EvidenceBucket.Arn}/*'
+            Condition:
+              Bool:
+                aws:SecureTransport: false
+
+  WarehouseBucketTlsPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WarehouseBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              - !GetAtt WarehouseBucket.Arn
+              - !Sub '${WarehouseBucket.Arn}/*'
+            Condition:
+              Bool:
+                aws:SecureTransport: false
+
+  OperationalEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: !Sub 'echo-${EnvironmentName}-business-events'
+
+  IngestionDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub 'echo-${EnvironmentName}-ingestion-dlq'
+      SqsManagedSseEnabled: true
+      MessageRetentionPeriod: 1209600
+
+  IngestionQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub 'echo-${EnvironmentName}-ingestion'
+      SqsManagedSseEnabled: true
+      VisibilityTimeout: 300
+      MessageRetentionPeriod: 345600
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt IngestionDeadLetterQueue.Arn
+        maxReceiveCount: 5
+
+  RawCatalogueDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseInput:
+        Name: !Sub 'echo_${EnvironmentName}_raw'
+        Description: ECHO raw source catalogue. Objects remain source-evidence, not operational truth.
+
+  AdmittedCatalogueDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseInput:
+        Name: !Sub 'echo_${EnvironmentName}_admitted'
+        Description: Deterministically admitted ECHO datasets with provenance.
+
+  CuratedCatalogueDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseInput:
+        Name: !Sub 'echo_${EnvironmentName}_curated'
+        Description: Curated analytical datasets derived from admitted evidence.
+
+  AthenaWorkGroup:
+    Type: AWS::Athena::WorkGroup
+    Properties:
+      Name: !Sub 'echo-${EnvironmentName}'
+      Description: Governed read/query workgroup for ECHO warehouse data.
+      State: ENABLED
+      WorkGroupConfiguration:
+        EnforceWorkGroupConfiguration: true
+        PublishCloudWatchMetricsEnabled: true
+        ResultConfiguration:
+          OutputLocation: !Sub 's3://${WarehouseBucket}/athena-results/'
+          EncryptionConfiguration:
+            EncryptionOption: SSE_S3
+
+Outputs:
+  EvidenceBucketName:
+    Description: Private versioned source-evidence bucket.
+    Value: !Ref EvidenceBucket
+  WarehouseBucketName:
+    Description: Private versioned analytical warehouse bucket.
+    Value: !Ref WarehouseBucket
+  OperationalEventBusName:
+    Description: ECHO custom business event bus.
+    Value: !Ref OperationalEventBus
+  OperationalEventBusArn:
+    Description: ECHO custom business event bus ARN.
+    Value: !GetAtt OperationalEventBus.Arn
+  IngestionQueueUrl:
+    Description: Queue for governed asynchronous ingestion work.
+    Value: !Ref IngestionQueue
+  IngestionQueueArn:
+    Description: Queue ARN for governed asynchronous ingestion work.
+    Value: !GetAtt IngestionQueue.Arn
+  IngestionDeadLetterQueueArn:
+    Description: Dead-letter queue ARN for ingestion failures requiring review.
+    Value: !GetAtt IngestionDeadLetterQueue.Arn
+  RawCatalogueDatabaseName:
+    Value: !Ref RawCatalogueDatabase
+  AdmittedCatalogueDatabaseName:
+    Value: !Ref AdmittedCatalogueDatabase
+  CuratedCatalogueDatabaseName:
+    Value: !Ref CuratedCatalogueDatabase
+  AthenaWorkGroupName:
+    Value: !Ref AthenaWorkGroup

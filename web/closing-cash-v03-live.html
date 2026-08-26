@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TAGRO ECHO · Closing Cash Ver03 Live</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f4f4f1}#ccFrame{width:100%;height:100%;border:0;display:block}.syncflag{position:fixed;right:8px;bottom:8px;z-index:20;background:#111;color:#fff;border-radius:18px;padding:7px 10px;font:12px Arial,sans-serif;box-shadow:0 2px 10px #0003}.syncflag.pending{background:#8a5a00}.syncflag.review{background:#a12622}.syncflag.ok{background:#246b36}.syncflag.local{background:#555}
+</style>
+<script src="runtime-config.js"></script>
+<script src="runtime-client.js"></script>
+</head>
+<body>
+<iframe id="ccFrame" title="TAGRO ECHO Closing Cash Ver03"></iframe>
+<div class="syncflag local" id="syncFlag">Standalone ready</div>
+<script>
+(()=>{
+  'use strict';
+  const frame=document.getElementById('ccFrame'),flag=document.getElementById('syncFlag');
+  const q=location.search||'';
+  frame.src='closing-cash-v03.html'+q;
+
+  function state(text,kind='local'){
+    flag.textContent=text;flag.className='syncflag '+kind;
+    try{frame.contentDocument.getElementById('saveState').textContent=text}catch{}
+  }
+  function blobToDataUrl(blob){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result||''));r.onerror=()=>reject(r.error);r.readAsDataURL(blob)})}
+  function sessionState(){try{return window.EchoRuntime?.sessionInfo?.()||{signedIn:false}}catch{return{signedIn:false}}}
+
+  async function syncSaved(saved,w){
+    if(!saved?.rec||!saved?.blob)return;
+    const rec=saved.rec;
+    const session=sessionState();
+    if(!session.signedIn||!session.enterpriseId){
+      rec.shared_runtime_state='local_only_sign_in_required';
+      try{await w.dbPut('closing_cash',rec)}catch{}
+      state('Saved locally · sign in to sync','local');
+      return;
+    }
+    let imageData='';
+    try{imageData=await blobToDataUrl(saved.blob)}catch{}
+    const payload={
+      enterprise_id:session.enterpriseId,
+      idempotency_key:rec.record_id,
+      branch_code:rec.branch,
+      business_date:rec.business_date,
+      opening_cash:rec.summary?.yesterday??0,
+      declared_closing:rec.summary?.cash??0,
+      entered_for_label:rec.entered_by||'Login user',
+      context_switch_reason:rec.switch_reason||'',
+      document_schema:rec.schema||'tagro.echo.closing-cash-trial.v3',
+      document:rec,
+      entries:[],
+      rendered_image_data_url:imageData
+    };
+    try{
+      state('Saved locally · syncing…','pending');
+      const result=await window.EchoRuntime.enqueueAndFlush({
+        path:'/cash-days/save',method:'POST',body:payload,
+        expectedSchema:'tagro.echo.cash-document-saved.v1',idempotencyKey:rec.record_id
+      });
+      rec.shared_runtime_state=result.state;
+      if(result.state==='acknowledged'){
+        rec.shared_document_id=result.response?.data?.document_id||'';
+        state('Saved · AWS confirmed','ok');
+      }else if(result.state==='review'){
+        state('Saved locally · sync needs review','review');
+      }else{
+        state('Saved locally · sync pending','pending');
+      }
+      try{await w.dbPut('closing_cash',rec)}catch{}
+    }catch(err){
+      rec.shared_runtime_state='local_only_sync_error';
+      try{await w.dbPut('closing_cash',rec)}catch{}
+      state('Saved locally · sync pending','pending');
+    }
+  }
+
+  frame.addEventListener('load',()=>{
+    const w=frame.contentWindow,d=frame.contentDocument;
+    const button=d.getElementById('confirmSave');
+    if(!button||typeof w.confirmRecord!=='function'){state('Standalone page unavailable','review');return}
+    button.onclick=async()=>{
+      await w.confirmRecord();
+      let saved=null;
+      try{saved=w.eval('currentSaved')}catch{}
+      if(saved)await syncSaved(saved,w);
+    };
+    const session=sessionState();
+    state(session.signedIn&&session.enterpriseId?'Standalone + AWS ready':'Standalone ready · sign in for AWS','local');
+    window.addEventListener('online',async()=>{
+      try{
+        const r=await window.EchoRuntime.flushQueue();
+        if(r.review)state('Saved locally · sync needs review','review');
+        else if(r.pending)state('Saved locally · sync pending','pending');
+        else if(r.acknowledged)state('Pending saves synchronized','ok');
+      }catch{}
+    });
+  });
+})();
+</script>
+</body>
+</html>

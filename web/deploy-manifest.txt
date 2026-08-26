@@ -1,0 +1,26 @@
+# TAGRO STIHL non-production admitted web release
+# One relative path per line. The builder refuses unlisted web files.
+404.html
+index.html
+login.html
+runtime-config.js
+runtime-client.js
+echo-home-v1.css
+echo-home-v1.js
+operation.css
+billing.html
+service.html
+customers.html
+stock-count.html
+po.html
+closing-cash.html
+business.html
+business.js
+business-intelligence.css
+on-call.html
+manifest.webmanifest
+icon.svg
+sw.js
+# Owner-provided approved TAGRO–STIHL lockups; natural proportions must be preserved
+assets/brand/tagro-stihl-900x240.png
+assets/brand/tagro-stihl-1600x400.png

@@ -1,12 +1,12 @@
-const CACHE='tagro-echo-os-v1';
+const CACHE='tagro-stihl-os-v13';
 const CORE=[
-  './','./index.html','./styles.css','./app.js','./counter.html','./service.html','./cash.html','./bank.html','./payments.html','./documents.html','./manifest.webmanifest','./icon.svg'
+  './','./404.html','./index.html','./login.html','./runtime-config.js','./runtime-client.js','./echo-home-v1.css','./echo-home-v1.js',
+  './operation.css','./business-intelligence.css','./business.js',
+  './billing.html','./service.html','./customers.html','./stock-count.html','./po.html','./closing-cash.html','./business.html','./on-call.html',
+  './assets/brand/tagro-stihl-900x240.png','./assets/brand/tagro-stihl-1600x400.png',
+  './manifest.webmanifest','./icon.svg'
 ];
-self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()))});
-self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
-self.addEventListener('fetch',event=>{
-  if(event.request.method!=='GET') return;
-  event.respondWith(fetch(event.request).then(response=>{
-    const copy=response.clone();caches.open(CACHE).then(c=>c.put(event.request,copy));return response;
-  }).catch(()=>caches.match(event.request).then(r=>r||caches.match('./index.html'))));
-});
+const STATIC_URLS=new Set(CORE.map(path=>new URL(path,self.registration.scope).href));
+self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting()))});
+self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()))});
+self.addEventListener('fetch',event=>{const request=event.request;if(request.method!=='GET')return;const url=new URL(request.url);if(url.origin!==self.location.origin)return;if(request.mode==='navigate'){event.respondWith(fetch(request,{cache:'no-store'}).catch(()=>caches.match(request).then(hit=>hit||caches.match('./index.html'))));return}if(!STATIC_URLS.has(request.url))return;event.respondWith(fetch(request,{cache:'no-store'}).then(response=>{if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(request,copy))}return response}).catch(()=>caches.match(request))) });

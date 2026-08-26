@@ -21,3 +21,27 @@ jobs:
           python-version: '3.12'
       - name: Run all runtime and business tests
         run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Check admitted web JavaScript
+        run: python scripts/check_web_javascript.py
+      - name: Check nonprod PowerShell deploy runner syntax
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          [scriptblock]::Create((Get-Content 'scripts/DEPLOY_ECHO_NONPROD_PORTAL.ps1' -Raw)) | Out-Null
+          Write-Host 'POWERSHELL DEPLOY RUNNER SYNTAX PASS'
+      - name: Install CloudFormation linter
+        run: python -m pip install --disable-pip-version-check cfn-lint
+      - name: Lint admitted AWS templates
+        run: |
+          cfn-lint architecture/aws/nonprod-runtime-template.yaml
+          cfn-lint architecture/aws/nonprod-web-template.yaml
+          cfn-lint architecture/aws/nonprod-data-foundation-template.yaml
+      - name: Build admitted web release
+        run: python scripts/build_web_release.py --output build/web-release
+      - name: Upload admitted web release
+        uses: actions/upload-artifact@v4
+        with:
+          name: echo-nonprod-web-release
+          path: build/web-release
+          if-no-files-found: error
+          retention-days: 7

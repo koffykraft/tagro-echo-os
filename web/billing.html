@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f5f4f1">
+  <title>New sale · TAGRO STIHL</title>
+  <link rel="stylesheet" href="operation.css">
+  <style>
+    .sale-shell{max-width:920px;padding-top:14px}
+    .sale-heading{align-items:center;margin:2px 0 12px}
+    .sale-heading h1{font-size:25px}
+    .sale-layout{display:grid;gap:12px}
+    .sale-card{margin:0;padding:14px;border-radius:15px;box-shadow:none}
+    .sale-card+.sale-card{margin-top:10px}
+    .context-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .context-grid .field,.customer-field{margin:0}
+    .customer-field{margin-top:12px}
+    .customer-hint{margin-top:6px;font-size:12px;color:var(--muted)}
+    .section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .section-title h2{margin:0}
+    .bill-lines{display:grid;gap:10px}
+    .bill-line{padding:11px;border:1px solid var(--line);border-radius:12px;background:#fff}
+    .item-name{display:grid;grid-template-columns:minmax(0,1fr) 40px;gap:8px;align-items:end}
+    .item-fields{display:grid;grid-template-columns:minmax(64px,.8fr) minmax(70px,.85fr) minmax(108px,1.3fr);gap:8px;margin-top:9px}
+    .bill-field{display:grid;gap:4px;min-width:0}
+    .bill-field label{font-size:11px;font-weight:750;color:#5c5852}
+    .bill-field input{width:100%;min-height:46px;min-width:0;padding:9px 10px;border:1px solid #d6d2ca;border-radius:10px;background:#fff;color:var(--ink);font-size:16px}
+    .bill-field input[readonly]{background:var(--soft)}
+    .remove{min-height:46px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:20px;cursor:pointer}
+    .line-facts{display:flex;justify-content:space-between;gap:8px;margin-top:8px;font-size:12px;color:var(--muted)}
+    .line-facts b{color:var(--ink)}
+    .price-note{margin-top:6px;font-size:11px;color:var(--muted)}
+    .price-note.warn{color:var(--warn-ink)}
+    .add-item{margin-top:10px;min-height:46px;width:100%;border:1px dashed #d6d2ca;border-radius:11px;background:#fff;font-weight:750;cursor:pointer}
+    .checkout{align-self:start}
+    .checkout-card{margin:0;padding:14px;border-radius:15px}
+    .summary-grid{display:grid;grid-template-columns:1fr auto;gap:6px 12px;color:var(--muted);font-size:13px}
+    .summary-grid b{text-align:right;color:var(--ink)}
+    .summary-grid .grand{padding-top:8px;border-top:1px solid var(--line);font-size:19px;color:var(--ink)}
+    .save-sale{margin-top:12px;min-height:54px}
+    .busy-note{margin-top:9px;color:var(--muted);font-size:11px}
+    .customer-actions{display:flex;gap:8px;align-items:center}
+    .customer-actions .action{flex:1}
+    .customer-actions a{font-size:12px}
+    @media(min-width:820px){.sale-layout{grid-template-columns:minmax(0,1fr) 300px;gap:16px}.checkout{position:sticky;top:92px}.sale-card{padding:16px}}
+    @media(max-width:560px){.sale-shell{padding-top:11px}.sale-heading h1{font-size:23px}.op-top-inner{gap:8px}.context-grid{gap:8px}.sale-card,.checkout-card{padding:12px}.item-fields{gap:6px}.bill-line{padding:9px}.bill-field input{padding:8px}.checkout-card{box-shadow:none}.sale-layout{gap:9px}}
+    @media(max-width:360px){.item-fields{grid-template-columns:minmax(56px,.7fr) minmax(62px,.8fr) minmax(88px,1.1fr)}}
+  </style>
+</head>
+<body>
+  <header class="op-top">
+    <div class="op-top-inner">
+      <picture class="op-brand"><source media="(min-width:700px)" srcset="assets/brand/tagro-stihl-1600x400.png"><img src="assets/brand/tagro-stihl-900x240.png" alt="TAGRO STIHL"></picture>
+      <div class="op-title"><b>SELL</b><span id="contextLabel">New sale</span></div>
+      <a class="home" href="index.html">Home</a>
+    </div>
+  </header>
+
+  <main class="op-shell sale-shell">
+    <div class="op-head sale-heading"><h1>New sale</h1><span id="statePill" class="state">LOCAL DRAFT</span></div>
+    <div class="sale-layout">
+      <section aria-label="Sale details">
+        <div class="panel sale-card">
+          <div class="context-grid">
+            <div class="field"><label for="branch">Branch</label><select id="branch"></select></div>
+            <div class="field"><label for="payment">Payment</label><select id="payment"><option value="cash">Cash</option><option value="upi">UPI</option><option value="card">Card</option><option value="bank">Bank</option><option value="credit">Credit</option></select></div>
+          </div>
+          <div class="field lookup customer-field">
+            <label for="customerSearch">Customer</label>
+            <input id="customerSearch" placeholder="Cash, customer name or phone" autocomplete="off">
+            <input id="customerId" type="hidden">
+            <div id="customerSelected" class="customer-hint">Cash customer</div>
+            <div id="customerResults" class="results"></div>
+          </div>
+          <details id="newCustomerBox">
+            <summary>Add a new customer</summary>
+            <div class="field"><label for="newCustomerName">Name</label><input id="newCustomerName" autocomplete="name" maxlength="160" placeholder="Customer name"></div>
+            <div class="field"><label for="newCustomerPhone">Phone</label><input id="newCustomerPhone" autocomplete="tel" inputmode="tel" maxlength="40" placeholder="Phone number"></div>
+            <div class="customer-actions"><button id="createCustomer" class="action secondary" type="button">Save customer</button><a href="customers.html">Customers</a></div>
+            <div id="newCustomerState" class="statusbox" aria-live="polite">Search before creating a customer.</div>
+          </details>
+        </div>
+
+        <div class="panel sale-card">
+          <div class="section-title"><h2>Items</h2><span id="itemCount" class="customer-hint">1 item</span></div>
+          <div id="lines" class="bill-lines"></div>
+          <button id="add" class="add-item" type="button">+ Add another item</button>
+        </div>
+      </section>
+
+      <aside class="checkout" aria-label="Sale total">
+        <div class="panel checkout-card">
+          <div class="summary-grid"><span>Before GST</span><b id="taxable">₹0.00</b><span>GST</span><b id="tax">₹0.00</b><span class="grand">Total</span><b id="total" class="grand">₹0.00</b></div>
+          <button id="issue" class="action primary save-sale" type="button">SAVE SALE</button>
+          <div id="message" class="statusbox" aria-live="polite">Draft has not been issued.</div>
+          <div id="busySeries" class="busy-note">BUSY: not booked / not confirmed</div>
+          <p class="sr-only">BUSY is not shown as booked until separate readback confirms it.</p>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script src="runtime-config.js"></script>
+  <script src="runtime-client.js"></script>
+  <script>
+  (()=>{
+    'use strict';
+    const $=id=>document.getElementById(id);
+    let rows=[],draftKey='',customerTimer=null,storeKey='',catalogKey='',branchKey='',enterpriseId='',isOwner=false;
+    const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const money=v=>'₹'+Number(v||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+    const approvedRate=p=>p.approved_price_before_tax==null?null:Number(p.approved_price_before_tax);
+
+    function message(text,kind=''){
+      $('message').className='statusbox'+(kind?' '+kind:'');
+      $('message').textContent=text;
+    }
+
+    function totals(){
+      let base=0,t=0,unknown=false;
+      for(const r of rows){
+        const amount=Math.max(0,Number(r.quantity||0)*Number(r.unit_price_before_tax||0)-Number(r.discount_before_tax||0));
+        base+=amount;
+        if(r.product_id&&!r.gst_known)unknown=true;
+        else t+=amount*Number(r.gst_rate||0)/100;
+      }
+      $('taxable').textContent=money(base);
+      $('tax').textContent=unknown?'GST incomplete':money(t);
+      $('total').textContent=unknown?'—':money(base+t);
+      $('itemCount').textContent=rows.length+' '+(rows.length===1?'item':'items');
+    }
+
+    function productCache(){
+      if(!catalogKey)return{};
+      try{return JSON.parse(localStorage.getItem(catalogKey)||'{}')||{}}catch{return{}}
+    }
+
+    function rememberProducts(items){
+      if(!catalogKey||!$('branch').value)return;
+      const all=productCache(),branch=$('branch').value;
+      all[branch]=all[branch]||{};
+      for(const p of items)all[branch][p.product_id]=p;
+      const ids=Object.keys(all[branch]);
+      if(ids.length>250)for(const id of ids.slice(0,ids.length-250))delete all[branch][id];
+      localStorage.setItem(catalogKey,JSON.stringify(all));
+    }
+
+    async function searchProducts(q){
+      try{
+        const result=await EchoRuntime.reference('products',q,15,{branchCode:$('branch').value});
+        rememberProducts(result.items||[]);
+        return{items:result.items||[],offline:false};
+      }catch(error){
+        const cached=Object.values(productCache()[$('branch').value]||{});
+        const needle=q.trim().toLowerCase();
+        const items=cached.filter(p=>[p.name,p.model,p.sku,p.manufacturer_part_no].some(v=>String(v||'').toLowerCase().includes(needle))).slice(0,15);
+        if(!navigator.onLine&&items.length)return{items,offline:true};
+        throw error;
+      }
+    }
+
+    function addLine(v={},persist=true){
+      rows.push({
+        product_id:v.product_id||'',label:v.label||v.description||'',
+        part_no:v.part_no||'',unit:v.unit||'',quantity:Number(v.quantity||1),
+        unit_price_before_tax:Number(v.unit_price_before_tax||0),
+        approved_price_before_tax:v.approved_price_before_tax==null?null:Number(v.approved_price_before_tax),
+        gst_rate:v.gst_rate==null?null:Number(v.gst_rate),
+        gst_known:Boolean(v.gst_known),discount_before_tax:Number(v.discount_before_tax||0)
+      });
+      renderLines();
+      if(persist)saveLocal();
+    }
+
+    function applyProduct(row,p){
+      row.product_id=p.product_id;
+      row.label=String(p.name||p.model||p.sku||'');
+      row.part_no=String(p.manufacturer_part_no||p.sku||'');
+      row.unit=String(p.unit||'').trim();
+      row.gst_known=Boolean(p.gst_known);
+      row.gst_rate=row.gst_known&&p.gst_rate!=null?Number(p.gst_rate):null;
+      row.approved_price_before_tax=approvedRate(p);
+      row.unit_price_before_tax=row.approved_price_before_tax==null?0:row.approved_price_before_tax;
+    }
+
+    function renderLines(){
+      $('lines').innerHTML='';
+      rows.forEach((r,i)=>{
+        const box=document.createElement('article');
+        box.className='bill-line';
+        const gstText=r.gst_known?'GST '+esc(r.gst_rate)+'%':'GST incomplete';
+        const rateHint=r.approved_price_before_tax!=null?'Approved TAGRO price':(isOwner?'Owner: enter selling price':'Owner-approved price required');
+        const lineAmount=r.product_id&&!r.gst_known?'—':money(r.quantity*r.unit_price_before_tax*(1+Number(r.gst_rate||0)/100));
+        box.innerHTML=
+          '<div class="item-name"><div class="bill-field"><label for="product-'+i+'">Item or part number</label>'+
+          '<input id="product-'+i+'" class="product" placeholder="Search BUSY item or part" autocomplete="off" value="'+esc(r.label)+'"></div>'+
+          '<button class="remove" type="button" aria-label="Remove item '+(i+1)+'">×</button></div>'+
+          '<div class="results"></div>'+
+          '<div class="item-fields"><div class="bill-field"><label for="quantity-'+i+'">Qty</label>'+
+          '<input id="quantity-'+i+'" class="qty" inputmode="decimal" value="'+esc(r.quantity)+'"></div>'+
+          '<div class="bill-field"><label for="unit-'+i+'">Unit</label>'+
+          '<input id="unit-'+i+'" class="unit" value="'+esc(r.unit||'—')+'" readonly></div>'+
+          '<div class="bill-field"><label for="rate-'+i+'">Rate</label>'+
+          '<input id="rate-'+i+'" class="rate" inputmode="decimal" placeholder="—" value="'+esc(r.unit_price_before_tax||'')+'"'+(isOwner?'':' readonly')+'></div></div>'+
+          '<div class="price-note'+(r.product_id&&r.approved_price_before_tax==null?' warn':'')+'">'+esc(rateHint)+'</div>'+
+          '<div class="line-facts"><span>'+gstText+(r.part_no?' · '+esc(r.part_no):'')+'</span><b>'+lineAmount+'</b></div>';
+
+        const product=box.querySelector('.product'),results=box.querySelector('.results');
+        const qty=box.querySelector('.qty'),rate=box.querySelector('.rate');
+        let timer=null;
+
+        product.oninput=()=>{
+          r.label=product.value;r.product_id='';r.part_no='';r.unit='';
+          r.gst_rate=null;r.gst_known=false;r.approved_price_before_tax=null;r.unit_price_before_tax=0;
+          clearTimeout(timer);
+          timer=setTimeout(async()=>{
+            const q=product.value.trim();
+            if(q.length<2){results.innerHTML='';totals();saveLocal();return}
+            if(!$('branch').value){results.innerHTML='<div class="selected error">Choose a branch first.</div>';return}
+            try{
+              const found=await searchProducts(q);
+              results.innerHTML=found.items.map((p,n)=>{
+                const taxLabel=p.gst_known?'GST '+esc(p.gst_rate)+'%':'GST incomplete';
+                const price=approvedRate(p);
+                const detail=(p.unit?esc(p.unit):'Unit missing')+' · '+(price==null?'Price not approved':money(price))+' · '+taxLabel;
+                return '<button type="button" class="result" data-n="'+n+'"><b>'+esc(p.name||p.model||p.sku)+'</b><small>'+esc(p.manufacturer_part_no||p.sku||'')+' · '+detail+(found.offline?' · saved offline':'')+'</small></button>';
+              }).join('')||'<div class="selected">No matching item.</div>';
+              results.querySelectorAll('[data-n]').forEach(btn=>btn.onclick=()=>{
+                applyProduct(r,found.items[Number(btn.dataset.n)]);
+                renderLines();saveLocal();
+                const next=$('quantity-'+i);if(next){next.focus();next.select()}
+              });
+            }catch(e){results.innerHTML='<div class="statusbox error">'+esc(e.message)+'</div>'}
+          },180);
+          totals();saveLocal();
+        };
+
+        product.onkeydown=e=>{if(e.key==='Enter'){const first=results.querySelector('[data-n]');if(first){e.preventDefault();first.click()}}};
+        qty.oninput=()=>{r.quantity=Number(qty.value||0);totals();saveLocal()};
+        qty.onkeydown=e=>{if(e.key==='Enter'&&isOwner){e.preventDefault();rate.focus()}};
+        rate.oninput=()=>{if(!isOwner)return;r.unit_price_before_tax=Number(rate.value||0);totals();saveLocal()};
+        box.querySelector('.remove').onclick=()=>{
+          rows.splice(i,1);
+          if(!rows.length)addLine({},false);else renderLines();
+          saveLocal();
+        };
+        $('lines').appendChild(box);
+      });
+      totals();
+    }
+
+    async function refreshBranchPrices(){
+      for(const row of rows){
+        if(!row.product_id)continue;
+        const wanted=row.product_id;
+        try{
+          const found=await searchProducts(row.part_no||row.label);
+          const exact=found.items.find(p=>p.product_id===wanted);
+          if(exact)applyProduct(row,exact);
+          else{row.approved_price_before_tax=null;if(!isOwner)row.unit_price_before_tax=0}
+        }catch{row.approved_price_before_tax=null;if(!isOwner)row.unit_price_before_tax=0}
+      }
+      renderLines();saveLocal();
+    }
+
+    async function branches(){
+      let b;
+      try{
+        b=await EchoRuntime.reference('branches','',100);
+        if(branchKey)localStorage.setItem(branchKey,JSON.stringify(b.items||[]));
+      }catch(error){
+        let saved=[];
+        try{saved=JSON.parse(localStorage.getItem(branchKey)||'[]')||[]}catch{}
+        if(!saved.length)throw error;
+        b={items:saved};
+        message('Offline: using previously verified branch details.','warn');
+      }
+      $('branch').innerHTML='<option value="">Choose</option>'+b.items.map(x=>'<option value="'+esc(x.code)+'">'+esc(x.code)+'</option>').join('');
+      const remembered=localStorage.getItem('echo.billing.branch');
+      if(remembered&&b.items.some(x=>x.code===remembered))$('branch').value=remembered;
+      else if(b.items.length===1)$('branch').value=b.items[0].code;
+      $('branch').onchange=()=>{
+        localStorage.setItem('echo.billing.branch',$('branch').value);
+        refreshBranchPrices().catch(e=>message(e.message,'warn'));
+      };
+    }
+
+    function selectCustomer(x){
+      $('customerId').value=x.customer_id;
+      $('customerSearch').value=[x.name,x.phone].filter(Boolean).join(' · ');
+      $('customerSelected').textContent='Verified customer';
+      $('customerResults').innerHTML='';
+      saveLocal();
+    }
+
+    async function findCustomers(){
+      const q=$('customerSearch').value.trim();
+      $('customerId').value='';
+      $('customerSelected').textContent=q?'Choose a matching customer or add a new one.':'Cash customer';
+      if(q.length<2){$('customerResults').innerHTML='';return}
+      try{
+        const result=await EchoRuntime.reference('customers',q,12);
+        $('customerResults').innerHTML=result.items.map((x,i)=>'<button class="result" type="button" data-i="'+i+'"><b>'+esc(x.name)+'</b><small>'+esc(x.phone||x.district||'')+'</small></button>').join('')||'<div class="selected">No customer found. Add the customer below.</div>';
+        $('customerResults').querySelectorAll('[data-i]').forEach(btn=>btn.onclick=()=>selectCustomer(result.items[Number(btn.dataset.i)]));
+      }catch(e){$('customerResults').innerHTML='<div class="statusbox error">'+esc(e.message)+'</div>'}
+    }
+
+    async function createCustomer(){
+      const body={schema:'tagro.echo.customer-create-request.v1',enterprise_id:enterpriseId,name:$('newCustomerName').value.trim(),phone:$('newCustomerPhone').value.trim(),email:'',gstin:'',district:'',idempotency_key:crypto.randomUUID()};
+      $('newCustomerName').setAttribute('aria-invalid',body.name?'false':'true');
+      $('newCustomerPhone').setAttribute('aria-invalid',body.phone?'false':'true');
+      if(!body.name||!body.phone){$('newCustomerState').className='statusbox error';$('newCustomerState').textContent='Enter customer name and phone.';return}
+      $('createCustomer').disabled=true;
+      $('newCustomerState').textContent='Saving customer…';
+      try{
+        const r=await EchoRuntime.enqueueAndFlush({path:'/customers',body,expectedSchema:'tagro.echo.customer-created.v1',idempotencyKey:body.idempotency_key});
+        if(r.state==='acknowledged'&&r.response?.data?.customer_id){
+          const x=r.response.data;selectCustomer(x);
+          $('newCustomerName').value='';$('newCustomerPhone').value='';$('newCustomerBox').open=false;
+          $('newCustomerState').className='statusbox ok';
+          $('newCustomerState').textContent=x.matched_existing?'Existing customer selected.':'Customer saved and selected.';
+        }else{
+          $('newCustomerState').className='statusbox '+(r.state==='review'?'error':'warn');
+          $('newCustomerState').textContent=r.state==='review'?'Customer needs review.':'Customer saved locally and waiting to send.';
+        }
+      }catch(e){$('newCustomerState').className='statusbox warn';$('newCustomerState').textContent='Customer retained: '+e.message}
+      finally{$('createCustomer').disabled=false}
+    }
+
+    function draft(){
+      return{
+        schema:'tagro.echo.billing-request.v1',enterprise_id:enterpriseId,
+        branch_code:$('branch').value,customer_id:$('customerId').value||undefined,
+        customer_name:$('customerSearch').value.trim()||'Cash',payment_mode:$('payment').value,
+        lines:rows.map(r=>({product_id:r.product_id,quantity:r.quantity,unit_price_before_tax:r.unit_price_before_tax,gst_rate:r.gst_rate,discount_before_tax:r.discount_before_tax})),
+        idempotency_key:draftKey||crypto.randomUUID()
+      };
+    }
+
+    function saveLocal(){
+      if(!storeKey)return;
+      const d=draft();draftKey=d.idempotency_key;
+      d.lines=rows.map(r=>({...r}));
+      localStorage.setItem(storeKey,JSON.stringify(d));
+    }
+
+    async function issue(){
+      const d=draft();draftKey=d.idempotency_key;
+      if($('customerSearch').value.trim()&&!$('customerId').value){message('Choose a verified customer or clear the field for a cash sale.','error');return}
+      if(rows.some(x=>x.product_id&&(!x.gst_known||x.gst_rate==null))){message('GST incomplete for one or more selected products. Populate canonical GST before billing.','error');return}
+      if(rows.some(x=>x.product_id&&!x.unit)){message('The selected item does not have a verified selling unit.','error');return}
+      if(!isOwner&&rows.some(x=>x.product_id&&x.approved_price_before_tax==null)){message('An owner-approved selling price is required for this item.','error');return}
+      if(!d.branch_code||!d.lines.length||d.lines.some(x=>!x.product_id||x.quantity<=0||x.unit_price_before_tax<=0)){message('Choose a branch, verified item, quantity and selling rate.','error');return}
+
+      saveLocal();
+      $('issue').disabled=true;$('statePill').textContent='SENDING';$('statePill').className='state pending';
+      message('Saving sale…');
+      try{
+        const r=await EchoRuntime.enqueueAndFlush({path:'/billing/issue',body:d,expectedSchema:'tagro.echo.bill-issued.v1',idempotencyKey:d.idempotency_key});
+        if(r.state==='acknowledged'&&r.response?.data?.bill_id){
+          const x=r.response.data;
+          $('statePill').textContent='ECHO ISSUED';$('statePill').className='state live';
+          message('Sale saved · '+money(x.invoice_total||0)+'.','ok');
+          $('busySeries').textContent='BUSY: '+(x.busy_status||'not booked / not confirmed');
+          localStorage.removeItem(storeKey);draftKey='';rows=[];addLine({},false);
+        }else{
+          $('statePill').textContent=r.state==='review'?'REVIEW':'WAITING TO SEND';
+          $('statePill').className='state '+(r.state==='review'?'review':'pending');
+          message(r.state==='review'?'Sale needs owner review.':'Sale saved on this phone and waiting to send.',r.state==='review'?'error':'warn');
+        }
+      }catch(e){$('statePill').textContent='LOCAL DRAFT';$('statePill').className='state pending';message('Draft retained: '+e.message,'warn')}
+      finally{$('issue').disabled=false}
+    }
+
+    async function boot(){
+      if(!EchoRuntime.sessionInfo().signedIn){location.href='login.html';return}
+      const info=EchoRuntime.sessionInfo(),contextKey=EchoRuntime.localKey('billing-context-v1');
+      let context;
+      try{
+        context=await EchoRuntime.loadContext();
+        localStorage.setItem(contextKey,JSON.stringify({display_name:context.display_name,enterprises:context.enterprises||[]}));
+      }catch(error){
+        try{context=JSON.parse(localStorage.getItem(contextKey)||'null')}catch{context=null}
+        if(!context)throw error;
+        message('Offline: using your saved workspace.','warn');
+      }
+      const membership=(context.enterprises||[]).find(x=>x.enterprise_id===info.enterpriseId)||(context.enterprises||[])[0];
+      enterpriseId=membership?.enterprise_id||info.enterpriseId;
+      isOwner=String(membership?.role_code||'').toUpperCase()==='OWNER';
+      $('contextLabel').textContent=context.display_name||info.email||'Staff';
+      storeKey=EchoRuntime.localKey('billing-draft-v3');
+      catalogKey=EchoRuntime.localKey('billing-product-cache-v1');
+      branchKey=EchoRuntime.localKey('billing-branches-v1');
+      await branches();
+      const saved=localStorage.getItem(storeKey);
+      if(saved){
+        const d=JSON.parse(saved);
+        draftKey=d.idempotency_key||'';
+        $('branch').value=d.branch_code||$('branch').value;
+        $('customerId').value=d.customer_id||'';
+        $('customerSearch').value=d.customer_name==='Cash'?'':(d.customer_name||'');
+        $('customerSelected').textContent=d.customer_id?'Verified customer':'Cash customer';
+        $('payment').value=d.payment_mode||'cash';
+        rows=(d.lines||[]).map(v=>({
+          ...v,part_no:v.part_no||'',unit:v.unit||'',
+          approved_price_before_tax:v.approved_price_before_tax==null?null:Number(v.approved_price_before_tax),
+          gst_known:Boolean(v.gst_known),gst_rate:v.gst_rate==null?null:Number(v.gst_rate)
+        }));
+      }
+      if(!rows.length)addLine({},false);else renderLines();
+      EchoRuntime.flushQueue().catch(()=>{});
+    }
+
+    $('customerSearch').oninput=()=>{clearTimeout(customerTimer);customerTimer=setTimeout(findCustomers,180);saveLocal()};
+    $('customerSearch').onkeydown=e=>{if(e.key==='Enter'){const first=$('customerResults').querySelector('[data-i]');if(first){e.preventDefault();first.click()}}};
+    $('payment').onchange=saveLocal;
+    $('add').onclick=()=>{addLine();const input=$('product-'+(rows.length-1));if(input)input.focus()};
+    $('createCustomer').onclick=createCustomer;
+    $('issue').onclick=issue;
+    boot().catch(e=>message(e.message,'error'));
+  })();
+  </script>
+</body>
+</html>

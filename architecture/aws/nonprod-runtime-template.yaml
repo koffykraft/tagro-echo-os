@@ -1,0 +1,208 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: TAGRO ECHO OS NonProd governed runtime and Operational Twin data boundary
+
+Parameters:
+  UserPoolId:
+    Type: String
+  UserPoolClientId:
+    Type: String
+  StableWebAllowedOrigin:
+    Type: String
+    Default: https://os.tagro.in
+    Description: Stable TAGRO browser origin retained during non-production smoke deployment.
+  WebAllowedOrigin:
+    Type: String
+    Description: Exact HTTPS smoke/test origin hosting the ECHO web/PWA shell; required for authenticated browser CORS.
+  LambdaExecutionRoleArn:
+    Type: String
+  DbSecretArn:
+    Type: String
+  DbHost:
+    Type: String
+  DbName:
+    Type: String
+    Default: echoos
+  PrivateSubnetA:
+    Type: AWS::EC2::Subnet::Id
+  PrivateSubnetB:
+    Type: AWS::EC2::Subnet::Id
+  AppSecurityGroup:
+    Type: AWS::EC2::SecurityGroup::Id
+
+Resources:
+  EchoHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: '$default'
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref StableWebAllowedOrigin
+          - !Ref WebAllowedOrigin
+        AllowHeaders:
+          - Authorization
+          - Content-Type
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        MaxAge: 600
+      Auth:
+        DefaultAuthorizer: EchoStaffJwt
+        Authorizers:
+          EchoStaffJwt:
+            IdentitySource: '$request.header.Authorization'
+            JwtConfiguration:
+              issuer: !Sub 'https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPoolId}'
+              audience:
+                - !Ref UserPoolClientId
+
+  EchoRuntimeFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: echo-nonprod-runtime
+      Runtime: python3.12
+      Architectures: [arm64]
+      Handler: src.aws_runtime.handler.lambda_handler
+      CodeUri: ../..
+      Role: !Ref LambdaExecutionRoleArn
+      MemorySize: 256
+      Timeout: 15
+      Environment:
+        Variables:
+          ECHO_ENV: nonprod
+          DB_SECRET_ARN: !Ref DbSecretArn
+          DB_HOST: !Ref DbHost
+          DB_PORT: '5432'
+          DB_NAME: !Ref DbName
+      VpcConfig:
+        SecurityGroupIds: [!Ref AppSecurityGroup]
+        SubnetIds: [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      Events:
+        PublicHealth: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /health, Method: GET, Auth: {Authorizer: NONE}}}
+        WhoAmI: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /whoami, Method: GET}}
+        DatabaseHealth: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /db-health, Method: GET}}
+        TenantContext: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /tenant-context, Method: GET}}
+        ReferenceData: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /reference-data, Method: GET}}
+        CustomerCreate: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /customers, Method: POST}}
+        OwnerOnCall: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /owner-on-call, Method: GET}}
+        CashDayReadback: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /cash-days, Method: GET}}
+        CashDayOpen: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /cash-days/open, Method: POST}}
+        CashEntryRecord: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /cash-days/entries, Method: POST}}
+        CashDaySubmit: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /cash-days/submit, Method: POST}}
+        CashDocumentSave: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /cash-days/save, Method: POST}}
+        BillingIssue: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /billing/issue, Method: POST}}
+        ServiceIntake: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /service/intake, Method: POST}}
+        PurchaseOrderCreate: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /purchase-orders, Method: POST}}
+        StockCountRecord: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /stock-count/record, Method: POST}}
+        ImportReconciliation: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /import-reconciliation, Method: GET}}
+
+  EchoTwinReadFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: echo-nonprod-twin-read
+      Runtime: python3.12
+      Architectures: [arm64]
+      Handler: src.aws_runtime.twin_read_handler.lambda_handler
+      CodeUri: ../..
+      Role: !Ref LambdaExecutionRoleArn
+      MemorySize: 256
+      Timeout: 20
+      Environment:
+        Variables:
+          ECHO_ENV: nonprod
+          DB_SECRET_ARN: !Ref DbSecretArn
+          DB_HOST: !Ref DbHost
+          DB_PORT: '5432'
+          DB_NAME: !Ref DbName
+      VpcConfig:
+        SecurityGroupIds: [!Ref AppSecurityGroup]
+        SubnetIds: [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      Events:
+        TwinSourceStatus: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /twin-source-status, Method: GET}}
+        TwinHistory: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /twin-history, Method: GET}}
+
+  EchoSchemaMigrationFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: echo-nonprod-schema-migrate
+      Runtime: python3.12
+      Architectures: [arm64]
+      Handler: src.aws_runtime.migration_handler.lambda_handler
+      CodeUri: ../..
+      Role: !Ref LambdaExecutionRoleArn
+      MemorySize: 256
+      Timeout: 60
+      Environment:
+        Variables:
+          ECHO_ENV: nonprod
+          DB_SECRET_ARN: !Ref DbSecretArn
+          DB_HOST: !Ref DbHost
+          DB_PORT: '5432'
+          DB_NAME: !Ref DbName
+      VpcConfig:
+        SecurityGroupIds: [!Ref AppSecurityGroup]
+        SubnetIds: [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+
+  EchoEnterpriseBootstrapFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: echo-nonprod-enterprise-bootstrap
+      Runtime: python3.12
+      Architectures: [arm64]
+      Handler: src.aws_runtime.bootstrap_handler.lambda_handler
+      CodeUri: ../..
+      Role: !Ref LambdaExecutionRoleArn
+      MemorySize: 256
+      Timeout: 60
+      Environment:
+        Variables:
+          ECHO_ENV: nonprod
+          DB_SECRET_ARN: !Ref DbSecretArn
+          DB_HOST: !Ref DbHost
+          DB_PORT: '5432'
+          DB_NAME: !Ref DbName
+      VpcConfig:
+        SecurityGroupIds: [!Ref AppSecurityGroup]
+        SubnetIds: [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+
+  EchoObservationImportFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: echo-nonprod-observation-import
+      Runtime: python3.12
+      Architectures: [arm64]
+      Handler: src.aws_runtime.import_handler.lambda_handler
+      CodeUri: ../..
+      Role: !Ref LambdaExecutionRoleArn
+      MemorySize: 512
+      Timeout: 120
+      Environment:
+        Variables:
+          ECHO_ENV: nonprod
+          DB_SECRET_ARN: !Ref DbSecretArn
+          DB_HOST: !Ref DbHost
+          DB_PORT: '5432'
+          DB_NAME: !Ref DbName
+      VpcConfig:
+        SecurityGroupIds: [!Ref AppSecurityGroup]
+        SubnetIds: [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+
+Outputs:
+  HttpApiId: {Value: !Ref EchoHttpApi}
+  HttpApiEndpoint: {Value: !Sub 'https://${EchoHttpApi}.execute-api.${AWS::Region}.amazonaws.com'}
+  LambdaFunctionName: {Value: !Ref EchoRuntimeFunction}
+  TwinReadFunctionName: {Value: !Ref EchoTwinReadFunction}
+  SchemaMigrationFunctionName: {Value: !Ref EchoSchemaMigrationFunction}
+  EnterpriseBootstrapFunctionName: {Value: !Ref EchoEnterpriseBootstrapFunction}
+  ObservationImportFunctionName: {Value: !Ref EchoObservationImportFunction}

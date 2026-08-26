@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=yes">
+  <meta name="theme-color" content="#ffffff">
+  <title>TAGRO ECHO · Closing Cash</title>
+  <link rel="stylesheet" href="echo-forms.css">
+  <link rel="stylesheet" href="closing-cash.css">
+</head>
+<body class="closing-page">
+  <div class="closing-app" id="closingApp">
+    <header class="closing-topbar">
+      <button class="menu-btn" id="menuBtn" type="button" aria-label="Open context">☰</button>
+      <div class="closing-title">Closing Cash</div>
+      <div class="closing-context-mini" id="contextMini"></div>
+      <div class="closing-spacer"></div>
+      <span class="closing-state" id="statePill">DRAFT LOCAL</span>
+      <button class="secondary closing-undo" id="undoBtn" type="button" aria-label="Undo last edit">↶</button>
+      <button class="secondary" id="correctBtn" type="button" hidden>Correct</button>
+      <button class="primary" id="reviewBtn" type="button">Review</button>
+    </header>
+
+    <div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
+    <aside class="closing-drawer" id="contextDrawer" aria-label="Closing Cash context" aria-hidden="true">
+      <div class="drawer-head">
+        <strong>Context</strong>
+        <button class="secondary" id="drawerDone" type="button">Done</button>
+      </div>
+      <div class="field">
+        <label for="businessDate">Date</label>
+        <input id="businessDate" type="date" data-editable>
+      </div>
+      <div class="field">
+        <label for="branch">Branch</label>
+        <select id="branch" data-editable></select>
+      </div>
+      <div class="field">
+        <label for="enteredBy">Entered by</label>
+        <input id="enteredBy" autocomplete="off" data-editable>
+      </div>
+      <div class="field">
+        <label for="onBehalfOf">On behalf of <span class="quiet">(only if needed)</span></label>
+        <input id="onBehalfOf" autocomplete="off" data-editable>
+      </div>
+      <div class="field" id="reasonField" hidden>
+        <label for="switchReason">Reason</label>
+        <input id="switchReason" autocomplete="off" data-editable>
+      </div>
+      <div class="field">
+        <label for="openingCash">Yesterday Closing</label>
+        <input id="openingCash" inputmode="decimal" autocomplete="off" data-editable>
+      </div>
+      <div class="correction-note" id="correctionNote" hidden>
+        Correction of <span id="supersedesId"></span>
+      </div>
+      <div class="drawer-status" id="drawerStatus">Standalone/local draft</div>
+      <div class="drawer-actions">
+        <button class="secondary" id="newBlankBtn" type="button">New blank</button>
+      </div>
+    </aside>
+
+    <main class="closing-shell">
+      <section class="closing-entry-card" aria-label="Closing Cash entries">
+        <div class="closing-section-head">
+          <strong>ENTRIES</strong>
+          <span>raw cash-plane evidence</span>
+        </div>
+        <div class="closing-grid-wrap">
+          <table class="closing-entry-table">
+            <colgroup>
+              <col class="col-sale">
+              <col class="col-bill">
+              <col class="col-expense">
+              <col class="col-particulars">
+            </colgroup>
+            <thead>
+              <tr>
+                <th class="sale-col">SALE</th>
+                <th>BILL</th>
+                <th class="expense-col">EXPENSES</th>
+                <th>PARTICULARS</th>
+              </tr>
+            </thead>
+            <tbody id="entryRows"></tbody>
+          </table>
+        </div>
+        <div class="closing-entry-note">EXPENSES remains the historical cash-movement / offset column. Classification follows the saved evidence; it is not automatically P&amp;L expense.</div>
+      </section>
+
+      <aside class="closing-side">
+        <section class="closing-side-card" aria-label="Cash count">
+          <div class="closing-section-head"><strong>CASH COUNT</strong></div>
+          <table class="cash-count-table">
+            <thead><tr><th>Note</th><th>Qty</th><th>Amount</th></tr></thead>
+            <tbody id="cashCountRows"></tbody>
+          </table>
+        </section>
+
+        <section class="closing-side-card" aria-label="Closing reconciliation">
+          <div class="closing-section-head"><strong>CLOSING</strong></div>
+          <div class="closing-summary">
+            <div>Yesterday Closing</div><div class="value" id="sumOpening">0.00</div>
+            <div>Today Sale</div><div class="value" id="sumSales">0.00</div>
+            <div class="summary-total">TOTAL</div><div class="value summary-total" id="sumTotal">0.00</div>
+            <div>Expenses / cash movements</div><div class="value" id="sumExpenses">0.00</div>
+            <div class="summary-balance">Balance Due</div><div class="value summary-balance" id="sumBalance">0.00</div>
+            <div>Cash in Hand</div><div class="value" id="sumCash">0.00</div>
+            <div class="summary-difference" id="differenceLabel">Difference</div><div class="value summary-difference" id="sumDifference">0.00</div>
+          </div>
+        </section>
+      </aside>
+    </main>
+
+    <div class="closing-review-overlay" id="reviewOverlay" aria-hidden="true">
+      <div class="closing-review-shell">
+        <div class="closing-review-tools">
+          <button class="secondary" id="editBtn" type="button">Edit</button>
+          <div class="closing-spacer"></div>
+          <button class="secondary" id="printBtn" type="button">PDF / Print</button>
+          <button class="secondary" id="shareBtn" type="button">Share</button>
+          <button class="primary" id="confirmBtn" type="button">Confirm Save</button>
+        </div>
+        <div id="reviewHost"></div>
+        <div class="closing-print-host" id="printHost" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+  <script src="closing-cash.js"></script>
+</body>
+</html>

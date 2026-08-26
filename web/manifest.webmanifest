@@ -1,13 +1,18 @@
 {
-  "name": "TAGRO ECHO OS",
-  "short_name": "ECHO OS",
+  "name": "TAGRO STIHL",
+  "short_name": "TAGRO STIHL",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f7f5f1",
   "theme_color": "#111111",
-  "description": "Mobile-first TAGRO ECHO counter operating shell with offline-capable workflows.",
+  "description": "Mobile-first TAGRO STIHL operational workspace on the ECHO platform, with secure offline-capable workflows.",
   "icons": [
-    {"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
   ]
 }

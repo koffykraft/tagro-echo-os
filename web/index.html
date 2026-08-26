@@ -1,1 +1,63 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#111111"><title>TAGRO ECHO OS</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg"><link rel="stylesheet" href="styles.css"></head><body><header><div><b>TAGRO × ECHO</b><small>Operating System · mobile/offline candidate</small></div><button id="menu">☰</button></header><nav id="nav"></nav><main><div id="network" class="notice">Checking connection…</div><div class="actions"><a class="pill" href="counter.html">Counter Ops</a><a class="pill" href="service.html">Service</a><a class="pill" href="cash.html">Closing Cash</a><a class="pill" href="bank.html">Bank Import</a><a class="pill" href="payments.html">Payments</a><a class="pill" href="documents.html">Print Documents</a></div><div id="app"></div></main><footer>Local/offline records remain on this device until synchronized. BUSY, bank and shared-cloud states are never implied when unavailable.</footer><script src="app.js"></script><script>const n=document.getElementById('network');function net(){n.innerHTML=navigator.onLine?'<b>ONLINE</b> · Network available. Pending local work still requires confirmed synchronization.':'<b>OFFLINE</b> · Cached pages and local workflows remain available; engine/report data may be stale.'}addEventListener('online',net);addEventListener('offline',net);net();if('serviceWorker'in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'))}</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#faf9f7">
+  <title>TAGRO STIHL</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg">
+  <link rel="stylesheet" href="echo-home-v1.css">
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar">
+      <button class="iconbtn" id="quick" type="button" aria-label="Quick sale" title="Quick sale">＋</button>
+      <picture class="brand-picture"><source media="(min-width:700px)" srcset="assets/brand/tagro-stihl-1600x400.png"><img src="assets/brand/tagro-stihl-900x240.png" alt="TAGRO STIHL"></picture>
+      <button class="signout" id="signOut" type="button">Sign out</button>
+    </div>
+    <main>
+      <section class="context" aria-label="Current ECHO workspace">
+        <div class="avatar" id="avatar">E</div>
+        <div class="identity"><strong id="person">Resolving ECHO…</strong><span id="place">Checking workspace</span></div>
+        <div class="net" id="networkState"><span class="dot"></span><span id="networkLabel">Online</span></div>
+      </section>
+
+      <div class="desktop-grid">
+        <section>
+          <div class="section-title" id="roleTitle">WORK</div>
+          <div class="jobs" id="jobs">
+            <a class="job primary" href="billing.html" data-capability="SELL"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M3 4h2l2.2 10.1a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 7H6"/><circle cx="10" cy="20" r="1.2"/><circle cx="18" cy="20" r="1.2"/></svg><span>SELL</span></a>
+            <a class="job primary" href="service.html" data-capability="SERVICE"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M14.7 6.3a4 4 0 0 0-5-5l2.2 2.2-2.8 2.8-2.2-2.2a4 4 0 0 0 5 5l7.1 7.1a2 2 0 0 1-2.8 2.8l-7.1-7.1"/></svg><span>SERVICE</span></a>
+            <a class="job primary" href="stock-count.html" data-capability="STOCK"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 5h16v14H4zM8 2v6M16 2v6M8 12h8M8 16h5"/></svg><span>COUNT STOCK</span></a>
+            <a class="job" href="po.html" data-capability="PURCHASE"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h4"/></svg><span>REQUEST PURCHASE</span></a>
+            <a class="job" href="closing-cash.html" data-capability="CASH"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M3 6h18v12H3zM7 10h5M7 14h3M17 9v6"/></svg><span>CLOSING CASH</span></a>
+            <a class="job" href="business.html" data-capability="REPORTS"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 20V8h5v12M10 20V4h5v16M16 20v-9h4v9"/></svg><span>BUSINESS</span></a>
+          </div>
+        </section>
+
+        <section>
+          <div class="section-title">SAVED WORK</div>
+          <div class="continuity">
+            <button class="status-card" type="button" id="pendingCard"><span class="mark">↑</span><span><strong>Waiting to send</strong><small id="pendingText">Checking saved work…</small></span><span class="chev">›</span></button>
+            <a class="status-card" href="on-call.html" id="reviewCard"><span class="mark">!</span><span><strong>Needs attention</strong><small id="reviewText">Checking…</small></span><span class="chev">›</span></a>
+          </div>
+          <p class="quiet" id="truthLine">Checking saved work and connection.</p>
+          <div class="data-strip"><span>Business data</span><b id="dataState">Checking shared database…</b></div>
+        </section>
+      </div>
+      <div class="environment">TAGRO STIHL OPERATIONS · ECHO PLATFORM · NON-PRODUCTION</div>
+    </main>
+  </div>
+
+  <nav class="bottomnav" aria-label="Primary navigation"><div class="bottomnav-inner">
+    <a class="navitem active" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M3 11 12 3l9 8v10h-6v-6H9v6H3z"/></svg><span>Home</span></a>
+    <a class="navitem" href="business.html"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 20V8h5v12M10 20V4h5v16M16 20v-9h4v9"/></svg><span>Business</span></a>
+    <a class="navitem" href="on-call.html"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span>Attention</span></a>
+  </div></nav>
+
+  <div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
+  <script src="runtime-config.js"></script><script src="runtime-client.js"></script><script src="echo-home-v1.js"></script>
+  <script>if('serviceWorker'in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}</script>
+</body>
+</html>
