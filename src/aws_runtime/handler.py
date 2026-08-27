@@ -4,6 +4,8 @@ import json
 from typing import Any, Mapping
 
 from src.aws_runtime.billing_runtime_v2 import RuntimeBillingError, issue_bill
+from src.aws_runtime.busy_bridge_runtime import read_busy_records, save_busy_record
+from src.aws_runtime.busy_round_trip import BusyRoundTripError
 from src.aws_runtime.cash_document_runtime import CashDocumentRuntimeError, save_cash_document
 from src.aws_runtime.cash_runtime import CashRuntimeError, cash_day_readback, open_cash_day, record_cash_entry, submit_cash_day
 from src.aws_runtime.config import RuntimeConfig
@@ -284,6 +286,42 @@ def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
 
     if raw_path == "/purchase-entries" and method == "POST":
         return _operational_post(config, claims, event, capability="PURCHASE", operation=save_purchase_entry, schema="tagro.echo.purchase-entry-saved.v1")
+
+    if raw_path == "/busy-records" and method == "POST":
+        subject = str(claims.get("sub") or "")
+        payload = _json_body(event)
+        if not subject or payload is None:
+            return _response(400 if subject else 401, {"error": "invalid_json_body" if subject else "authenticated_subject_missing"})
+        try:
+            context_result, membership, error = _runtime_identity(config, subject, payload)
+            if error:
+                return error
+            result = save_busy_record(config, principal_id=str(context_result["principal_id"]), membership=membership, payload=payload)
+        except PermissionError as exc:
+            return _response(403, {"error": "busy_record_capability_required", "detail": str(exc)})
+        except BusyRoundTripError as exc:
+            return _response(409, {"error": "busy_record_rejected", "detail": str(exc)})
+        except Exception as exc:
+            return _response(503, {"error": "busy_bridge_unavailable", "error_type": type(exc).__name__})
+        return _response(201, {"schema": "tagro.echo.busy-record-saved.v1", "data": result})
+
+    if raw_path == "/busy-records" and method == "GET":
+        subject = str(claims.get("sub") or "")
+        try:
+            context_result = tenant_context(config, subject)
+            memberships = list((context_result or {}).get("enterprises") or [])
+            query = event.get("queryStringParameters") or {}
+            requested = str(query.get("enterprise_id") or "")
+            if requested:
+                memberships = [m for m in memberships if str(m.get("enterprise_id")) == requested]
+            if len(memberships) != 1:
+                return _response(409, {"error": "enterprise_selection_required"})
+            membership = memberships[0]
+            created_by = "" if str(membership.get("role_code") or "").upper() == "OWNER" else str(context_result.get("principal_id") or "")
+            result = read_busy_records(config, enterprise_id=str(membership["enterprise_id"]), kind=str(query.get("kind") or ""), limit=int(query.get("limit") or 50), created_by=created_by)
+        except Exception as exc:
+            return _response(503, {"error": "busy_bridge_unavailable", "error_type": type(exc).__name__})
+        return _response(200, {"schema": "tagro.echo.busy-record-list.v1", "data": result})
 
     if raw_path == "/stock-count/record" and method == "POST":
         return _operational_post(config, claims, event, capability="STOCK", operation=record_stock_count, schema="tagro.echo.stock-count.v1")

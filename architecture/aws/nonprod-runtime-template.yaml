@@ -96,6 +96,9 @@ Resources:
         BillingIssue: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /billing/issue, Method: POST}}
         ServiceIntake: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /service/intake, Method: POST}}
         PurchaseOrderCreate: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /purchase-orders, Method: POST}}
+        PurchaseEntrySave: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /purchase-entries, Method: POST}}
+        BusyRecordSave: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /busy-records, Method: POST}}
+        BusyRecordList: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /busy-records, Method: GET}}
         StockCountRecord: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /stock-count/record, Method: POST}}
         ImportReconciliation: {Type: HttpApi, Properties: {ApiId: !Ref EchoHttpApi, Path: /import-reconciliation, Method: GET}}
 
