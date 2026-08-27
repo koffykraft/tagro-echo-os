@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#f3f3f1">
+<title>TAGRO Purchase Entry · TAGRO STIHL</title>
+<style>
+:root{
+  --bg:#f3f3f1;--card:#fff;--ink:#111;--muted:#6b6b68;--line:#d9d9d4;
+  --accent:#f36f21;--soft:#f8f8f5;--danger:#b42318;--radius:16px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.app{max-width:480px;margin:0 auto;min-height:100vh;padding-bottom:92px}
+.topbar{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--line);padding:12px 14px}
+.headrow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:38px;height:38px;border:1.5px dashed #999;border-radius:10px;display:grid;place-items:center;font-size:10px;color:var(--muted);background:#fafaf8}
+h1{font-size:18px;margin:0;font-weight:900}
+.sub{font-size:11px;color:var(--muted);margin-top:3px}
+.badge{font-size:11px;font-weight:900;background:#f5f5f2;border:1px solid var(--line);border-radius:999px;padding:7px 9px}
+main{padding:12px}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:13px;margin-bottom:10px}
+.section-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.section-title h2{margin:0;font-size:14px;font-weight:900}
+.link{border:0;background:none;color:var(--accent);font-size:12px;font-weight:900}
+.field{margin-bottom:10px}.field:last-child{margin-bottom:0}
+label{display:block;font-size:11px;font-weight:800;color:#4d4d49;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+input,textarea,select{width:100%;min-height:45px;border:1px solid var(--line);border-radius:11px;background:#fff;padding:10px 11px;font-size:15px;color:var(--ink);outline:none}
+textarea{min-height:74px;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.item{border:1px solid var(--line);border-radius:13px;padding:10px;margin-top:8px}
+.itemhead{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.itemname{font-size:14px;font-weight:900;line-height:1.3}
+.itemmeta{font-size:11px;color:var(--muted);margin-top:3px}
+.remove{width:34px;height:34px;border-radius:9px;border:1px solid #e2b6b1;background:#fff;color:var(--danger);font-weight:900;font-size:18px}
+.item-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:9px}
+.item-grid .field{margin:0}
+.taxbox{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:10px}
+.taxbox span{display:block;font-size:10px;color:var(--muted);font-weight:800;text-transform:uppercase}
+.taxbox strong{display:block;font-size:16px;margin-top:4px}
+.totalbox{border-top:1px solid var(--line);margin-top:10px;padding-top:10px;display:flex;justify-content:space-between;align-items:center;font-size:18px;font-weight:900}
+.helper{font-size:11px;color:var(--muted);line-height:1.45;margin-top:6px}
+.bottom{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:min(480px,100%);background:rgba(255,255,255,.97);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1.6fr;gap:8px}
+.bottom button{min-height:52px;border-radius:12px;font-size:14px;font-weight:900}
+.secondary{background:#fff;border:1px solid #bdbdb7}
+.primary{background:var(--accent);border:1px solid var(--accent);color:#fff}
+/* Additive, not a design change: visible tap-or-Enter lookup for supplier and
+   item-name entry, matching this ECHO AWS codebase's own established
+   navigation convention. */
+.results{display:grid;gap:6px;margin-top:8px}
+.result{width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:11px;padding:9px 10px;cursor:pointer;font:inherit;color:inherit}
+.result:active{background:var(--soft)}
+.result b{display:block;font-size:13px;line-height:1.3}
+.result small{display:block;color:var(--muted);margin-top:2px;font-size:11px;line-height:1.35}
+.hint{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.4}
+.hint.warn{color:var(--danger)}
+.tag-verified{display:inline-block;margin-top:7px;font-size:11px;font-weight:800;color:#1f7a3d;background:#eaf6ec;border:1px solid #cfe9d3;border-radius:999px;padding:4px 9px}
+@media(max-width:360px){.grid2,.grid3,.item-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="headrow">
+      <div class="brand">
+        <img class="logo" src="assets/brand/tagro-stihl-900x240.png" alt="TAGRO STIHL" style="border:0;object-fit:contain;background:#fff">
+        <div>
+          <h1>Purchase Entry</h1>
+          <div class="sub">Supplier invoice & stock purchase</div>
+        </div>
+      </div>
+      <div class="badge" id="entryBadge">NEW</div>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="section-title"><h2>Supplier & Invoice</h2></div>
+
+      <div class="field">
+        <label>Branch</label>
+        <select id="branch"><option value="">Select branch</option></select>
+      </div>
+
+      <div class="field">
+        <label>Supplier name</label>
+        <input id="supplierName" placeholder="Search or type supplier" autocomplete="off" />
+        <input id="supplierId" type="hidden">
+        <div id="supplierResults" class="results"></div>
+        <div id="supplierHint" class="hint">Search by supplier name, phone or GSTIN.</div>
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label>Supplier GSTIN</label>
+          <input id="supplierGstin" placeholder="e.g. 32ABCDE1234F1Z5" autocapitalize="characters" />
+        </div>
+        <div class="field">
+          <label>Place of supply</label>
+          <input id="placeOfSupply" placeholder="State / code" />
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label>Invoice number</label>
+          <input id="invoiceNumber" placeholder="Supplier invoice no." />
+        </div>
+        <div class="field">
+          <label>Invoice date</label>
+          <input id="invoiceDate" type="date" />
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title"><h2>Shipment details</h2><span class="helper" style="margin:0">Optional</span></div>
+
+      <div class="grid2">
+        <div class="field">
+          <label>Shipment / LR / AWB</label>
+          <input id="shipmentReference" placeholder="Optional reference" />
+        </div>
+        <div class="field">
+          <label>Transporter</label>
+          <input id="transporter" placeholder="Optional" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Shipment note</label>
+        <textarea id="shipmentNote" maxlength="1000" placeholder="Optional delivery or shipment details"></textarea>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title"><h2>Purchase items</h2><button class="link" id="addBlankItem" type="button">+ Add item</button></div>
+
+      <div class="field">
+        <label>Item name</label>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:8px">
+          <input id="purchaseItemName" placeholder="Type item name" autocomplete="off" />
+          <button id="addPurchaseItem" type="button" style="min-width:72px;border:0;border-radius:11px;background:#111;color:#fff;font-weight:900">ADD</button>
+        </div>
+        <div id="purchaseItemResults" class="results"></div>
+        <div id="purchaseItemHint" class="hint">Tap a catalog match to link its GST/HSN, or keep typing and press ADD for an item not in the catalog.</div>
+      </div>
+
+      <div id="purchaseItems"></div>
+    </section>
+
+    <section class="card">
+      <div class="section-title"><h2>GST summary</h2></div>
+
+      <div class="grid2">
+        <div class="field">
+          <label>Taxable value</label>
+          <input id="taxableValueOut" placeholder="₹ 0.00" readonly />
+        </div>
+        <div class="field">
+          <label>Total GST</label>
+          <input id="totalGstOut" placeholder="₹ 0.00" readonly />
+        </div>
+      </div>
+
+      <div class="grid3">
+        <div class="taxbox">
+          <span>CGST</span>
+          <strong id="cgstOut">₹0</strong>
+        </div>
+        <div class="taxbox">
+          <span>SGST</span>
+          <strong id="sgstOut">₹0</strong>
+        </div>
+        <div class="taxbox">
+          <span>IGST</span>
+          <strong id="igstOut">₹0</strong>
+        </div>
+      </div>
+
+      <div class="helper">GST auto-populates from Supplier GSTIN: intra-Kerala purchases split into CGST/SGST; any other state's GSTIN (or none given) uses IGST. The server recomputes this same split independently on save.</div>
+
+      <div class="totalbox">
+        <span>Purchase Total</span>
+        <span id="purchaseTotalOut">₹0</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title"><h2>Purchase note</h2></div>
+      <textarea id="purchaseNote" maxlength="1500" placeholder="Optional internal note"></textarea>
+      <div class="helper" id="entryStatus" style="margin-top:8px"></div>
+    </section>
+  </main>
+
+  <div class="bottom">
+    <button class="secondary" id="saveDraftPe" type="button">SAVE DRAFT</button>
+    <button class="primary" id="savePurchase" type="button">SAVE PURCHASE</button>
+  </div>
+</div>
+
+<script src="runtime-config.js"></script>
+<script src="runtime-client.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const input = $('purchaseItemName');
+  const add = $('addPurchaseItem');
+  const list = $('purchaseItems');
+
+  // Same home-state convention the server enforces (src/aws_runtime/purchase_entry_runtime.py):
+  // a supplier GSTIN whose first two digits are the Kerala state code is intra-state
+  // (CGST+SGST); anything else, or no GSTIN at all, is inter-state (IGST). Shown here
+  // for real-time display only -- the server recomputes it independently on save.
+  const KERALA_GST_STATE_CODE = '32';
+
+  function money(n){ return '₹' + Number(n || 0).toLocaleString('en-IN'); }
+
+  function addItem(name = '', v = {}){
+    const displayName = (name || v.item_name || '').trim();
+    if(!displayName) return;
+    const el = document.createElement('div');
+    el.className = 'item';
+    el.dataset.productId = v.product_id || '';
+    el.dataset.hsnCode = v.hsn_code || '';
+    el.innerHTML = `
+      <div class="itemhead">
+        <div>
+          <div class="itemname" contenteditable="true">${esc(displayName)}</div>
+          <div class="itemmeta">${esc(v.meta || 'Editable item line')}</div>
+        </div>
+        <button class="remove" type="button">×</button>
+      </div>
+      <div class="item-grid">
+        <div class="field"><label>Qty</label><input data-role="qty" value="${esc(v.quantity || 1)}" /></div>
+        <div class="field"><label>Rate</label><input data-role="rate" placeholder="₹ 0.00" value="${esc(v.unit_rate || '')}" /></div>
+        <div class="field"><label>GST %</label><input data-role="gst" placeholder="18" value="${esc(v.gst_rate || '')}" /></div>
+      </div>`;
+    list.appendChild(el);
+    input.value = '';
+    input.focus();
+    updateGstSummary();
+  }
+
+  add.addEventListener('click', () => { if(lastItemResults.length) selectItem(0); else addItem(input.value); });
+  input.addEventListener('keydown', e => {
+    if(e.key === 'Enter'){ e.preventDefault(); if(lastItemResults.length) selectItem(0); else addItem(input.value); }
+  });
+  $('addBlankItem').addEventListener('click', () => input.focus());
+
+  document.addEventListener('click', e => {
+    if(e.target.matches('.remove')){
+      e.target.closest('.item')?.remove();
+      updateGstSummary();
+    }
+  });
+
+  // ---- tap/Enter product lookup: links product/GST/HSN/TAGRO-name when the
+  // item matches the catalog; typing a name with no selection still works for
+  // an item that isn't in the catalog (a workshop consumable, one-off buy). --
+  const itemResults = $('purchaseItemResults');
+  const itemHint = $('purchaseItemHint');
+  let itemTimer = null, lastItemResults = [];
+
+  function renderItemResults(items){
+    lastItemResults = items;
+    itemResults.innerHTML = items.map((p, i) => {
+      const name = p.tagro_name || p.name || p.model || p.sku;
+      const detail = [p.manufacturer_part_no || p.sku, p.hsn_code ? 'HSN ' + p.hsn_code : '', p.gst_known ? 'GST ' + p.gst_rate + '%' : 'GST incomplete'].filter(Boolean).join(' · ');
+      return `<button type="button" class="result" data-i="${i}"><b>${esc(name)}</b><small>${esc(detail)}</small></button>`;
+    }).join('') || '';
+  }
+  itemResults.addEventListener('click', e => {
+    const btn = e.target.closest('[data-i]');
+    if(btn) selectItem(Number(btn.dataset.i));
+  });
+  function selectItem(i){
+    const p = lastItemResults[i];
+    if(!p) return;
+    addItem(p.tagro_name || p.name || p.model || p.sku, {
+      product_id: p.product_id,
+      hsn_code: p.hsn_code || '',
+      gst_rate: p.gst_known ? p.gst_rate : '',
+      meta: [p.manufacturer_part_no || p.sku, p.hsn_code ? 'HSN ' + p.hsn_code : ''].filter(Boolean).join(' · ') || 'Linked catalog item'
+    });
+    itemResults.innerHTML = ''; itemHint.textContent = '';
+  }
+  input.addEventListener('input', () => {
+    clearTimeout(itemTimer);
+    const q = input.value.trim();
+    if(q.length < 2){ itemResults.innerHTML = ''; lastItemResults = []; return; }
+    itemTimer = setTimeout(async () => {
+      try{ const body = await EchoRuntime.reference('products', q, 10); renderItemResults(body.items || []); }
+      catch(e){ itemHint.textContent = e.message; }
+    }, 220);
+  });
+
+  // ---- real-time GST math (client display only; server recomputes) -------
+  function isInterState(){
+    const gstin = $('supplierGstin').value.trim().toUpperCase();
+    return Boolean(gstin) && gstin.length >= 2 && gstin.slice(0, 2) !== KERALA_GST_STATE_CODE;
+  }
+
+  function updateGstSummary(){
+    const interState = isInterState();
+    let taxableTotal = 0, cgstTotal = 0, sgstTotal = 0, igstTotal = 0;
+    document.querySelectorAll('#purchaseItems .item').forEach(item => {
+      const qty = Number(item.querySelector('[data-role="qty"]')?.value) || 0;
+      const rate = Number(item.querySelector('[data-role="rate"]')?.value) || 0;
+      const gstRate = Number(item.querySelector('[data-role="gst"]')?.value) || 0;
+      const taxable = qty * rate;
+      const tax = taxable * gstRate / 100;
+      taxableTotal += taxable;
+      if(interState) igstTotal += tax;
+      else { cgstTotal += tax / 2; sgstTotal += tax / 2; }
+    });
+    const grandTotal = taxableTotal + cgstTotal + sgstTotal + igstTotal;
+    $('taxableValueOut').value = money(taxableTotal);
+    $('totalGstOut').value = money(cgstTotal + sgstTotal + igstTotal);
+    $('cgstOut').textContent = money(cgstTotal);
+    $('sgstOut').textContent = money(sgstTotal);
+    $('igstOut').textContent = money(igstTotal);
+    $('purchaseTotalOut').textContent = money(grandTotal);
+  }
+
+  document.addEventListener('input', e => {
+    if(e.target.matches('[data-role="qty"], [data-role="rate"], [data-role="gst"], #supplierGstin')){
+      updateGstSummary();
+    }
+  });
+
+  function currentItems(){
+    return [...document.querySelectorAll('#purchaseItems .item')].map(item => ({
+      product_id: item.dataset.productId || null,
+      item_name: item.querySelector('.itemname')?.textContent.trim() || '',
+      hsn_code: item.dataset.hsnCode || '',
+      quantity: Number(item.querySelector('[data-role="qty"]')?.value) || 0,
+      unit: 'nos',
+      unit_rate: Number(item.querySelector('[data-role="rate"]')?.value) || 0,
+      gst_rate: Number(item.querySelector('[data-role="gst"]')?.value) || 0
+    }));
+  }
+
+  // ---- supplier lookup (tap-or-Enter) -------------------------------------
+  let supplierTimer = null;
+  function chooseSupplier(x){
+    $('supplierId').value = x.supplier_id;
+    $('supplierName').value = x.name;
+    if(x.gstin && !$('supplierGstin').value) $('supplierGstin').value = x.gstin;
+    $('supplierResults').innerHTML = '';
+    $('supplierHint').innerHTML = '<span class="tag-verified">Selected: ' + esc([x.name, x.phone].filter(Boolean).join(' · ')) + '</span>';
+    updateGstSummary();
+  }
+  async function findSuppliers(){
+    $('supplierId').value = '';
+    const q = $('supplierName').value.trim();
+    if(q.length < 2){ $('supplierResults').innerHTML = ''; $('supplierHint').textContent = 'Search by supplier name, phone or GSTIN.'; $('supplierHint').className = 'hint'; return; }
+    try{
+      const b = await EchoRuntime.reference('suppliers', q, 20);
+      $('supplierResults').innerHTML = b.items.map((x,i) => `<button class="result" type="button" data-i="${i}"><b>${esc(x.name)}</b><small>${esc(x.phone||x.gstin||'')}</small></button>`).join('') || '<div class="hint">No supplier match. The supplier master must be populated before a purchase entry can be submitted.</div>';
+      $('supplierResults').querySelectorAll('[data-i]').forEach(btn => btn.onclick = () => chooseSupplier(b.items[Number(btn.dataset.i)]));
+      $('supplierHint').textContent = ''; $('supplierHint').className = 'hint';
+    }catch(e){ $('supplierHint').textContent = e.message; $('supplierHint').className = 'hint warn'; }
+  }
+  $('supplierName').addEventListener('input', () => { clearTimeout(supplierTimer); supplierTimer = setTimeout(findSuppliers, 220); });
+  $('supplierName').addEventListener('keydown', e => { if(e.key === 'Enter'){ const first = $('supplierResults').querySelector('[data-i]'); if(first){ e.preventDefault(); first.click(); } } });
+
+  async function branches(){
+    const b = await EchoRuntime.reference('branches', '', 100);
+    $('branch').innerHTML = '<option value="">Select branch</option>' + b.items.map(x => `<option value="${esc(x.code)}">${esc(x.code)} · ${esc(x.name)}</option>`).join('');
+    const remembered = localStorage.getItem('echo.purchase-entry.branch');
+    if(remembered && b.items.some(x => x.code === remembered)) $('branch').value = remembered;
+    $('branch').onchange = () => localStorage.setItem('echo.purchase-entry.branch', $('branch').value);
+  }
+
+  let currentEntryId = null;
+  let enterpriseId = '';
+
+  async function persistEntry(status){
+    const items = currentItems();
+    if(!items.length) throw new Error('Add at least one purchase item first.');
+    if(!$('branch').value) throw new Error('Select a branch first.');
+    if(!$('supplierId').value) throw new Error('Select a verified supplier first.');
+    const payload = {
+      schema: 'tagro.echo.purchase-entry-request.v1',
+      enterprise_id: enterpriseId,
+      entry_id: currentEntryId || undefined,
+      status,
+      branch_code: $('branch').value,
+      supplier_id: $('supplierId').value,
+      supplier_gstin: $('supplierGstin').value.trim(),
+      place_of_supply: $('placeOfSupply').value.trim(),
+      invoice_number: $('invoiceNumber').value.trim(),
+      invoice_date: $('invoiceDate').value,
+      shipment_reference: $('shipmentReference').value.trim(),
+      transporter: $('transporter').value.trim(),
+      shipment_note: $('shipmentNote').value.trim(),
+      purchase_note: $('purchaseNote').value.trim(),
+      lines: items,
+      idempotency_key: crypto.randomUUID()
+    };
+    const r = await EchoRuntime.enqueueAndFlush({path:'/purchase-entries', body: payload, expectedSchema:'tagro.echo.purchase-entry-saved.v1', idempotencyKey: payload.idempotency_key});
+    if(r.state === 'acknowledged' && r.response?.data?.entry_id){
+      currentEntryId = r.response.data.entry_id;
+      $('entryBadge').textContent = r.response.data.status === 'recorded' ? 'RECORDED' : 'DRAFT';
+      return r.response.data;
+    }
+    throw new Error(r.state === 'review' ? 'Purchase entry needs review.' : 'Saved on this phone and waiting to send to ECHO.');
+  }
+
+  $('saveDraftPe').addEventListener('click', async () => {
+    const status = $('entryStatus');
+    status.textContent = 'Saving draft…';
+    try{
+      const entry = await persistEntry('draft');
+      status.textContent = `Draft saved (${entry.entry_number}). Continue any time before recording it.`;
+    }catch(error){ status.textContent = error.message; }
+  });
+
+  $('savePurchase').addEventListener('click', async () => {
+    const status = $('entryStatus');
+    status.textContent = 'Saving purchase entry…';
+    try{
+      const entry = await persistEntry('recorded');
+      status.textContent = `Purchase entry ${entry.entry_number} recorded. Taxable ${money(entry.taxable_total)} · GST ${money(Number(entry.cgst_total)+Number(entry.sgst_total)+Number(entry.igst_total))} · Total ${money(entry.grand_total)}.`;
+    }catch(error){ status.textContent = error.message; }
+  });
+
+  async function boot(){
+    if(!EchoRuntime.sessionInfo().signedIn){ location.href = 'login.html'; return; }
+    const info = EchoRuntime.sessionInfo();
+    const context = await EchoRuntime.loadContext();
+    const membership = (context.enterprises||[]).find(x => x.enterprise_id === info.enterpriseId) || (context.enterprises||[])[0];
+    enterpriseId = membership?.enterprise_id || info.enterpriseId;
+    await branches();
+    updateGstSummary();
+    EchoRuntime.flushQueue().catch(() => {});
+  }
+
+  boot().catch(e => { $('entryStatus').textContent = e.message; });
+})();
+</script>
+</body>
+</html>

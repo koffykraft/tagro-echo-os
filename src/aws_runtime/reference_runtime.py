@@ -74,9 +74,18 @@ def reference_search(
                 select p.product_id,p.sku,p.model,p.name,p.category,p.gst_rate,p.unit,p.serial_tracked,
                        coalesce(pca.hsn_code,''),coalesce(pca.manufacturer_part_no,''),
                        coalesce(pca.gst_known,false),approved.amount,approved.price_type,
-                       approved.effective_from
+                       approved.effective_from,coalesce(tagro_alias.alias_value,p.name)
                 from products p
                 left join product_commercial_attributes pca on pca.product_id=p.product_id
+                left join lateral (
+                  select pa.alias_value
+                  from product_aliases pa
+                  where pa.enterprise_id=p.enterprise_id and pa.product_id=p.product_id
+                    and pa.alias_type='tagro_display_name' and pa.active=true
+                    and (pa.branch_code='' or %s='' or pa.branch_code=%s)
+                  order by case when pa.branch_code='' then 1 else 0 end
+                  limit 1
+                ) tagro_alias on true
                 left join lateral (
                   select pr.amount,pr.price_type,pr.effective_from
                   from prices pr
@@ -109,12 +118,13 @@ def reference_search(
                   )
                 order by p.model,p.name limit %s
                 """,
-                (branch, branch, enterprise_id, q, pattern, pattern, pattern, pattern, pattern, pattern, branch, branch, pattern, n),
+                (branch, branch, branch, branch, enterprise_id, q, pattern, pattern, pattern, pattern, pattern, pattern, branch, branch, pattern, n),
             ).fetchall()
             columns = (
                 "product_id", "sku", "model", "name", "category", "gst_rate", "unit", "serial_tracked",
                 "hsn_code", "manufacturer_part_no", "gst_known",
                 "approved_price_before_tax", "approved_price_type", "approved_price_effective_from",
+                "tagro_name",
             )
         elif kind == "customers":
             rows = conn.execute(

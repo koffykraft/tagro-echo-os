@@ -17,6 +17,7 @@ from src.aws_runtime.operational_runtime import (
     create_service_intake,
     record_stock_count,
 )
+from src.aws_runtime.purchase_entry_runtime import PurchaseEntryRuntimeError, save_purchase_entry
 from src.aws_runtime.reference_runtime import ReferenceRuntimeError, reference_search
 
 
@@ -77,7 +78,7 @@ def _operational_post(config: RuntimeConfig, claims: Mapping[str, Any], event: M
         result = operation(config, principal_id=str(context_result["principal_id"]), membership=membership, payload=payload)
     except PermissionError:
         return _response(403, {"error": f"{capability.lower()}_capability_required"})
-    except (OperationalRuntimeError, CashRuntimeError, CashDocumentRuntimeError) as exc:
+    except (OperationalRuntimeError, CashRuntimeError, CashDocumentRuntimeError, PurchaseEntryRuntimeError) as exc:
         return _response(409, {"error": "operation_rejected", "detail": str(exc)})
     except Exception as exc:
         return _response(503, {"error": "operational_runtime_unavailable", "error_type": type(exc).__name__})
@@ -280,6 +281,9 @@ def lambda_handler(event: Mapping[str, Any], context: Any) -> dict[str, Any]:
 
     if raw_path == "/purchase-orders" and method == "POST":
         return _operational_post(config, claims, event, capability="PURCHASE", operation=create_purchase_order, schema="tagro.echo.purchase-order.v1")
+
+    if raw_path == "/purchase-entries" and method == "POST":
+        return _operational_post(config, claims, event, capability="PURCHASE", operation=save_purchase_entry, schema="tagro.echo.purchase-entry-saved.v1")
 
     if raw_path == "/stock-count/record" and method == "POST":
         return _operational_post(config, claims, event, capability="STOCK", operation=record_stock_count, schema="tagro.echo.stock-count.v1")

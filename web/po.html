@@ -1,1 +1,633 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f5f4f1"><title>Purchase · TAGRO STIHL</title><link rel="stylesheet" href="operation.css"><style>.po-line{display:grid;grid-template-columns:minmax(0,1fr) 86px 42px;gap:7px;align-items:end;margin:8px 0}.po-field{display:grid;gap:4px;min-width:0}.po-field label{font-size:10px;font-weight:750;color:var(--muted)}.po-field input{width:100%;min-width:0;min-height:46px;border:1px solid #d6d2ca;border-radius:11px;padding:9px;font-size:16px}.po-line>button{min-height:44px;border:1px solid var(--line);background:#fff;border-radius:10px;font-size:20px}.po-line .results{grid-column:1/4}@media(max-width:560px){.po-line{grid-template-columns:minmax(0,1fr) 74px 40px}}</style></head><body><header class="op-top"><div class="op-top-inner"><picture class="op-brand"><source media="(min-width:700px)" srcset="assets/brand/tagro-stihl-1600x400.png"><img src="assets/brand/tagro-stihl-900x240.png" alt="TAGRO STIHL"></picture><div class="op-title"><b>PURCHASE</b><span id="contextLabel">Purchase requirement</span></div><a class="home" href="index.html">Home</a></div></header><main class="op-shell"><div class="op-head"><div><h1>Purchase requirement</h1><p>Create the requirement first; approval and supplier instruction remain separate states.</p></div><span id="statePill" class="state">READY</span></div><div class="truth">ECHO runtime acceptance creates the shared purchase-order draft. It does not by itself mean owner-approved, sent to supplier, received or booked in BUSY.</div><div class="desktop-two"><section><div class="panel"><div class="field"><label for="branch">Counter / destination</label><select id="branch"></select></div><div class="field lookup"><label for="supplierSearch">Supplier</label><input id="supplierSearch" autocomplete="off" placeholder="Supplier name, phone or GSTIN"><input id="supplierId" type="hidden"><div id="supplierSelected" class="selected">No supplier selected.</div><div id="supplierResults" class="results"></div></div><div class="field"><label for="note">Requirement note</label><input id="note" autocomplete="off" placeholder="optional"></div></div><div class="panel"><h2>Items needed</h2><div id="lines"></div><button id="add" class="action secondary" type="button">+ ADD ITEM</button></div><div class="sticky-action"><button id="save" class="action primary" type="button">SAVE FOR APPROVAL</button></div><div id="state" class="statusbox" aria-live="polite">Nothing submitted.</div></section><aside><h2>Drafts on this phone</h2><div id="drafts" class="list"></div></aside></div></main><script src="runtime-config.js"></script><script src="runtime-client.js"></script><script>(()=>{'use strict';const $=id=>document.getElementById(id);let db={drafts:[],current:{}},storeKey='',rows=[],supplierTimer=null;const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));function persist(){if(storeKey)localStorage.setItem(storeKey,JSON.stringify(db))}function saveCurrent(){if(!storeKey)return;db.current={branch_code:$('branch').value,supplier_id:$('supplierId').value,supplier_name:$('supplierSearch').value.trim(),note:$('note').value.trim(),lines:rows.map(x=>({product_id:x.product_id,label:x.label,quantity:x.quantity,unit_price:x.unit_price,note:x.note||''}))};persist()}function state(text,kind=''){$('state').className='statusbox'+(kind?' '+kind:'');$('state').textContent=text}function addLine(v={},save=true){rows.push({product_id:v.product_id||'',label:v.label||'',quantity:Number(v.quantity||1),unit_price:v.unit_price??'',note:v.note||''});renderLines();if(save)saveCurrent()}function renderLines(){$('lines').innerHTML='';rows.forEach((r,i)=>{const d=document.createElement('div');d.className='po-line';d.innerHTML=`<div class="po-field"><label>PRODUCT</label><input aria-label="Purchase product ${i+1}" placeholder="Part number / model / name" value="${esc(r.label||r.product_id)}"></div><div class="po-field"><label>QTY</label><input aria-label="Purchase quantity ${i+1}" type="number" min="0.001" step="0.001" value="${r.quantity}"></div><button type="button" aria-label="Remove purchase item ${i+1}">×</button><div class="results"></div>`;const ins=d.querySelectorAll('input'),results=d.querySelector('.results');let timer=null;ins[0].oninput=()=>{r.label=ins[0].value;r.product_id='';saveCurrent();clearTimeout(timer);timer=setTimeout(async()=>{const q=ins[0].value.trim();if(q.length<2){results.innerHTML='';return}try{const body=await EchoRuntime.reference('products',q,12);results.innerHTML=body.items.map((p,n)=>`<button type="button" class="result" data-n="${n}"><b>${esc(p.model||p.sku||p.name)}</b><small>${esc(p.name||p.sku||'')}</small></button>`).join('')||'<div class="selected">No product match.</div>';results.querySelectorAll('[data-n]').forEach(btn=>btn.onclick=()=>{const p=body.items[Number(btn.dataset.n)];r.product_id=p.product_id;r.label=[p.model,p.name].filter(Boolean).join(' · ');ins[0].value=r.label;results.innerHTML='';saveCurrent()})}catch(e){results.innerHTML='<div class="statusbox error">'+esc(e.message)+'</div>'}},220)};ins[1].oninput=()=>{r.quantity=Number(ins[1].value||0);saveCurrent()};d.querySelector('button').onclick=()=>{rows.splice(i,1);if(!rows.length)addLine({},false);else renderLines();saveCurrent()};$('lines').appendChild(d)})}function renderDrafts(){$('drafts').innerHTML=(db.drafts||[]).slice().reverse().slice(0,12).map(d=>`<div class="list-item"><span class="pill">${esc(d.status)}</span><b>${esc(d.branch_code)} → ${esc(d.supplier_name||d.supplier_id)}</b><p>${d.lines.map(x=>esc(x.label||x.product_id)+' × '+esc(x.quantity)).join('<br>')}</p><small>${esc(d.po_id||d.idempotency_key)}</small></div>`).join('')||'<div class="statusbox">No purchase drafts on this device.</div>'}function chooseSupplier(x){$('supplierId').value=x.supplier_id;$('supplierSearch').value=x.name;$('supplierSelected').className='selected';$('supplierSelected').textContent='Selected: '+[x.name,x.phone].filter(Boolean).join(' · ');$('supplierResults').innerHTML='';saveCurrent()}async function findSuppliers(){const q=$('supplierSearch').value.trim();if(q.length<2){$('supplierResults').innerHTML='';return}try{const b=await EchoRuntime.reference('suppliers',q,20);$('supplierResults').innerHTML=b.items.map((x,i)=>`<button class="result" type="button" data-i="${i}"><b>${esc(x.name)}</b><small>${esc(x.phone||x.gstin||'')}</small></button>`).join('')||'<div class="selected">No supplier match. Supplier master must be populated before a purchase requirement can be submitted.</div>';$('supplierResults').querySelectorAll('[data-i]').forEach(btn=>btn.onclick=()=>chooseSupplier(b.items[Number(btn.dataset.i)]))}catch(e){$('supplierResults').innerHTML='<div class="statusbox error">'+esc(e.message)+'</div>'}}async function branches(){const b=await EchoRuntime.reference('branches','',100);$('branch').innerHTML='<option value="">Select counter</option>'+b.items.map(x=>`<option value="${esc(x.code)}">${esc(x.code)} · ${esc(x.name)}</option>`).join('');const remembered=localStorage.getItem('echo.purchase.branch');if(remembered)$('branch').value=remembered;$('branch').onchange=()=>{localStorage.setItem('echo.purchase.branch',$('branch').value);saveCurrent()}}async function submit(){const valid=rows.filter(r=>r.product_id&&r.quantity>0);$('branch').setAttribute('aria-invalid',$('branch').value?'false':'true');$('supplierSelected').className='selected'+($('supplierId').value?'':' error');if(!$('branch').value||!$('supplierId').value||!valid.length){state('Select counter and supplier and choose at least one valid product.','error');return}const d={schema:'tagro.echo.purchase-order-request.v1',branch_code:$('branch').value,supplier_id:$('supplierId').value,supplier_name:$('supplierSearch').value.trim(),lines:valid.map(x=>({product_id:x.product_id,quantity:x.quantity,unit_price:x.unit_price||null,note:$('note').value.trim()})),idempotency_key:crypto.randomUUID(),created_at:new Date().toISOString(),status:'local_pending',supplier_order_sent:false};db.drafts.push(d);persist();renderDrafts();$('statePill').textContent='SENDING';$('statePill').className='state pending';state('Saving purchase requirement…');$('save').disabled=true;try{const r=await EchoRuntime.enqueueAndFlush({path:'/purchase-orders',body:d,expectedSchema:'tagro.echo.purchase-order.v1',idempotencyKey:d.idempotency_key});if(r.state==='acknowledged'&&r.response?.data?.po_id){d.po_id=r.response.data.po_id;d.status=r.response.data.status||'draft';d.runtime_confirmed_at=new Date().toISOString();$('statePill').textContent='DRAFT RECORDED';$('statePill').className='state live';state('ECHO draft '+d.po_id+' recorded. It has not been sent to the supplier.','ok');rows=[];$('supplierId').value='';$('supplierSearch').value='';$('supplierSelected').textContent='No supplier selected.';$('note').value='';addLine({},false);saveCurrent()}else{d.status=r.state==='review'?'review':'pending_sync';$('statePill').textContent=d.status==='review'?'REVIEW':'WAITING TO SEND';$('statePill').className='state '+(d.status==='review'?'review':'pending');state(d.status==='review'?'Purchase draft needs review.':'Saved on this phone and waiting for ECHO.',d.status==='review'?'error':'warn')}persist();renderDrafts()}catch(e){d.status='pending_sync';persist();renderDrafts();$('statePill').textContent='WAITING TO SEND';$('statePill').className='state pending';state('Saved for retry: '+e.message,'warn')}finally{$('save').disabled=false}}async function boot(){if(!EchoRuntime.sessionInfo().signedIn){location.href='login.html';return}try{const ctx=await EchoRuntime.loadContext(),info=EchoRuntime.sessionInfo(),m=(ctx.enterprises||[]).find(x=>x.enterprise_id===info.enterpriseId)||(ctx.enterprises||[])[0];$('contextLabel').textContent=(ctx.display_name||info.email||'Staff')+' · '+(m?.enterprise_code||'ECHO');storeKey=EchoRuntime.localKey('purchase-drafts-v2');const saved=localStorage.getItem(storeKey);db=saved?JSON.parse(saved):{drafts:[],current:{}};if(!Array.isArray(db.drafts))db.drafts=[];if(!db.current)db.current={};await branches();const c=db.current;$('branch').value=c.branch_code||$('branch').value;$('supplierId').value=c.supplier_id||'';$('supplierSearch').value=c.supplier_name||'';$('supplierSelected').textContent=c.supplier_id?'Selected: '+(c.supplier_name||c.supplier_id):'No supplier selected.';$('note').value=c.note||'';rows=Array.isArray(c.lines)?c.lines:[];if(!rows.length)addLine({},false);else renderLines();renderDrafts();saveCurrent();EchoRuntime.flushQueue().catch(()=>{})}catch(e){state(e.message,'error')}}$('supplierSearch').oninput=()=>{$('supplierId').value='';$('supplierSelected').textContent='No supplier selected.';saveCurrent();clearTimeout(supplierTimer);supplierTimer=setTimeout(findSuppliers,220)};$('note').oninput=saveCurrent;$('add').onclick=()=>addLine();$('save').onclick=submit;boot()})();</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#f3f3f1">
+<title>TAGRO Mobile Purchase Order · TAGRO STIHL</title>
+<style>
+:root{
+  --bg:#f3f3f1;--card:#fff;--ink:#111;--muted:#6b6b68;--line:#d9d9d4;
+  --soft:#ecece8;--accent:#f36f21;--danger:#b42318;--radius:16px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+.app{width:100%;max-width:480px;min-height:100vh;margin:0 auto;padding-bottom:94px}
+.topbar{
+  position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--line);
+  padding:12px 14px 10px;
+}
+.brandrow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{
+  width:38px;height:38px;border:1.5px dashed #999;border-radius:10px;
+  display:grid;place-items:center;font-size:10px;color:var(--muted);background:#fafaf8
+}
+h1{font-size:18px;margin:0;font-weight:900}
+.sub{font-size:11px;color:var(--muted);margin-top:3px}
+.step{font-size:11px;font-weight:900;text-align:right}
+.step span{display:block;color:var(--muted);font-weight:600;margin-top:2px}
+.progress{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:10px}
+.progress div{height:4px;border-radius:99px;background:#ddd}
+.progress div.active{background:var(--accent)}
+main{padding:12px}
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:13px;margin-bottom:10px;
+}
+.section-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.section-title h2{margin:0;font-size:14px;font-weight:900}
+.link{border:0;background:none;color:var(--accent);font-weight:900;font-size:12px}
+.field{margin-bottom:10px}.field:last-child{margin-bottom:0}
+label{
+  display:block;font-size:11px;font-weight:800;color:#4c4c49;margin-bottom:5px;
+  text-transform:uppercase;letter-spacing:.04em
+}
+input,textarea,select{
+  width:100%;border:1px solid var(--line);background:#fff;border-radius:11px;
+  min-height:45px;padding:10px 11px;font-size:15px;color:var(--ink);outline:none
+}
+textarea{min-height:76px;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:8px}
+.quick button{
+  min-height:49px;border:1px solid var(--line);border-radius:11px;background:#fafaf8;
+  padding:6px;font-size:11px;font-weight:900
+}
+.quick button span{display:block;font-size:10px;color:var(--muted);font-weight:600;margin-top:2px}
+.item{border:1px solid var(--line);border-radius:13px;padding:10px;margin-top:8px}
+.item:first-of-type{margin-top:0}
+.itemhead{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.itemname{font-weight:900;font-size:14px;line-height:1.25}
+.itemmeta{font-size:11px;color:var(--muted);margin-top:3px}
+.remove{
+  border:1px solid #e2b6b1;background:#fff;color:var(--danger);width:34px;height:34px;
+  border-radius:9px;font-size:18px;font-weight:900;flex:0 0 auto
+}
+.controls{display:grid;grid-template-columns:110px 1fr;gap:8px;align-items:center;margin-top:9px}
+.qty{display:grid;grid-template-columns:34px 1fr 34px;border:1px solid var(--line);border-radius:10px;overflow:hidden;height:40px}
+.qty button{border:0;background:#f5f5f2;font-size:20px}
+.qty span{display:grid;place-items:center;font-weight:900;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.needby{text-align:right;font-size:11px;color:var(--muted)}
+.needby b{display:block;color:var(--ink);font-size:13px;margin-top:2px}
+.summary{display:grid;gap:8px}
+.sumrow{display:flex;justify-content:space-between;font-size:13px}
+.sumrow.total{border-top:1px solid var(--line);padding-top:9px;font-weight:900;font-size:16px}
+.helper{font-size:11px;color:var(--muted);line-height:1.45;margin-top:6px}
+.page{display:none}.page.active{display:block}
+.bottom{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:min(480px,100%);
+  background:rgba(255,255,255,.97);backdrop-filter:blur(8px);border-top:1px solid var(--line);
+  padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1.6fr;gap:8px;z-index:20
+}
+.bottom button{min-height:52px;border-radius:12px;font-size:14px;font-weight:900}
+.secondary{background:#fff;border:1px solid #bdbdb7}
+.primary{background:var(--accent);color:#fff;border:1px solid var(--accent)}
+.sendbox{
+  border:1px solid #cfcfc9;background:#fafaf8;border-radius:13px;padding:11px;margin-top:10px
+}
+.format-grid,.send-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.format-grid button,.send-grid button{
+  min-height:48px;border:1px solid var(--line);background:#fff;border-radius:11px;font-weight:900
+}
+.format-grid button.selected{background:#111;color:#fff;border-color:#111}
+.send-grid{margin-top:8px}
+.send-grid .primarysend{background:var(--accent);color:#fff;border-color:var(--accent)}
+.status{
+  padding:10px;border-radius:11px;background:#f6f6f3;border:1px solid var(--line);
+  font-size:12px;color:#555;margin-top:10px;display:none
+}
+/* Additive, not a design change: visible tap-or-Enter lookup lists for item
+   and supplier search, matching this ECHO AWS codebase's own established
+   navigation convention, replacing the mock's static/demo <datalist>s. */
+.results{display:grid;gap:6px;margin-top:8px}
+.result{width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:11px;padding:9px 10px;cursor:pointer;font:inherit;color:inherit}
+.result:active{background:var(--soft)}
+.result b{display:block;font-size:13px;line-height:1.3}
+.result small{display:block;color:var(--muted);margin-top:2px;font-size:11px;line-height:1.35}
+.hint{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.4}
+.hint.warn{color:var(--danger)}
+.tag-verified{display:inline-block;margin-top:7px;font-size:11px;font-weight:800;color:#1f7a3d;background:#eaf6ec;border:1px solid #cfe9d3;border-radius:999px;padding:4px 9px}
+@media(max-width:360px){.grid2{grid-template-columns:1fr}.quick{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+  <div class="brandrow">
+    <div class="brand">
+      <img class="logo" src="assets/brand/tagro-stihl-900x240.png" alt="TAGRO STIHL" style="border:0;object-fit:contain;background:#fff">
+      <div>
+        <h1>Purchase Order</h1>
+        <div class="sub">Fast reorder form</div>
+      </div>
+    </div>
+    <div class="step">STEP <span id="stepLabel">1 of 2</span></div>
+  </div>
+  <div class="progress"><div class="active" id="p1"></div><div id="p2"></div></div>
+</header>
+
+<main>
+  <section class="page active" id="page1">
+    <div class="card">
+      <div class="section-title"><h2>Reorder items</h2><button class="link" id="addBlank" type="button">+ Add item</button></div>
+
+      <div class="field" style="margin-top:4px">
+        <label>Item name</label>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:8px">
+          <input id="itemNameInput" placeholder="Type item name" autocomplete="off" />
+          <button id="addTypedItem" type="button" style="min-width:72px;border:0;border-radius:11px;background:#111;color:#fff;font-weight:900">ADD</button>
+        </div>
+        <div id="itemResults" class="results"></div>
+        <div id="itemHint" class="hint"></div>
+      </div>
+
+      <div class="quick">
+        <button type="button" data-name="STIHL Saw Chain .325&quot;">.325 Chain<span>quick add</span></button>
+        <button type="button" data-name="STIHL Saw Chain 3/8P">3/8P Chain<span>quick add</span></button>
+        <button type="button" data-name="STIHL Round File 4.0 mm">4.0 File<span>quick add</span></button>
+        <button type="button" data-name="STIHL Round File 4.8 mm">4.8 File<span>quick add</span></button>
+      </div>
+
+      <div id="items" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title"><h2>Order summary</h2></div>
+      <div class="summary">
+        <div class="sumrow"><span>Line items</span><strong id="lineCount">0</strong></div>
+        <div class="sumrow total"><span>Total quantity</span><span id="qtyTotal">0 pcs</span></div>
+      </div>
+      <div class="helper">Supplier, branch and creator are deliberately kept for the next page so item entry stays fast.</div>
+      <div class="helper" id="draftStatus" style="margin-top:6px"></div>
+    </div>
+  </section>
+
+  <section class="page" id="page2">
+    <div class="card">
+      <div class="section-title"><h2>Order details</h2></div>
+
+      <div class="field">
+        <label>Supplier</label>
+        <input id="supplier" placeholder="Search or type supplier" autocomplete="off" />
+        <input id="supplierId" type="hidden">
+        <div id="supplierResults" class="results"></div>
+        <div id="supplierHint" class="hint">Search by supplier name, phone or GSTIN.</div>
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label>Ordering branch</label>
+          <select id="branch"><option value="">Select branch</option></select>
+        </div>
+        <div class="field">
+          <label>Created by</label>
+          <input id="createdBy" value="Logged-in user" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Comments / instructions</label>
+        <textarea id="comments" placeholder="Optional comments, urgency, delivery note, etc."></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title"><h2>Review</h2><button class="link" id="backToItems" type="button">Edit items</button></div>
+      <div id="review"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title"><h2>Convert & Send</h2></div>
+      <div class="format-grid">
+        <button class="format selected" data-format="pdf" type="button">PDF</button>
+        <button class="format" data-format="xlsx" type="button">EXCEL</button>
+      </div>
+      <div class="send-grid">
+        <button class="primarysend" id="shareBtn" type="button">SHARE</button>
+        <button id="saveBtn" type="button">SAVE</button>
+      </div>
+      <div class="helper">Share uses the device share sheet, so WhatsApp, email and other installed apps can be chosen. Save keeps the file on the device.</div>
+      <div class="helper">Saving here creates the shared ECHO purchase-order draft. It does not by itself mean owner-approved, sent to supplier, received or booked in BUSY.</div>
+      <div class="status" id="status"></div>
+    </div>
+  </section>
+</main>
+
+<div class="bottom" id="bottom1">
+  <button class="secondary" id="saveDraft" type="button">SAVE DRAFT</button>
+  <button class="primary" id="continueBtn" type="button">SAVE & CONTINUE</button>
+</div>
+
+<div class="bottom" id="bottom2" style="display:none">
+  <button class="secondary" id="backBtn" type="button">BACK</button>
+  <button class="primary" id="savePO" type="button">SAVE PURCHASE ORDER</button>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="runtime-config.js"></script>
+<script src="runtime-client.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const money = n => '₹' + Number(n || 0).toLocaleString('en-IN');
+
+  const page1 = $('page1'), page2 = $('page2');
+  const p1 = $('p1'), p2 = $('p2');
+  const stepLabel = $('stepLabel');
+  const bottom1 = $('bottom1'), bottom2 = $('bottom2');
+  let format = 'pdf';
+  let draftKey = '', supplierId = '';
+
+  function updateItems(){
+    let qty = 0, lines = 0;
+    document.querySelectorAll('#items .item').forEach(item => {
+      const q = Number(item.dataset.qty || 1);
+      qty += q; lines += 1;
+      item.querySelector('.qval').textContent = q;
+      item.querySelector('.needby b').textContent = q + ' pcs';
+    });
+    $('lineCount').textContent = lines;
+    $('qtyTotal').textContent = qty + ' pcs';
+    saveLocal();
+  }
+
+  // ---- item resolution: any active enterprise product is a valid PO line --
+  // (a purchase order is TAGRO reordering against its own catalog, so unlike
+  // Billing there is no GST/approved-price gate here).
+  function addResolvedItem(p, qty){
+    const existing = [...document.querySelectorAll('#items .item[data-catalog-id]')].find(el => el.dataset.catalogId === p.product_id);
+    if(existing){
+      existing.dataset.qty = String(Number(existing.dataset.qty || 1) + qty);
+      updateItems();
+      return;
+    }
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.dataset.qty = String(qty);
+    div.dataset.catalogId = p.product_id;
+    div.dataset.unit = p.unit || 'nos';
+    const displayName = p.tagro_name || p.name || p.model || p.sku || 'Item';
+    const meta = [p.manufacturer_part_no || p.sku, p.hsn_code ? 'HSN ' + p.hsn_code : '', p.approved_price_before_tax != null ? money(p.approved_price_before_tax) : ''].filter(Boolean).join(' · ');
+    div.innerHTML = `
+      <div class="itemhead">
+        <div>
+          <div class="itemname" contenteditable="true">${esc(displayName)}</div>
+          <div class="itemmeta">${esc(meta)}</div>
+        </div>
+        <button class="remove" type="button" aria-label="Remove item">×</button>
+      </div>
+      <div class="controls">
+        <div class="qty">
+          <button class="minus" type="button">−</button><span class="qval">${qty}</span><button class="plus" type="button">+</button>
+        </div>
+        <div class="needby">ORDER QTY<b>${qty} pcs</b></div>
+      </div>`;
+    $('items').appendChild(div);
+    updateItems();
+  }
+
+  // ---- visible tap/Enter item lookup (replaces an invisible <datalist>) --
+  const itemNameInputEl = $('itemNameInput');
+  const addTypedItem = $('addTypedItem');
+  const itemResults = $('itemResults');
+  const itemHint = $('itemHint');
+  let itemTimer = null, lastItemResults = [];
+
+  function renderItemResults(items){
+    lastItemResults = items;
+    itemResults.innerHTML = items.map((p,i) => {
+      const name = p.tagro_name || p.name || p.model || p.sku;
+      const detail = [p.manufacturer_part_no || p.sku, p.hsn_code ? 'HSN '+p.hsn_code : '', p.gst_known ? 'GST '+p.gst_rate+'%' : 'GST incomplete'].filter(Boolean).join(' · ');
+      return `<button type="button" class="result" data-i="${i}"><b>${esc(name)}</b><small>${esc(detail)}</small></button>`;
+    }).join('') || '<div class="hint">No matching item.</div>';
+    itemResults.querySelectorAll('[data-i]').forEach(btn => btn.onclick = () => selectItem(Number(btn.dataset.i)));
+  }
+  function selectItem(i){
+    const p = lastItemResults[i];
+    if(!p) return;
+    addResolvedItem(p, 1);
+    itemNameInputEl.value = ''; itemResults.innerHTML = ''; itemHint.textContent = '';
+    itemNameInputEl.focus();
+  }
+  itemNameInputEl.addEventListener('input', () => {
+    clearTimeout(itemTimer);
+    const q = itemNameInputEl.value.trim();
+    if(q.length < 2){ itemResults.innerHTML = ''; return; }
+    itemTimer = setTimeout(async () => {
+      try{ const body = await EchoRuntime.reference('products', q, 12); renderItemResults(body.items || []); }
+      catch(e){ itemHint.textContent = e.message; }
+    }, 220);
+  });
+  itemNameInputEl.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); if(lastItemResults.length) selectItem(0); } });
+  addTypedItem.addEventListener('click', () => { if(lastItemResults.length) selectItem(0); else itemNameInputEl.focus(); });
+  $('addBlank').addEventListener('click', () => itemNameInputEl.focus());
+
+  // Quick add: resolve the button's own visible label against the real
+  // catalog and add the best real match in one tap.
+  document.querySelectorAll('.quick button[data-name]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const term = btn.dataset.name;
+      const draftStatus = $('draftStatus');
+      try{
+        const body = await EchoRuntime.reference('products', term, 5);
+        const match = (body.items || [])[0];
+        if(!match){ draftStatus.textContent = 'No catalog match found for "' + term + '" yet.'; return; }
+        draftStatus.textContent = '';
+        addResolvedItem(match, 1);
+      }catch(e){ draftStatus.textContent = e.message; }
+    });
+  });
+
+  document.addEventListener('click', e => {
+    const item = e.target.closest('#items .item');
+    if(!item) return;
+    if(e.target.matches('.remove')){ item.remove(); updateItems(); }
+    else if(e.target.matches('.minus')){ item.dataset.qty = Math.max(1, Number(item.dataset.qty||1)-1); updateItems(); }
+    else if(e.target.matches('.plus')){ item.dataset.qty = Number(item.dataset.qty||1)+1; updateItems(); }
+  });
+  document.getElementById('items').addEventListener('input', e => { if(e.target.matches('.itemname')) saveLocal(); });
+
+  function currentCartLines(){
+    return [...document.querySelectorAll('#items .item[data-catalog-id]')].map(item => ({
+      product_id: item.dataset.catalogId,
+      label: item.querySelector('.itemname')?.textContent.trim() || '',
+      quantity: Number(item.dataset.qty || 1)
+    }));
+  }
+
+  // ---- supplier lookup (tap-or-Enter) ------------------------------------
+  let supplierTimer = null;
+  function chooseSupplier(x){
+    supplierId = x.supplier_id;
+    $('supplier').value = x.name;
+    $('supplierResults').innerHTML = '';
+    $('supplierHint').innerHTML = '<span class="tag-verified">Selected: ' + esc([x.name, x.phone].filter(Boolean).join(' · ')) + '</span>';
+    saveLocal();
+  }
+  async function findSuppliers(){
+    supplierId = '';
+    const q = $('supplier').value.trim();
+    if(q.length < 2){ $('supplierResults').innerHTML = ''; $('supplierHint').textContent = 'Search by supplier name, phone or GSTIN.'; $('supplierHint').className = 'hint'; return; }
+    try{
+      const b = await EchoRuntime.reference('suppliers', q, 20);
+      $('supplierResults').innerHTML = b.items.map((x,i) => `<button class="result" type="button" data-i="${i}"><b>${esc(x.name)}</b><small>${esc(x.phone||x.gstin||'')}</small></button>`).join('') || '<div class="hint">No supplier match. The supplier master must be populated before a purchase order can be submitted.</div>';
+      $('supplierResults').querySelectorAll('[data-i]').forEach(btn => btn.onclick = () => chooseSupplier(b.items[Number(btn.dataset.i)]));
+      $('supplierHint').textContent = ''; $('supplierHint').className = 'hint';
+    }catch(e){ $('supplierHint').textContent = e.message; $('supplierHint').className = 'hint warn'; }
+  }
+  $('supplier').addEventListener('input', () => { clearTimeout(supplierTimer); supplierTimer = setTimeout(findSuppliers, 220); saveLocal(); });
+  $('supplier').addEventListener('keydown', e => { if(e.key === 'Enter'){ const first = $('supplierResults').querySelector('[data-i]'); if(first){ e.preventDefault(); first.click(); } } });
+
+  async function branches(){
+    const b = await EchoRuntime.reference('branches', '', 100);
+    $('branch').innerHTML = '<option value="">Select branch</option>' + b.items.map(x => `<option value="${esc(x.code)}">${esc(x.code)} · ${esc(x.name)}</option>`).join('');
+    const remembered = localStorage.getItem('echo.purchase.branch');
+    if(remembered && b.items.some(x => x.code === remembered)) $('branch').value = remembered;
+    $('branch').onchange = () => { localStorage.setItem('echo.purchase.branch', $('branch').value); saveLocal(); };
+  }
+
+  $('comments').addEventListener('input', saveLocal);
+  $('createdBy').addEventListener('input', saveLocal);
+
+  document.getElementById('saveDraft').addEventListener('click', () => {
+    saveLocal();
+    $('draftStatus').textContent = 'Saved on this device. Choose a supplier and branch on the next step to submit it to ECHO.';
+  });
+
+  document.getElementById('savePO').addEventListener('click', async () => {
+    const status = $('status');
+    status.style.display = 'block';
+    const lines = currentCartLines();
+    if(!$('branch').value || !supplierId || !lines.length){
+      status.textContent = 'Choose a branch, a verified supplier and at least one item first.';
+      return;
+    }
+    status.textContent = 'Saving purchase order…';
+    const body = {
+      schema: 'tagro.echo.purchase-order-request.v1',
+      branch_code: $('branch').value,
+      supplier_id: supplierId,
+      lines: lines.map(x => ({product_id: x.product_id, quantity: x.quantity, unit_price: null, note: $('comments').value.trim()})),
+      idempotency_key: crypto.randomUUID()
+    };
+    try{
+      const r = await EchoRuntime.enqueueAndFlush({path:'/purchase-orders', body, expectedSchema:'tagro.echo.purchase-order.v1', idempotencyKey: body.idempotency_key});
+      if(r.state === 'acknowledged' && r.response?.data?.po_id){
+        status.textContent = `Purchase order ${r.response.data.po_id} saved as a draft. Supplier: ${$('supplier').value} · Branch: ${$('branch').value}.`;
+        if(draftKey) localStorage.removeItem(draftKey);
+      }else{
+        status.textContent = r.state === 'review' ? 'Purchase order needs review.' : 'Saved on this phone and waiting to send to ECHO.';
+      }
+      window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
+    }catch(e){ status.textContent = 'Saved for retry: ' + e.message; }
+  });
+
+  function orderData(){
+    const items = [...document.querySelectorAll('#items .item')].map((item, i) => ({
+      no:i+1,
+      item:item.querySelector('.itemname').textContent.trim(),
+      qty:Number(item.dataset.qty||1),
+      unit:'pcs'
+    }));
+    return {
+      supplier: $('supplier').value.trim(),
+      branch: $('branch').value,
+      createdBy: $('createdBy').value.trim() || 'Logged-in user',
+      comments: $('comments').value.trim(),
+      items
+    };
+  }
+
+  function renderReview(){
+    const d = orderData();
+    let h = `
+      <div class="sumrow"><span>Supplier</span><strong>${esc(d.supplier || 'Not selected')}</strong></div>
+      <div class="sumrow"><span>Branch</span><strong>${esc(d.branch || 'Not selected')}</strong></div>
+      <div class="sumrow"><span>Created by</span><strong>${esc(d.createdBy)}</strong></div>`;
+    d.items.forEach(x => {
+      h += `<div class="item" style="margin-top:8px">
+        <div class="itemhead"><div><div class="itemname">${esc(x.item)}</div><div class="itemmeta">${x.qty} ${x.unit}</div></div></div>
+      </div>`;
+    });
+    if(d.comments) h += `<div class="helper" style="margin-top:10px"><strong>Comments:</strong> ${esc(d.comments)}</div>`;
+    $('review').innerHTML = h;
+  }
+
+  function goStep(n){
+    const step2 = n===2;
+    page1.classList.toggle('active', !step2);
+    page2.classList.toggle('active', step2);
+    p1.classList.add('active');
+    p2.classList.toggle('active', step2);
+    stepLabel.textContent = step2 ? '2 of 2' : '1 of 2';
+    bottom1.style.display = step2 ? 'none' : 'grid';
+    bottom2.style.display = step2 ? 'grid' : 'none';
+    if(step2) renderReview();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  $('continueBtn').addEventListener('click', () => {
+    if(!currentCartLines().length){ $('draftStatus').textContent = 'Add at least one item before continuing.'; return; }
+    goStep(2);
+  });
+  $('backBtn').addEventListener('click', () => goStep(1));
+  $('backToItems').addEventListener('click', () => goStep(1));
+
+  document.querySelectorAll('.format').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('.format').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected'); format = btn.dataset.format;
+  }));
+
+  function pdfEscape(s){return String(s).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)')}
+
+  function makePdfBlob(){
+    const d = orderData();
+    let lines = [
+      'TAGRO PURCHASE ORDER',
+      '',
+      `Supplier: ${d.supplier || ''}`,
+      `Ordering Branch: ${d.branch || ''}`,
+      `Created By: ${d.createdBy}`,
+      ''
+    ];
+    d.items.forEach(x => lines.push(`${x.no}. ${x.item}   Qty: ${x.qty} ${x.unit}`));
+    if(d.comments) lines.push('', `Comments: ${d.comments}`);
+
+    let y = 800;
+    let content = 'BT\n/F1 12 Tf\n';
+    lines.forEach((line,i) => {
+      content += `1 0 0 1 48 ${y} Tm (${pdfEscape(line)}) Tj\n`;
+      y -= i===0 ? 26 : 18;
+    });
+    content += 'ET';
+
+    const objects = [
+      '<< /Type /Catalog /Pages 2 0 R >>',
+      '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+      '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
+      `<< /Length ${content.length} >>\nstream\n${content}\nendstream`,
+      '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'
+    ];
+    let pdf='%PDF-1.4\n', offsets=[0];
+    objects.forEach((o,i)=>{offsets[i+1]=pdf.length;pdf+=`${i+1} 0 obj\n${o}\nendobj\n`});
+    const xref=pdf.length;
+    pdf+=`xref\n0 ${objects.length+1}\n0000000000 65535 f \n`;
+    for(let i=1;i<=objects.length;i++)pdf+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';
+    pdf+=`trailer\n<< /Size ${objects.length+1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+    return new File([new Blob([pdf],{type:'application/pdf'})],'TAGRO_Purchase_Order.pdf',{type:'application/pdf'});
+  }
+
+  function makeExcelFile(){
+    const d = orderData();
+    if(typeof XLSX === 'undefined'){
+      const rows = [
+        ['TAGRO PURCHASE ORDER'],
+        ['Supplier',d.supplier],['Ordering Branch',d.branch],['Created By',d.createdBy],['Comments',d.comments],[],
+        ['No','Item','Qty','Unit'],
+        ...d.items.map(x=>[x.no,x.item,x.qty,x.unit])
+      ];
+      const csv = rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+      return new File([csv],'TAGRO_Purchase_Order.csv',{type:'text/csv'});
+    }
+    const wb = XLSX.utils.book_new();
+    const rows = [
+      ['TAGRO PURCHASE ORDER'],
+      [],
+      ['Supplier',d.supplier],
+      ['Ordering Branch',d.branch],
+      ['Created By',d.createdBy],
+      ['Comments',d.comments],
+      [],
+      ['No','Item','Qty','Unit'],
+      ...d.items.map(x=>[x.no,x.item,x.qty,x.unit])
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=[{wch:8},{wch:42},{wch:10},{wch:10}];
+    XLSX.utils.book_append_sheet(wb,ws,'Purchase Order');
+    const data = XLSX.write(wb,{bookType:'xlsx',type:'array'});
+    return new File([data],'TAGRO_Purchase_Order.xlsx',{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  }
+
+  async function buildFile(){return format==='xlsx' ? makeExcelFile() : makePdfBlob()}
+
+  function downloadFile(file){
+    const url=URL.createObjectURL(file);
+    const a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+  }
+
+  $('shareBtn').addEventListener('click', async()=>{
+    const file=await buildFile();
+    try{
+      if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
+        await navigator.share({title:'TAGRO Purchase Order',text:'Purchase Order',files:[file]});
+      }else downloadFile(file);
+    }catch(err){if(err?.name!=='AbortError')downloadFile(file)}
+  });
+  $('saveBtn').addEventListener('click', async()=>downloadFile(await buildFile()));
+
+  // ---- local draft persistence (invisible; the mock has no drafts panel) --
+  function saveLocal(){
+    if(!draftKey) return;
+    const items = [...document.querySelectorAll('#items .item[data-catalog-id]')].map(el => ({
+      name: el.querySelector('.itemname')?.textContent || '', qty: el.dataset.qty, catalogId: el.dataset.catalogId, unit: el.dataset.unit
+    }));
+    localStorage.setItem(draftKey, JSON.stringify({
+      supplier: $('supplier').value, supplierId, branch: $('branch').value,
+      createdBy: $('createdBy').value, comments: $('comments').value, items
+    }));
+  }
+  function restoreLocal(){
+    if(!draftKey) return;
+    let d;
+    try{ d = JSON.parse(localStorage.getItem(draftKey) || 'null'); }catch{ d = null; }
+    if(!d) return;
+    (d.items || []).forEach(snap => {
+      const div = document.createElement('div');
+      div.className = 'item';
+      div.dataset.qty = snap.qty; div.dataset.catalogId = snap.catalogId; div.dataset.unit = snap.unit || 'nos';
+      div.innerHTML = `
+        <div class="itemhead">
+          <div><div class="itemname" contenteditable="true">${esc(snap.name)}</div><div class="itemmeta">Editable item line</div></div>
+          <button class="remove" type="button" aria-label="Remove item">×</button>
+        </div>
+        <div class="controls">
+          <div class="qty"><button class="minus" type="button">−</button><span class="qval">${snap.qty}</span><button class="plus" type="button">+</button></div>
+          <div class="needby">ORDER QTY<b>${snap.qty} pcs</b></div>
+        </div>`;
+      $('items').appendChild(div);
+    });
+    $('supplier').value = d.supplier || '';
+    supplierId = d.supplierId || '';
+    if(supplierId) $('supplierHint').innerHTML = '<span class="tag-verified">Selected: ' + esc(d.supplier || '') + '</span>';
+    $('branch').value = d.branch || $('branch').value;
+    if(d.createdBy) $('createdBy').value = d.createdBy;
+    $('comments').value = d.comments || '';
+    updateItems();
+  }
+
+  async function loadBranchOptions(){ await branches(); }
+
+  async function boot(){
+    if(!EchoRuntime.sessionInfo().signedIn){ location.href = 'login.html'; return; }
+    const info = EchoRuntime.sessionInfo();
+    const context = await EchoRuntime.loadContext();
+    $('createdBy').value = context.display_name || info.email || 'Logged-in user';
+    draftKey = EchoRuntime.localKey('po-mock-draft-v1');
+    await loadBranchOptions();
+    restoreLocal();
+    updateItems();
+    EchoRuntime.flushQueue().catch(() => {});
+  }
+
+  boot().catch(e => { $('draftStatus').textContent = e.message; });
+})();
+</script>
+</body>
+</html>
