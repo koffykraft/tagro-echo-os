@@ -446,7 +446,10 @@
   <header class="topbar">
     <div class="brandrow">
       <div class="brand">
-        <img class="logo-placeholder" src="assets/brand/tagro-stihl-900x240.png" alt="TAGRO STIHL" style="border:0;object-fit:contain;background:#fff">
+        <picture>
+          <source media="(min-width:720px)" srcset="assets/brand/tagro-stihl-1600x400.png">
+          <img class="logo-placeholder" src="assets/brand/tagro-stihl-900x240.png" alt="TAGRO STIHL" style="border:0;object-fit:contain;background:#fff">
+        </picture>
         <div>
           <h1>Billing</h1>
           <small>Fast counter & service billing</small>
@@ -700,6 +703,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   const createBill = $('createBill');
   let paymentMode = 'cash';
   let enterpriseId = '', isOwner = false, branchKey = '', draftKey = '';
+  let productCacheKey = '', contextCacheKey = '', branchCacheKey = '';
   let customerId = '';
 
   // ---- totals ----------------------------------------------------------
@@ -751,6 +755,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   }
 
   function addResolvedItem(p, mode){
+    const row = {...p};
+    row.unit=String(p.unit||'').trim();
     const targetSection = mode === 'repair'
       ? [...document.querySelectorAll('.card')].find(c => c.querySelector('h2')?.textContent.trim() === 'Repair items / labour')
       : [...document.querySelectorAll('.card')].find(c => c.querySelector('h2')?.textContent.trim() === 'Bill items');
@@ -775,10 +781,10 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       <div class="itemhead">
         <div>
           <div class="itemname">${esc(displayName)}</div>
-          <div class="itemmeta">${esc(meta)}</div>
+          <div class="itemmeta">${esc(meta)}${row.unit ? ' · <span class="unit">'+esc(row.unit)+'</span>' : ''}</div>
         </div>
         <div class="itemhead-right">
-          <div class="price">${money(p.approved_price_before_tax)}</div>
+          <input class="price" aria-label="Rate before tax" type="number" step="0.01" value="${Number(p.approved_price_before_tax)||0}"${(isOwner?'':' readonly')}>
           <button class="remove-item" type="button" aria-label="Remove item">×</button>
         </div>
       </div>
@@ -830,8 +836,15 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         try{
           const body = await EchoRuntime.reference('products', q, 10, {branchCode: $('branch').value});
           const items=(body.items||[]).map(v=>({...v,gst_rate:v.gst_rate==null?null:Number(v.gst_rate),gst_known:Boolean(v.gst_known)}));
+          localStorage.setItem(productCacheKey, JSON.stringify(items));
           render(items);
-        }catch(e){ hint.textContent = e.message; hint.className = 'hint warn'; }
+        }catch(e){
+          let cached=[];
+          try{ cached=JSON.parse(localStorage.getItem(productCacheKey)||'[]'); }catch{}
+          cached=cached.filter(p=>JSON.stringify(p).toLowerCase().includes(q.toLowerCase())).slice(0,10);
+          if(cached.length){ render(cached); hint.textContent='Showing recently verified items while offline.'; }
+          else { hint.textContent = e.message; hint.className = 'hint warn'; }
+        }
       }, 220);
     });
     input.addEventListener('keydown', e => {
@@ -866,6 +879,13 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     if(e.target.matches('.remove-item') && item){ item.remove(); updateTotals(); return; }
     if(e.target.matches('.qty-minus') && item){ item.dataset.qty = Math.max(1, Number(item.dataset.qty || 1) - 1); updateTotals(); return; }
     if(e.target.matches('.qty-plus') && item){ item.dataset.qty = Number(item.dataset.qty || 1) + 1; updateTotals(); }
+  });
+  document.addEventListener('input', e => {
+    if(!isOwner || !e.target.matches('.item .price')) return;
+    const item = e.target.closest('.item[data-unit]');
+    if(!item) return;
+    item.dataset.unit = String(Math.max(0, Number(e.target.value) || 0));
+    updateTotals();
   });
 
   document.querySelectorAll('.payment-choice').forEach(btn => {
@@ -1129,19 +1149,21 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     const name = $('partyName').value.trim();
     const phone = $('partyPhone').value.trim();
     if(!name || !phone) return '';
-    const body = {
-      schema: 'tagro.echo.customer-create-request.v1', enterprise_id: enterpriseId,
-      name, phone, email: '', gstin: $('partyGstin').value.trim(), district: '',
-      idempotency_key: crypto.randomUUID()
-    };
-    const r = await EchoRuntime.enqueueAndFlush({path:'/customers', body, expectedSchema:'tagro.echo.customer-created.v1', idempotencyKey: body.idempotency_key});
-    if(r.state === 'acknowledged' && r.response?.data?.customer_id) return r.response.data.customer_id;
-    throw new Error('Customer could not be saved yet (' + (r.state||'pending') + '). Try again once connected, or bill as cash.');
+    throw new Error('Choose a verified customer or clear the field for a cash sale');
   }
 
   // ---- branch ------------------------------------------------------------
   async function branches(){
-    const b = await EchoRuntime.reference('branches', '', 100);
+    let b;
+    try{
+      b = await EchoRuntime.reference('branches', '', 100);
+      localStorage.setItem(branchCacheKey, JSON.stringify(b.items || []));
+    }catch(error){
+      let items=[];
+      try{ items=JSON.parse(localStorage.getItem(branchCacheKey)||'[]'); }catch{}
+      if(!items.length) throw error;
+      b={items};
+    }
     $('branch').innerHTML = '<option value="">Select branch</option>' + b.items.map(x => `<option value="${esc(x.code)}">${esc(x.code)} · ${esc(x.name)}</option>`).join('');
     const remembered = localStorage.getItem('echo.billing.branch');
     if(remembered && b.items.some(x => x.code === remembered)) $('branch').value = remembered;
@@ -1270,7 +1292,17 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     if(!EchoRuntime.sessionInfo().signedIn){ location.href = 'login.html'; return; }
     $('invoiceDate').textContent = new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
     const info = EchoRuntime.sessionInfo();
-    const context = await EchoRuntime.loadContext();
+    productCacheKey = EchoRuntime.localKey('billing-product-cache-v1');
+    contextCacheKey = EchoRuntime.localKey('billing-context-v1');
+    branchCacheKey = EchoRuntime.localKey('billing-branches-v1');
+    let context;
+    try{
+      context = await EchoRuntime.loadContext();
+      localStorage.setItem(contextCacheKey, JSON.stringify({display_name:context.display_name,enterprises:context.enterprises||[]}));
+    }catch(error){
+      try{ context=JSON.parse(localStorage.getItem(contextCacheKey)||'null'); }catch{}
+      if(!context) throw error;
+    }
     const membership = (context.enterprises||[]).find(x => x.enterprise_id === info.enterpriseId) || (context.enterprises||[])[0];
     enterpriseId = membership?.enterprise_id || info.enterpriseId;
     isOwner = String(membership?.role_code||'').toUpperCase() === 'OWNER';

@@ -119,7 +119,10 @@ textarea{min-height:76px;resize:vertical}
 <header class="topbar">
   <div class="brandrow">
     <div class="brand">
-      <img class="logo" src="assets/brand/tagro-stihl-900x240.png" alt="TAGRO STIHL" style="border:0;object-fit:contain;background:#fff">
+      <picture>
+        <source media="(min-width:720px)" srcset="assets/brand/tagro-stihl-1600x400.png">
+        <img class="logo" src="assets/brand/tagro-stihl-900x240.png" alt="TAGRO STIHL" style="border:0;object-fit:contain;background:#fff">
+      </picture>
       <div>
         <h1>Purchase Order</h1>
         <div class="sub">Fast reorder form</div>
@@ -228,7 +231,6 @@ textarea{min-height:76px;resize:vertical}
 </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="runtime-config.js"></script>
 <script src="runtime-client.js"></script>
 <script>
@@ -526,17 +528,6 @@ textarea{min-height:76px;resize:vertical}
 
   function makeExcelFile(){
     const d = orderData();
-    if(typeof XLSX === 'undefined'){
-      const rows = [
-        ['TAGRO PURCHASE ORDER'],
-        ['Supplier',d.supplier],['Ordering Branch',d.branch],['Created By',d.createdBy],['Comments',d.comments],[],
-        ['No','Item','Qty','Unit'],
-        ...d.items.map(x=>[x.no,x.item,x.qty,x.unit])
-      ];
-      const csv = rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
-      return new File([csv],'TAGRO_Purchase_Order.csv',{type:'text/csv'});
-    }
-    const wb = XLSX.utils.book_new();
     const rows = [
       ['TAGRO PURCHASE ORDER'],
       [],
@@ -548,11 +539,8 @@ textarea{min-height:76px;resize:vertical}
       ['No','Item','Qty','Unit'],
       ...d.items.map(x=>[x.no,x.item,x.qty,x.unit])
     ];
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    ws['!cols']=[{wch:8},{wch:42},{wch:10},{wch:10}];
-    XLSX.utils.book_append_sheet(wb,ws,'Purchase Order');
-    const data = XLSX.write(wb,{bookType:'xlsx',type:'array'});
-    return new File([data],'TAGRO_Purchase_Order.xlsx',{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const csv = '\ufeff' + rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
+    return new File([csv],'TAGRO_Purchase_Order.csv',{type:'text/csv;charset=utf-8'});
   }
 
   async function buildFile(){return format==='xlsx' ? makeExcelFile() : makePdfBlob()}
