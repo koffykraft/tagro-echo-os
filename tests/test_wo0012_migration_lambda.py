@@ -15,15 +15,15 @@ class Wo0012MigrationLambdaTests(unittest.TestCase):
         self.assertIn("FunctionName: echo-nonprod-schema-migrate", block)
 
     def test_migration_requires_current_explicit_confirmation(self) -> None:
-        handler = (ROOT / "src/aws_runtime/migration_handler.py").read_text(encoding="utf-8")
-        self.assertIn('CONFIRMATION = "APPLY_NONPROD_V0_3"', handler)
+        handler = (ROOT / "src/aws_runtime/migration_handler_v0_4.py").read_text(encoding="utf-8")
+        self.assertIn('CONFIRMATION = "APPLY_NONPROD_V0_4"', handler)
         self.assertIn('event.get("confirm") != CONFIRMATION', handler)
-        self.assertIn('"migration_set": "nonprod_v0_3"', handler)
+        self.assertIn('"migration_set": "nonprod_v0_4"', handler)
 
-    def test_wo0014_lambda_starts_at_catalog_extension(self) -> None:
-        handler = (ROOT / "src/aws_runtime/migration_handler.py").read_text(encoding="utf-8")
+    def test_v04_lambda_starts_at_purchase_entry_extension(self) -> None:
+        handler = (ROOT / "src/aws_runtime/migration_handler_v0_4.py").read_text(encoding="utf-8")
         runner = (ROOT / "scripts/apply_schema_migrations.py").read_text(encoding="utf-8")
-        self.assertIn('START_AT = "0014-catalog-parts-lookup-v0.7"', handler)
+        self.assertIn('START_AT = "0017-purchase-entry-v0.10"', handler)
         self.assertIn("apply(start_at=START_AT)", handler)
         self.assertIn("migration baseline incomplete", runner)
         self.assertIn("migration baseline drift", runner)

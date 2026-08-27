@@ -10,6 +10,7 @@ MANIFEST = ROOT / "schemas" / "migrations" / "nonprod_v0_2_manifest.json"
 
 
 def git_blob_sha(content: bytes) -> str:
+    content = content.replace(b"\r\n", b"\n")
     header = f"blob {len(content)}\0".encode("utf-8")
     return hashlib.sha1(header + content).hexdigest()
 

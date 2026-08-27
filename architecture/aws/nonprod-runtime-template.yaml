@@ -134,7 +134,7 @@ Resources:
       FunctionName: echo-nonprod-schema-migrate
       Runtime: python3.12
       Architectures: [arm64]
-      Handler: src.aws_runtime.migration_handler.lambda_handler
+      Handler: src.aws_runtime.migration_handler_v0_4.lambda_handler
       CodeUri: ../..
       Role: !Ref LambdaExecutionRoleArn
       MemorySize: 256

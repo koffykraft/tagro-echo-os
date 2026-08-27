@@ -59,7 +59,7 @@ def reference_search(
         if kind == "branches":
             rows = conn.execute(
                 """
-                select branch_id,code,name,district,branch_type
+                select branch_id,code,name,district,branch_type,gst_state_code
                 from branches
                 where enterprise_id=%s and active=true
                   and (%s='' or lower(code) like %s or lower(name) like %s or lower(district) like %s)
@@ -67,7 +67,7 @@ def reference_search(
                 """,
                 (enterprise_id, q, pattern, pattern, pattern, n),
             ).fetchall()
-            columns = ("branch_id", "code", "name", "district", "branch_type")
+            columns = ("branch_id", "code", "name", "district", "branch_type", "gst_state_code")
         elif kind == "products":
             rows = conn.execute(
                 """

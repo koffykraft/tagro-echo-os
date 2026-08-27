@@ -14,6 +14,14 @@
 -- follow the product), and when it is absent the line stands entirely on its own
 -- typed name, rate and GST%.
 
+-- GST cannot be inferred from a fixed head-office state: each operating branch
+-- is the recipient of the supply.  Unknown state is intentionally nullable so
+-- the runtime can stop for review instead of silently applying the wrong tax.
+alter table branches add column if not exists gst_state_code text;
+alter table branches drop constraint if exists branches_gst_state_code_check;
+alter table branches add constraint branches_gst_state_code_check
+  check (gst_state_code is null or gst_state_code ~ '^[0-9]{2}$');
+
 create table purchase_entries (
   entry_id text primary key,
   enterprise_id text not null references enterprises(enterprise_id),

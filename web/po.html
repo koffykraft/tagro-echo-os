@@ -211,7 +211,7 @@ textarea{min-height:76px;resize:vertical}
         <button id="saveBtn" type="button">SAVE</button>
       </div>
       <div class="helper">Share uses the device share sheet, so WhatsApp, email and other installed apps can be chosen. Save keeps the file on the device.</div>
-      <div class="helper">Saving here creates the shared ECHO purchase-order draft. It does not by itself mean owner-approved, sent to supplier, received or booked in BUSY.</div>
+      <div class="helper">Saving here creates the shared purchase-order draft. It has not been sent to the supplier and is not owner-approved, received or booked in BUSY.</div>
       <div class="status" id="status"></div>
     </div>
   </section>
@@ -224,7 +224,7 @@ textarea{min-height:76px;resize:vertical}
 
 <div class="bottom" id="bottom2" style="display:none">
   <button class="secondary" id="backBtn" type="button">BACK</button>
-  <button class="primary" id="savePO" type="button">SAVE PURCHASE ORDER</button>
+  <button class="primary" id="savePO" type="button">SAVE FOR APPROVAL</button>
 </div>
 </div>
 
@@ -415,6 +415,7 @@ textarea{min-height:76px;resize:vertical}
       branch_code: $('branch').value,
       supplier_id: supplierId,
       lines: lines.map(x => ({product_id: x.product_id, quantity: x.quantity, unit_price: null, note: $('comments').value.trim()})),
+      supplier_order_sent:false,
       idempotency_key: crypto.randomUUID()
     };
     try{

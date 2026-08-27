@@ -8,15 +8,6 @@ from typing import Any, Mapping
 from .config import RuntimeConfig
 from .database import connect
 
-# Same home-state convention already used by the TAGRO OS mobile purchase-entry
-# feature (src/purchase-entries.js there): a supplier GSTIN whose first two
-# digits are the Kerala state code is treated as intra-state (CGST+SGST); any
-# other GSTIN, or none given, is treated as inter-state (IGST). Kept identical
-# across both TAGRO systems so a purchase invoice is taxed the same way whichever
-# system records it.
-KERALA_GST_STATE_CODE = "32"
-
-
 class PurchaseEntryRuntimeError(ValueError):
     pass
 
@@ -43,9 +34,18 @@ def _stable_id(enterprise_id: str, key: str) -> str:
     return f"echo-pe-{sha256(f'{enterprise_id}|{key}'.encode()).hexdigest()[:24]}"
 
 
-def _is_inter_state(supplier_gstin: str) -> bool:
+def _tax_mode(supplier_gstin: str, buyer_state_code: str) -> str:
     gstin = supplier_gstin.strip().upper()
-    return bool(gstin) and len(gstin) >= 2 and gstin[:2] != KERALA_GST_STATE_CODE
+    buyer = buyer_state_code.strip()
+    if len(gstin) != 15 or not gstin[:2].isdigit():
+        raise PurchaseEntryRuntimeError("supplier GSTIN is required and must identify its state")
+    if len(buyer) != 2 or not buyer.isdigit():
+        raise PurchaseEntryRuntimeError("branch GST state is not configured; purchase needs review")
+    return "inter" if gstin[:2] != buyer else "intra"
+
+
+def _branch_allowed(role_code: str, user_branch_id: str | None, selected_branch_id: str) -> bool:
+    return role_code.strip().upper() == "OWNER" or bool(user_branch_id and user_branch_id == selected_branch_id)
 
 
 def _parse_date(value: Any) -> date | None:
@@ -99,8 +99,6 @@ def save_purchase_entry(
     shipment_note = _clean(payload.get("shipment_note"))
     purchase_note = _clean(payload.get("purchase_note"))
 
-    inter_state = _is_inter_state(supplier_gstin)
-
     normalized_lines: list[dict[str, Any]] = []
     taxable_total = Decimal("0")
     cgst_total = Decimal("0")
@@ -112,20 +110,24 @@ def save_purchase_entry(
     with connect(config) as conn:
         with conn.transaction():
             user = conn.execute(
-                "select user_id from users where enterprise_id=%s and principal_id=%s and active=true",
+                "select user_id,branch_id from users where enterprise_id=%s and principal_id=%s and active=true",
                 (enterprise_id, principal_id),
             ).fetchone()
             if not user:
                 raise PurchaseEntryRuntimeError("authenticated principal has no active ECHO user")
             user_id = str(user[0])
+            user_branch_id = str(user[1]) if user[1] else None
 
             branch = conn.execute(
-                "select branch_id from branches where enterprise_id=%s and code=%s and active=true",
+                "select branch_id,gst_state_code from branches where enterprise_id=%s and code=%s and active=true",
                 (enterprise_id, branch_code),
             ).fetchone()
             if not branch:
                 raise PurchaseEntryRuntimeError("active branch not found for enterprise")
             branch_id = str(branch[0])
+            if not _branch_allowed(_clean(membership.get("role_code")), user_branch_id, branch_id):
+                raise PermissionError("purchase entry is restricted to the user's branch")
+            inter_state = _tax_mode(supplier_gstin, _clean(branch[1])) == "inter"
 
             if not conn.execute(
                 "select 1 from suppliers where enterprise_id=%s and supplier_id=%s",

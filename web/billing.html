@@ -640,6 +640,7 @@
   </main>
 
   <div class="helper" id="saleMessage" style="margin:0 12px 8px"></div>
+  <div class="helper" style="margin:0 12px 8px">LOCAL DRAFT · Draft has not been issued. BUSY is not shown as booked until separate readback confirms it.</div>
   <div class="bottom">
     <button class="secondary" id="saveDraftBtn" type="button">SAVE DRAFT</button>
     <button class="primary" id="createBill" type="button">CREATE BILL</button>
@@ -703,15 +704,16 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
   // ---- totals ----------------------------------------------------------
   function updateTotals(){
-    let taxable = 0, tax = 0, partsTotal = 0, labourTotal = 0;
+    let taxable = 0, tax = 0, partsTotal = 0, labourTotal = 0, unknown = false;
     document.querySelectorAll('.item[data-unit]').forEach(item => {
       const inHiddenMode = item.closest('.sale-only, .repair-only') && getComputedStyle(item.closest('.sale-only, .repair-only')).display === 'none';
       if(inHiddenMode) return;
       const unit = Number(item.dataset.unit || 0);
       const qty = Number(item.dataset.qty || 0);
-      const gstRate = Number(item.dataset.gst || 0);
+      const gstRate = item.dataset.gst==='' ? null : Number(item.dataset.gst);
+      if(gstRate==null || item.dataset.gstKnown!=='true') unknown = true;
       const line = unit * qty;
-      const lineTax = line * gstRate / 100;
+      const lineTax = gstRate==null ? 0 : line * gstRate / 100;
       taxable += line;
       tax += lineTax;
       if(item.dataset.service === '1') labourTotal += line; else partsTotal += line;
@@ -722,7 +724,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     });
     const grand = taxable + tax;
     itemsTotal.textContent = money(taxable);
-    if(taxTotal) taxTotal.textContent = money(tax);
+    const t = tax;
+    if(taxTotal) taxTotal.textContent = unknown?'GST incomplete':money(t);
     grandTotal.textContent = money(grand);
     createBill.textContent = 'CREATE BILL · ' + money(grand);
     const partsOut = $('partsTotalOut');
@@ -762,7 +765,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     div.className = 'item';
     div.dataset.unit = String(Number(p.approved_price_before_tax) || 0);
     div.dataset.qty = '1';
-    div.dataset.gst = String(Number(p.gst_rate) || 0);
+    div.dataset.gst = p.gst_rate==null ? '' : String(Number(p.gst_rate));
+    div.dataset.gstKnown = String(Boolean(p.gst_known));
     div.dataset.catalogId = p.product_id;
     div.dataset.service = '0';
     const displayName = p.tagro_name || p.name || p.model || p.sku || 'Item';
@@ -800,7 +804,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       results.innerHTML = items.map((p, i) => {
         const ok = eligible(p);
         const price = p.approved_price_before_tax != null ? money(p.approved_price_before_tax) : 'No approved price';
-        const gstText = p.gst_known ? 'GST ' + p.gst_rate + '%' : 'GST incomplete';
+        const gstText = p.gst_known?'GST '+esc(p.gst_rate)+'%':'GST incomplete';
         const name = p.tagro_name || p.name || p.model || p.sku;
         return `<button type="button" class="result" data-i="${i}" ${ok ? '' : 'style="opacity:.6"'}><b>${esc(name)}</b><small>${esc(p.manufacturer_part_no || p.sku || '')} · ${esc(price)} · ${esc(gstText)}${ok ? '' : ' · not billable yet'}</small></button>`;
       }).join('') || '<div class="hint">No matching item.</div>';
@@ -825,7 +829,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       timer = setTimeout(async () => {
         try{
           const body = await EchoRuntime.reference('products', q, 10, {branchCode: $('branch').value});
-          render(body.items || []);
+          const items=(body.items||[]).map(v=>({...v,gst_rate:v.gst_rate==null?null:Number(v.gst_rate),gst_known:Boolean(v.gst_known)}));
+          render(items);
         }catch(e){ hint.textContent = e.message; hint.className = 'hint warn'; }
       }, 220);
     });
@@ -1060,7 +1065,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       product_id: el.dataset.catalogId,
       quantity: Number(el.dataset.qty || 1),
       unit_price_before_tax: Number(el.dataset.unit || 0),
-      gst_rate: Number(el.dataset.gst || 0),
+      gst_rate: el.dataset.gst===''?null:Number(el.dataset.gst),
+      gst_known: el.dataset.gstKnown==='true',
       discount_before_tax: 0
     }));
   }
@@ -1227,8 +1233,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     const message = $('saleMessage');
     if(!$('branch').value){ message.textContent = 'Choose a branch first.'; return; }
     if(!lines.length){ message.textContent = 'Add at least one item first.'; return; }
+    if(lines.some(v => !v.gst_known || v.gst_rate == null)){ message.textContent = 'GST incomplete for one or more selected products'; return; }
     createBill.disabled = true;
-    message.textContent = 'Recording the sale…';
+    message.textContent = 'WAITING TO SEND';
     try{
       let resolvedCustomerId = '';
       try{ resolvedCustomerId = await resolveCustomer(); }
@@ -1243,10 +1250,10 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         idempotency_key: crypto.randomUUID()
       };
       const r = await EchoRuntime.enqueueAndFlush({path:'/billing/issue', body: payload, expectedSchema:'tagro.echo.bill-issued.v1', idempotencyKey: payload.idempotency_key});
-      if(r.state === 'acknowledged' && r.response?.data?.bill_id){
+      if(r.state==='acknowledged'&&r.response?.data?.bill_id){
         const x = r.response.data;
-        message.textContent = 'Sale recorded · ' + money(x.invoice_total || 0) + '.';
-        createBill.textContent = 'SALE RECORDED ✓';
+        message.textContent = 'ECHO ISSUED · ' + money(x.invoice_total || 0) + ' · BUSY: not booked / not confirmed';
+        createBill.textContent = 'ECHO ISSUED ✓';
         $('invoiceLabel').textContent = '#' + x.bill_id.slice(-8).toUpperCase();
         if(draftKey) localStorage.removeItem(draftKey);
       }else{

@@ -21,6 +21,6 @@
     {"id":"0014-catalog-parts-lookup-v0.7","path":"schemas/business/catalog_parts_lookup_v0_7.sql","git_blob_sha":"16d9625e7f505e6b07a6fbc6f8169bb606664fd0","depends_on":["0002-canonical-business-v0.2"]},
     {"id":"0015-product-tax-completeness-v0.8","path":"schemas/business/product_tax_completeness_v0_8.sql","git_blob_sha":"729f9f24171d61c62287340ee1f02c79d05cf55e","depends_on":["0002-canonical-business-v0.2","0014-catalog-parts-lookup-v0.7"]},
     {"id":"0016-product-unit-conversions-v0.9","path":"schemas/business/product_unit_conversions_v0_9.sql","git_blob_sha":"dbda01a8d729d68862f8bd2d1f9ce84f802f4a2e","depends_on":["0002-canonical-business-v0.2","0014-catalog-parts-lookup-v0.7"]},
-    {"id":"0017-purchase-entry-v0.10","path":"schemas/business/purchase_entry_v0_10.sql","git_blob_sha":"93ee9cc0fa889dd637e1923f8f60163360d123a6","depends_on":["0001-platform-foundation-v0.2","0002-canonical-business-v0.2"]}
+    {"id":"0017-purchase-entry-v0.10","path":"schemas/business/purchase_entry_v0_10.sql","git_blob_sha":"52c5ef48318131ac8074fc4f4efe5f1cedf75e8c","depends_on":["0001-platform-foundation-v0.2","0002-canonical-business-v0.2"]}
   ]
 }

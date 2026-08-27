@@ -9,10 +9,13 @@ from src.aws_runtime.config import RuntimeConfig
 from src.aws_runtime.database import connect
 
 ROOT = Path(__file__).resolve().parents[1]
-MANIFEST = ROOT / "schemas" / "migrations" / "nonprod_v0_3_manifest.json"
+MANIFEST = ROOT / "schemas" / "migrations" / "nonprod_v0_4_manifest.json"
 
 
 def _git_blob_sha(content: bytes) -> str:
+    # Git stores text blobs with LF line endings. Normalize Windows checkouts
+    # so the admitted migration is verified identically on Windows and Linux.
+    content = content.replace(b"\r\n", b"\n")
     header = f"blob {len(content)}\0".encode("utf-8")
     return hashlib.sha1(header + content).hexdigest()
 
