@@ -25,10 +25,3 @@ sw.js
 # Owner-provided approved TAGRO–STIHL lockups; natural proportions must be preserved
 assets/brand/tagro-stihl-900x240.png
 assets/brand/tagro-stihl-1600x400.png
-stihl-v0/index.html
-stihl-v0/app.js
-stihl-v0/styles.css
-stihl-v0/config.js
-stihl-v0/manifest.webmanifest
-stihl-v0/sw.js
-stihl-v0/assets/tagro-stihl-logo.png
